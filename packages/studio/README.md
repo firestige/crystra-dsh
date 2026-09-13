@@ -33,3 +33,7 @@ the DSH JSON disclosure; Studio never turns provenance into query authority.
 For local component work, `npm run studio:dev` mounts the production Studio
 plugin in a minimal development Harness at `127.0.0.1:4173`. It is not a
 separate product or release artifact and deliberately owns no domain logic.
+
+## Accepted Crystra UI design
+
+See [Shell design input](design/README.md) and [adoption ownership](../../docs/crystra-ui-adoption.md). This handoff does not replace the qualified runtime UI dependency.
