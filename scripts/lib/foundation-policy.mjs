@@ -89,7 +89,7 @@ export function validateDependencyGraph(manifests, domainOwnerRoles = [
 
 export function validatePackInventory({ name, files }) {
   const required = ["package/LICENSE", "package/NOTICE.md", "package/README.md", "package/package.json", "package/cordis.patch.yml", "package/src/index.js", "package/lib/client.js", "package/modules/execution/src/index.js", "package/modules/studio/src/index.js"];
-  const allowed = /^package\/(?:LICENSE|NOTICE\.md|README\.md|package\.json|cordis\.patch\.yml|lib\/client\.js|src\/.+|modules\/(?:execution|studio)\/(?:src\/.+|README\.md|NOTICE\.md)|skills\/.+)$/u;
+  const allowed = /^package\/(?:LICENSE|NOTICE\.md|README\.md|package\.json|cordis\.patch\.yml|lib\/client\.js|src\/.+|modules\/(?:execution|studio|initialization)\/(?:src\/.+|README\.md|NOTICE\.md)|skills\/.+)$/u;
   if (name !== "dsh-crystra" || required.some(file => !files.includes(file))
       || files.some(file => !allowed.test(file) || /(?:^|\/)test(?:s)?\/|\.test\.[cm]?[jt]sx?$/u.test(file))) {
     throw new BoundaryViolation("PACK_INVENTORY", name);
@@ -131,7 +131,7 @@ export async function validateRepository(root) {
     } else if (!/^https:\/\/github\.com\/firestige\/crystra-[^/]+\/releases\/download\/[^/]+\/[^/]+\.tgz$/u.test(coordinate)) throw new BoundaryViolation("COMPONENT_COORDINATE", coordinate);
   }
   if (Object.keys(manifest.dependencies).some(name => name.startsWith("dsh-crystra-") || name.startsWith("dsh-wsr"))) throw new BoundaryViolation("BUNDLE_COUPLING", manifest.name);
-  for (const directory of ["src", "modules/execution/src", "modules/studio/src"]) {
+  for (const directory of ["src", "modules/execution/src", "modules/studio/src", "modules/initialization/src"]) {
     for (const path of await filesUnder(resolve(repositoryRoot, directory))) {
       if (SOURCE_EXTENSION.test(path)) validateSourceFile({packageRoot: repositoryRoot, path, source: await readFile(path,"utf8"), policy});
     }

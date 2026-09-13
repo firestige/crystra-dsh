@@ -1,0 +1,61 @@
+import {randomUUID} from 'node:crypto';
+import {link, mkdir, readFile, unlink, writeFile} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
+export function resolveCrystraPaths({platform=process.platform,home=os.homedir(),env=process.env,pathApi=path}={}) {
+  const absoluteOr=(candidate,fallback)=>typeof candidate==='string'&&pathApi.isAbsolute(candidate)?candidate:fallback;
+  if(platform==='darwin') {
+    const root=pathApi.join(home,'Library','Application Support','Crystra');
+    return {configFile:pathApi.join(root,'config.json'),stateRoot:pathApi.join(root,'state')};
+  }
+  if(platform==='win32')return {
+    configFile:pathApi.join(absoluteOr(env.APPDATA,pathApi.join(home,'AppData','Roaming')),'Crystra','config.json'),
+    stateRoot:pathApi.join(absoluteOr(env.LOCALAPPDATA,pathApi.join(home,'AppData','Local')),'Crystra','state'),
+  };
+  return {
+    configFile:pathApi.join(absoluteOr(env.XDG_CONFIG_HOME,pathApi.join(home,'.config')),'crystra','config.json'),
+    stateRoot:pathApi.join(absoluteOr(env.XDG_STATE_HOME,pathApi.join(home,'.local','state')),'crystra'),
+  };
+}
+function invalid(field) {throw new TypeError(`CRYSTRA_CONFIG_INVALID: ${field}`);}
+function object(value,allowed,field) {
+  if(value===null||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!allowed.includes(key)))invalid(field);
+}
+function absolute(value,field) {if(typeof value!=='string'||!path.isAbsolute(value))invalid(field);return path.resolve(value);}
+export function normalizePluginConfiguration(input={}) {
+  object(input,['stateRoot','execution','services','studio'],'root');
+  const paths=input.stateRoot===undefined?resolveCrystraPaths():{
+    stateRoot:absolute(input.stateRoot,'stateRoot'),configFile:path.join(absolute(input.stateRoot,'stateRoot'),'config.json'),
+  };
+  const services=input.services??{};
+  object(services,['ports'],'services');
+  object(services.ports??{},['evidence','evolution'],'services.ports');
+  const ports={evidence:4318,evolution:8000,...services.ports};
+  for(const [id,port] of Object.entries(ports))if(!Number.isInteger(port)||port<1024||port>65535)invalid(`services.ports.${id}`);
+  if(ports.evidence===ports.evolution)invalid('services.ports.duplicate');
+  let execution;
+  if(input.execution!==undefined) {
+    object(input.execution,['configFile','bindingFile'],'execution');
+    execution={configFile:absolute(input.execution.configFile,'execution.configFile'),bindingFile:absolute(input.execution.bindingFile,'execution.bindingFile')};
+  }
+  // Retained adapter configuration for explicit development/qualification profiles.
+  // Normal setup derives Studio endpoints from the unified service description.
+  if(input.studio!==undefined)object(input.studio,['hostConfigFile','hostConfig','evidenceBaseUrl','evolutionBaseUrl'],'studio');
+  return Object.freeze({paths:Object.freeze(paths),services:Object.freeze({ports:Object.freeze(ports)}),execution,studio:input.studio});
+}
+
+export async function initializeConfiguration(configuration) {
+  const {configFile,stateRoot}=configuration.paths;
+  await mkdir(path.dirname(configFile),{recursive:true,mode:0o700});
+  await mkdir(stateRoot,{recursive:true,mode:0o700});
+  const temporary=`${configFile}.${randomUUID()}.new`;
+  const value={schemaVersion:'crystra.plugin-config@1.0.0',status:'NEEDS_CONFIGURATION',services:configuration.services};
+  // Publish complete bytes exclusively: concurrent first loads cannot overwrite
+  // a user file, and readers cannot observe partially written JSON.
+  try {
+    await writeFile(temporary,`${JSON.stringify(value,null,2)}\n`,{flag:'wx',mode:0o600});
+    try {await link(temporary,configFile);}catch(error){if(error.code!=='EEXIST')throw error;}
+  }finally{await unlink(temporary).catch(error=>{if(error.code!=='ENOENT')throw error;});}
+  return JSON.parse(await readFile(configFile,'utf8'));
+}

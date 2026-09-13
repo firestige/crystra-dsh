@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import {mkdtemp, readFile, rm, stat, writeFile} from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import {resolveCrystraPaths, normalizePluginConfiguration, initializeConfiguration} from '../src/configuration.js';
+
+test('platform paths keep Crystra config and state out of WSR directories', () => {
+  assert.deepEqual(resolveCrystraPaths({platform:'darwin',home:'/home/user',env:{}}), {
+    configFile:'/home/user/Library/Application Support/Crystra/config.json',
+    stateRoot:'/home/user/Library/Application Support/Crystra/state',
+  });
+  assert.deepEqual(resolveCrystraPaths({platform:'linux',home:'/home/user',env:{XDG_CONFIG_HOME:'/config',XDG_STATE_HOME:'/state'}}), {
+    configFile:'/config/crystra/config.json',stateRoot:'/state/crystra',
+  });
+  assert.deepEqual(resolveCrystraPaths({platform:'win32',home:'C:\\Users\\u',env:{APPDATA:'C:\\Roaming',LOCALAPPDATA:'C:\\Local'},pathApi:path.win32}), {
+    configFile:'C:\\Roaming\\Crystra\\config.json',stateRoot:'C:\\Local\\Crystra\\state',
+  });
+});
+
+test('relative XDG variables fall back to home instead of the current directory', () => {
+  assert.equal(resolveCrystraPaths({platform:'linux',home:'/home/u',env:{XDG_STATE_HOME:'relative'}}).stateRoot,'/home/u/.local/state/crystra');
+});
+
+test('default config is light and explicit roots isolate all generated files', () => {
+  const value=normalizePluginConfiguration({stateRoot:'/tmp/crystra-isolated'});
+  assert.equal(value.paths.configFile,'/tmp/crystra-isolated/config.json');
+  assert.deepEqual(value.services.ports,{evidence:4318,evolution:8000});
+  assert.equal(value.execution,undefined);
+});
+
+test('config rejects unknown fields, relative roots, unsafe ports and image overrides', () => {
+  for(const input of [null,[],{stateRoot:'relative'},{other:true},{services:{image:'mutable:latest'}},{services:{ports:{evidence:0}}},{services:{ports:{evidence:8000}}},{execution:{configFile:'/tmp/a',bindingFile:'relative'}},{execution:{configFile:'/tmp/a',bindingFile:'/tmp/b',extra:true}}]) {
+    assert.throws(()=>normalizePluginConfiguration(input),/CRYSTRA_CONFIG_INVALID/);
+  }
+});
+
+test('first load creates private configuration without declaring services ready or overwriting edits', async () => {
+  const root=await mkdtemp(path.join(os.tmpdir(),'crystra-init-'));
+  try {
+    const config=normalizePluginConfiguration({stateRoot:root});
+    const initial=await initializeConfiguration(config);
+    assert.equal(initial.status,'NEEDS_CONFIGURATION');
+    assert.equal(initial.schemaVersion,'crystra.plugin-config@1.0.0');
+    if(process.platform!=='win32')assert.equal((await stat(config.paths.configFile)).mode&0o777,0o600);
+    const edited={...initial,note:'user edit'};
+    await writeFile(config.paths.configFile,JSON.stringify(edited));
+    await Promise.all([initializeConfiguration(config),initializeConfiguration(config)]);
+    assert.deepEqual(JSON.parse(await readFile(config.paths.configFile,'utf8')),edited);
+  }finally{await rm(root,{recursive:true,force:true});}
+});

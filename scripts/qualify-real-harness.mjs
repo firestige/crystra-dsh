@@ -16,6 +16,7 @@ const chromeBinary = process.env.CRYSTRA_CHROME_BINARY ?? "/Applications/Google 
 const compatibility = JSON.parse(await readFile(resolve(root, "config/dsh-compatibility.json"), "utf8"));
 const executionAsset = await resolveQualificationExecutionAsset({ compatibility });
 const ownerAsset = executionAsset.coordinate;
+const initializationFixture = process.env.CRYSTRA_QUALIFY_INITIALIZATION === "1";
 const terminalFixture = process.env.CRYSTRA_QUALIFY_TERMINAL === "1";
 const screenshotDirectory = process.env.CRYSTRA_QUALIFY_SCREENSHOT_DIR;
 
@@ -350,9 +351,10 @@ try {
     "  disabled: true",
     "- id: crystra",
     "  config:",
-    "    execution:",
+    `    stateRoot: ${JSON.stringify(join(temporary,"crystra-state"))}`,
+    ...(initializationFixture ? [] : ["    execution:",
     `      configFile: ${JSON.stringify(configFile)}`,
-    `      bindingFile: ${JSON.stringify(bindings)}`,
+    `      bindingFile: ${JSON.stringify(bindings)}`]),
     "    studio:",
     `      hostConfigFile: ${JSON.stringify(hostConfigFile)}`,
     "",
@@ -489,6 +491,31 @@ try {
     const input = document.querySelector('textarea:not(:disabled)');
     return input && !/选择一个工作区开始|Choose a workspace to start/.test(input.placeholder) && document.body.innerText.includes('repository');
   })()`), "HARNESS_SESSION_COMPOSER_UNAVAILABLE");
+  if (initializationFixture) {
+    const sendAdmin = async (text) => {
+      await cdp.evaluate(`document.querySelector('textarea:not(:disabled)').focus()`);
+      await cdp.command("Input.insertText", {text});
+      await cdp.command("Input.dispatchKeyEvent", {type:"keyDown",key:"Enter",code:"Enter",windowsVirtualKeyCode:13,nativeVirtualKeyCode:36});
+      await cdp.command("Input.dispatchKeyEvent", {type:"keyUp",key:"Enter",code:"Enter",windowsVirtualKeyCode:13,nativeVirtualKeyCode:36});
+    };
+    await sendAdmin('/crystra doctor');
+    await waitFor(async()=>cdp.evaluate(`document.body.innerText.includes('CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE')`),'INITIALIZATION_DOCTOR_DIAGNOSTIC');
+    await sendAdmin('/crystra setup');
+    await waitFor(async()=>{
+      try { return JSON.parse(await readFile(join(temporary,'crystra-state','execution.json'),'utf8')); }
+      catch(error){if(error.code==='ENOENT')return undefined;throw error;}
+    },'INITIALIZATION_EXECUTION_CONFIG');
+    await waitFor(async()=>cdp.evaluate(`document.body.innerText.includes('DEGRADED')`),'INITIALIZATION_SETUP_DIAGNOSTIC');
+    const generatedBefore=await readFile(join(temporary,'crystra-state','execution.json'),'utf8');
+    await sendAdmin('/crystra setup');
+    await waitFor(async()=>cdp.evaluate(`document.querySelectorAll('[data-crystra-initialization="true"]').length >= 3`),'INITIALIZATION_RETRY');
+    if(await readFile(join(temporary,'crystra-state','execution.json'),'utf8')!==generatedBefore)throw new Error('INITIALIZATION_CONFIG_OVERWRITE');
+    await cdp.command('Page.reload',{ignoreCache:true});
+    await waitFor(async()=>cdp.evaluate(`document.querySelector('textarea:not(:disabled)')!==null && document.body.innerText.includes('DEGRADED')`),'INITIALIZATION_RELOAD');
+    const severe=cdp.events.filter(event=>event.method==='Runtime.exceptionThrown'||(event.method==='Log.entryAdded'&&event.params.entry.level==='error'));
+    if(severe.length)throw new Error(`INITIALIZATION_BROWSER_ERRORS: ${JSON.stringify(severe)}`);
+    process.stdout.write(JSON.stringify({initialization:'PASS',doctor:'NEEDS_CONFIGURATION',setup:'DEGRADED',retry:'preserves-config',reload:'PASS',serviceDescriptor:'not-yet-published',errors:0})+'\n');
+  } else {
   if (terminalFixture) {
     await waitFor(async () => cdp.evaluate(`(() => {
       const row = document.querySelector('.crystra-delivery-row[aria-label="delivery-completed, SUCCEEDED"]');
@@ -1206,6 +1233,7 @@ try {
       },
       escapeBehavior: retainedAfterEscape ? "conversation-view-retained" : "invalid", degraded, narrow, trace, errors: 0 },
   }, null, 2)}\n`);
+  }
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
   if (cdp !== undefined) {

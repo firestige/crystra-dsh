@@ -544,19 +544,18 @@ export function mapIntakeToolOperation(args) {
   return Object.freeze({ operation: args.operation, ...(args.selector === undefined ? {} : { selector: args.selector }), ...(args.deliveryId === undefined ? {} : { deliveryId: args.deliveryId }), ...(args.operation === "create" ? { directive: "/workflow-execution" } : {}) });
 }
 
-export async function apply(ctx, config) {
+export async function apply(ctx, config, hooks = {}) {
   const presentationRouter = createSessionPresentationRouter(ctx.agents);
   const runtime = await createPluginRuntime(config, { present: (value) => presentationRouter.present(value),
   sessionAvailable: (sessionKey) => ctx.agents.get(sessionKey) !== undefined,
   resolveConversationWorkspace: async (agent) => resolveConversationWorkspace(ctx, agent) });
-  await registerDeliveryControlPlaneGateway(
-    ctx,
+  await (hooks.registerGateway ?? ((readModel) => registerDeliveryControlPlaneGateway(ctx, readModel)))(
     createDshSessionControlPlaneReadModel(runtime.ownerProjection, runtime.bindings),
   );
   const active = new Set();
   const attachmentStore = ctx.attachments;
   const run = (task) => { active.add(task); void task.finally(() => active.delete(task)).catch(() => undefined); return task; };
-  const command = ctx.commands.register({
+  const command = (hooks.registerCommand ?? ctx.commands.register.bind(ctx.commands))({
     name: "crystra",
     description: "Create, list, recover, inspect, finish, or abandon a Workflow Delivery",
     input: { hint: "list | create <selector> | recover [delivery-id] | status [delivery-id] | action finish | abandon [delivery-id]", images: true },
