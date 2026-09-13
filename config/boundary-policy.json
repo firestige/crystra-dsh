@@ -30,6 +30,7 @@
   "publicPackage": "dsh-crystra",
   "internalModules": [
     "modules/execution",
-    "modules/studio"
+    "modules/studio",
+    "modules/initialization"
   ]
 }

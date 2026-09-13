@@ -31,11 +31,14 @@ npm run qualify:lifecycle
 npm run qualify:provider-routing
 npm run qualify:real-harness
 CRYSTRA_QUALIFY_TERMINAL=1 npm run qualify:real-harness
+CRYSTRA_QUALIFY_INITIALIZATION=1 npm run qualify:real-harness
 ```
 
 Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, and downstream unavailability. The terminal fixture mode supplies deterministic owner facts without invoking an LLM. DSH 0.1.1-rc.2 supplies no CSP header; the bundle check separately rejects dynamic code and inline-script injection.
 
-The normal installation target is DSH's plugin installation plus Crystra's own setup and service diagnostics. That initialization work follows the single-plugin merge; it is not yet implemented here. No independent public product installer is shipped by this repository.
+The root plugin loads without pre-existing Execution configuration. `/crystra setup` prepares configuration and the bound service group; `/crystra doctor` reports readiness and missing repository role bindings. `/crystra services start|stop|status` manages the installation's own Compose namespace. These commands are deterministic and do not invoke an LLM. No independent public product installer is shipped. See [initialization](docs/initialization.md).
+
+Before new service assets are published and bound, setup activates Execution and explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`. This development state is not a fully installed release.
 
 New RC tags use `crystra-dsh-v<version>-rc.N`. Stable promotion reuses qualified bytes through GitHub Releases and retains its manual release gate. There is no npm publication stage. Historical release records describe their original artifacts, not this new distribution.
 

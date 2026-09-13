@@ -1,0 +1,105 @@
+name: crystra-services
+
+services:
+  database:
+    image: @POSTGRES_IMAGE@
+    environment:
+      POSTGRES_DB: crystra_evidence
+      POSTGRES_PASSWORD_FILE: /run/secrets/admin_password
+      POSTGRES_USER: crystra_evidence_admin
+      CRYSTRA_EVIDENCE_ADMIN_PASSWORD_FILE: /run/secrets/admin_password
+      CRYSTRA_EVIDENCE_BACKUP_PASSWORD_FILE: /run/secrets/backup_password
+      CRYSTRA_EVIDENCE_RUNTIME_PASSWORD_FILE: /run/secrets/runtime_password
+      CRYSTRA_EVIDENCE_STATE_IDENTITY: ${CRYSTRA_EVIDENCE_STATE_IDENTITY:-unconfigured}
+    secrets: [admin_password, backup_password, runtime_password]
+    volumes:
+      - evidence-data:/var/lib/postgresql
+      - ./init-roles.sh:/docker-entrypoint-initdb.d/10-crystra-roles.sh:ro
+    networks: [evidence-db]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crystra_evidence_admin -d crystra_evidence"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  migrate:
+    image: @EVIDENCE_IMAGE@
+    command: ["/app/deployment/run-with-database-secret.sh", "uv", "run", "--no-sync", "alembic", "upgrade", "head"]
+    environment:
+      CRYSTRA_EVIDENCE_DATABASE_HOST: database
+      CRYSTRA_EVIDENCE_DATABASE_NAME: crystra_evidence
+      CRYSTRA_EVIDENCE_DATABASE_PASSWORD_FILE: /run/secrets/admin_password
+      CRYSTRA_EVIDENCE_DATABASE_USER: crystra_evidence_admin
+    secrets: [admin_password]
+    networks: [evidence-db]
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: "no"
+
+  evidence:
+    image: @EVIDENCE_IMAGE@
+    command: ["/app/deployment/run-with-database-secret.sh", "crystra-evidence"]
+    environment:
+      CRYSTRA_EVIDENCE_BIND_SCOPE: container
+      CRYSTRA_EVIDENCE_DATABASE_HOST: database
+      CRYSTRA_EVIDENCE_DATABASE_NAME: crystra_evidence
+      CRYSTRA_EVIDENCE_DATABASE_PASSWORD_FILE: /run/secrets/runtime_password
+      CRYSTRA_EVIDENCE_DATABASE_USER: crystra_evidence_runtime
+      CRYSTRA_EVIDENCE_HOST: 0.0.0.0
+      CRYSTRA_EVIDENCE_RETENTION_INTERVAL_SECONDS: ${CRYSTRA_EVIDENCE_RETENTION_INTERVAL_SECONDS:-60}
+    ports:
+      - "127.0.0.1:${CRYSTRA_EVIDENCE_PORT:-4318}:4318"
+    secrets: [runtime_password]
+    networks: [evidence-db, app-tier]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4318/healthz', timeout=2).read()"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  evolution:
+    image: @EVOLUTION_IMAGE@
+    environment:
+      CRYSTRA_EVOLUTION_CONFIG: /run/config/evolution.json
+    volumes:
+      - type: bind
+        source: ${CRYSTRA_EVOLUTION_CONFIG_FILE:-./evolution.config.json}
+        target: /run/config/evolution.json
+        read_only: true
+    ports:
+      - "127.0.0.1:${CRYSTRA_EVOLUTION_PORT:-8000}:8000"
+    networks: [app-tier]
+    depends_on:
+      evidence:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2).read()"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+secrets:
+  admin_password:
+    file: ${CRYSTRA_EVIDENCE_ADMIN_PASSWORD_FILE}
+  backup_password:
+    file: ${CRYSTRA_EVIDENCE_BACKUP_PASSWORD_FILE}
+  runtime_password:
+    file: ${CRYSTRA_EVIDENCE_RUNTIME_PASSWORD_FILE}
+
+volumes:
+  evidence-data:
+    name: ${CRYSTRA_EVIDENCE_VOLUME:-crystra-evidence-data}
+    external: true
+
+networks:
+  evidence-db:
+    internal: true
+  app-tier:
+    driver: bridge

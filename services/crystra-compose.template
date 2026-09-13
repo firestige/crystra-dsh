@@ -1,0 +1,175 @@
+#!/bin/sh
+set -eu
+
+bundle_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+compose_file="$bundle_dir/compose.yaml"
+state_dir=${CRYSTRA_LOCAL_STATE_DIR:-"$bundle_dir/.local"}
+secret_dir="$state_dir/secrets"
+identity_file="$state_dir/service-state-identity"
+volume=${CRYSTRA_EVIDENCE_VOLUME:-crystra-evidence-data}
+wait_timeout=${CRYSTRA_READY_TIMEOUT_SECONDS:-120}
+compose_timeout=${CRYSTRA_COMPOSE_TIMEOUT_SECONDS:-}
+evidence_port=${CRYSTRA_EVIDENCE_PORT:-4318}
+evolution_port=${CRYSTRA_EVOLUTION_PORT:-8000}
+evolution_config=${CRYSTRA_EVOLUTION_CONFIG_FILE:-"$bundle_dir/evolution.config.json"}
+action=${1:-start}
+
+case "$volume" in *[!A-Za-z0-9_.-]* | "") printf 'Invalid CRYSTRA_EVIDENCE_VOLUME.\n' >&2; exit 2;; esac
+for value in "$evidence_port" "$evolution_port" "$wait_timeout"; do
+  case "$value" in *[!0-9]* | "") printf 'Ports and ready timeout must be integers.\n' >&2; exit 2;; esac
+done
+if test -n "$compose_timeout"; then
+  case "$compose_timeout" in *[!0-9]* | "") printf 'Compose timeout must be an integer.\n' >&2; exit 2;; esac
+fi
+for port in "$evidence_port" "$evolution_port"; do
+  if test "$port" -lt 1 || test "$port" -gt 65535; then printf 'Ports must be in 1..65535.\n' >&2; exit 2; fi
+done
+if test "$wait_timeout" -lt 1 || test "$wait_timeout" -gt 3600; then
+  printf 'CRYSTRA_READY_TIMEOUT_SECONDS must be in 1..3600.\n' >&2
+  exit 2
+fi
+if test -z "$compose_timeout"; then compose_timeout=$((wait_timeout + 30)); fi
+if test "$compose_timeout" -lt 1 || test "$compose_timeout" -gt 3630; then
+  printf 'CRYSTRA_COMPOSE_TIMEOUT_SECONDS must be in 1..3630.\n' >&2
+  exit 2
+fi
+if ! test -f "$evolution_config" || ! test -r "$evolution_config"; then
+  printf 'CRYSTRA_EVOLUTION_CONFIG_FILE must name a readable file.\n' >&2
+  exit 2
+fi
+config_parent=$(CDPATH= cd -- "$(dirname "$evolution_config")" && pwd)
+evolution_config="$config_parent/$(basename "$evolution_config")"
+if ! command -v node >/dev/null 2>&1; then printf 'Required command not found: node\n' >&2; exit 1; fi
+case "$action" in
+  host-config) exec node "$bundle_dir/crystra-host-preflight.mjs" config;;
+  preflight) exec node "$bundle_dir/crystra-host-preflight.mjs" check;;
+esac
+if ! command -v docker >/dev/null 2>&1; then printf 'Required command not found: docker\n' >&2; exit 1; fi
+if ! command -v openssl >/dev/null 2>&1; then printf 'Required command not found: openssl\n' >&2; exit 1; fi
+if ! docker compose version >/dev/null 2>&1; then printf 'Docker Compose v2 is required.\n' >&2; exit 1; fi
+if ! docker info >/dev/null 2>&1; then printf 'Docker daemon is unavailable.\n' >&2; exit 1; fi
+if test "$action" = start; then
+  project=${COMPOSE_PROJECT_NAME:-crystra-services}
+  owned=
+  for service in evidence evolution; do
+    if test -n "$(docker ps -q \
+      --filter "label=com.docker.compose.project=$project" \
+      --filter "label=com.docker.compose.service=$service")"; then
+      if test -n "$owned"; then owned="$owned,$service"; else owned=$service; fi
+    fi
+  done
+  node "$bundle_dir/crystra-host-preflight.mjs" check "$owned"
+fi
+
+umask 077
+mkdir -p "$secret_dir"
+chmod 700 "$state_dir" "$secret_dir"
+for name in admin-password backup-password runtime-password; do
+  path="$secret_dir/$name"
+  if ! test -s "$path"; then openssl rand -out "$path" -hex 32; fi
+  chmod 644 "$path"
+done
+if ! test -s "$identity_file"; then openssl rand -out "$identity_file" -hex 32; fi
+chmod 600 "$identity_file"
+state_identity=$(tr -d '\r\n' < "$identity_file")
+case "$state_identity" in *[!0-9a-f]* | "") printf 'Invalid service state identity.\n' >&2; exit 2;; esac
+if test "${#state_identity}" -ne 64; then printf 'Invalid service state identity.\n' >&2; exit 2; fi
+
+verify_volume_owner=0
+volume_exists=0
+case "$action" in start | restart) verify_volume_owner=1;; esac
+if test "$verify_volume_owner" -eq 1 && volume_inspection=$(docker volume inspect "$volume" --format '{{json .Labels}}' 2>&1); then
+  volume_exists=1
+  recorded_identity=
+  if test -n "$volume_inspection" && test "$volume_inspection" != null; then
+    if ! recorded_identity=$(printf '%s' "$volume_inspection" | node -e '
+      const fs = require("node:fs");
+      const labels = JSON.parse(fs.readFileSync(0, "utf8"));
+      process.stdout.write(labels?.["io.crystra.state-identity"] ?? "");
+    '); then
+      printf 'Evidence volume %s has unreadable ownership labels.\n' "$volume" >&2
+      exit 20
+    fi
+  fi
+  if test -z "$recorded_identity"; then
+    printf 'Evidence volume %s has no verifiable CRYSTRA state owner.\n' "$volume" >&2
+    exit 20
+  elif test "$recorded_identity" != "$state_identity"; then
+    printf 'Evidence volume belongs to a different CRYSTRA state directory; refusing credential rotation.\n' >&2
+    exit 20
+  fi
+elif test "$verify_volume_owner" -eq 1; then
+  case "$volume_inspection" in
+    *'no such volume'* | *'No such volume'*)
+        node "$bundle_dir/run-with-timeout.mjs" "$compose_timeout" docker volume create \
+          --label "io.crystra.state-identity=$state_identity" "$volume" >/dev/null
+        volume_exists=1
+      ;;
+    *) printf 'Cannot inspect Evidence volume %s ownership.\n' "$volume" >&2; exit 20;;
+  esac
+fi
+
+export CRYSTRA_EVIDENCE_ADMIN_PASSWORD_FILE="$secret_dir/admin-password"
+export CRYSTRA_EVIDENCE_BACKUP_PASSWORD_FILE="$secret_dir/backup-password"
+export CRYSTRA_EVIDENCE_RUNTIME_PASSWORD_FILE="$secret_dir/runtime-password"
+export CRYSTRA_EVIDENCE_VOLUME="$volume"
+export CRYSTRA_EVIDENCE_STATE_IDENTITY="$state_identity"
+export CRYSTRA_EVOLUTION_CONFIG_FILE="$evolution_config"
+compose() { node "$bundle_dir/run-with-timeout.mjs" "$compose_timeout" docker compose -f "$compose_file" "$@"; }
+runtime_touched=0
+
+wait_stack() {
+  if compose up --wait --wait-timeout "$wait_timeout"; then
+    status=0
+  else
+    status=$?
+  fi
+  if test "$status" -ne 0; then
+    printf 'Published service stack did not become ready (bundle @BUNDLE_VERSION@).\n' >&2
+    compose ps >&2 || true
+    compose logs --no-color database migrate evidence evolution >&2 || true
+    return "$status"
+  fi
+  printf 'CRYSTRA services @BUNDLE_VERSION@ are ready at Evidence 127.0.0.1:%s and Evolution 127.0.0.1:%s.\n' "$evidence_port" "$evolution_port"
+}
+
+start_stack() {
+  compose pull || return $?
+  # Compose does not include a secret file's host source path in the service
+  # configuration hash. Recreate the database so a second Product state using
+  # this bundle cannot inherit another state's secret mounts or volume.
+  runtime_touched=1
+  compose up -d --wait --wait-timeout "$wait_timeout" --force-recreate database || return $?
+  compose exec -T database /docker-entrypoint-initdb.d/10-crystra-roles.sh || return $?
+  # One-shot migrate containers can otherwise retain the previous state's
+  # admin secret mount even after the database has moved to the current state.
+  compose rm -sf migrate evidence evolution || return $?
+  wait_stack
+}
+
+recoverable_start_stack() {
+  if start_stack; then
+    status=0
+  else
+    status=$?
+  fi
+  if test "$status" -ne 0; then
+    if test "$runtime_touched" -eq 1; then
+      printf 'Service operation did not commit; removing partial runtime while preserving Evidence data.\n' >&2
+      compose down --remove-orphans || printf 'Partial service runtime cleanup also failed.\n' >&2
+    fi
+    return "$status"
+  fi
+}
+
+case "$action" in
+  start) recoverable_start_stack;;
+  restart) compose restart database && compose exec -T database /docker-entrypoint-initdb.d/10-crystra-roles.sh && compose restart evidence evolution && wait_stack;;
+  stop) compose stop;;
+  down) compose down --remove-orphans;;
+  status) compose ps --all --format json;;
+  logs)
+    if test "$#" -gt 1; then compose logs --no-color "$2"; else compose logs --no-color; fi
+    ;;
+  *) printf 'usage: %s {host-config|preflight|start|stop|restart|down|status|logs}\n' "$0" >&2; exit 2;;
+esac
