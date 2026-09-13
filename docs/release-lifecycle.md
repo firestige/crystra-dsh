@@ -7,3 +7,11 @@ The repository uses one release-set version while each package keeps its own sem
 `dsh-wsr-execution` and `dsh-wsr-studio` can each be added, upgraded, rolled back, and removed independently. The suite pins both packages exactly and owns the single composition layer; it has no UI identity. When moving from separately installed components to the suite, remove the component bundle layers and retain one `dsh-wsr` layer. Repeated suite adds are reconciled to one suite layer. To return to Execution alone, remove the suite and Studio roots, retain/add the exact Execution root, and reconcile the profile to one `dsh-wsr-execution` layer.
 
 Release qualification exercises those transitions in temporary DSH homes, checks independent and suite composition, boots the real DSH web Host in Chrome, tests Studio downstream outage, and rejects duplicate activations. It also admits two Roles to distinct Copilot SDK and Codex CLI Provider descriptors through the exact published Execution owner without opening either Provider or reading credential material. Provider routing remains an Execution concern: installing the suite does not collapse the mapping to one Provider.
+
+### Crystra candidate evidence
+
+Candidate publication requires exact published Execution/UI dependencies and a digest-bound `service-descriptor.json`. Missing service assets are a blocking release input; development-only local service fixtures cannot satisfy this check.
+
+The builder creates the plugin archive first. `run-release-qualification.mjs` runs the fixed gates against that exact archive and retains per-gate logs and execution receipts under `qualification-evidence/`. Receipts bind the candidate tag, source commit, release metadata SHA-256 and log SHA-256. The qualification writer rejects absent, failed or mismatched receipts instead of synthesizing PASS values. A retry starts with a fresh candidate output directory.
+
+The remote-input gate downloads and verifies the component and service bytes. Clean-profile, lifecycle and real-Harness checks consume the candidate archive without repacking it. The real-Harness run also exercises loopback outage behavior. The release uploads `qualification-evidence.tar.gz` alongside the qualification record. A published candidate still requires the separate combination and actual-environment acceptance in the Crystra execution plan.
