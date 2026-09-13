@@ -25,6 +25,7 @@ jobs:
           node-version: 24.12.0
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node scripts/verify-candidate-inputs.mjs --cache
       - name: Install the frozen DSH qualification CLI outside the workspace graph
         run: |
           npm install --global --prefix "$RUNNER_TEMP/dsh-cli" --ignore-scripts --no-audit --no-fund @deepseek-ai/dsh@0.1.1-rc.2 pnpm@11.23.0
@@ -38,20 +39,19 @@ jobs:
       - run: npm run pack:verify
       - name: Verify immutable remote owner artifact
         run: npm run release:owner:verify
-      - run: npm run qualify:clean-profile
-      - run: npm run qualify:lifecycle
-      - run: npm run qualify:provider-routing
-      - run: npm run qualify:real-harness
-        env:
-          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
       - name: Build candidate artifact set
         run: npm run release:candidate -- "$RUNNER_TEMP/candidate"
         env:
           CRYSTRA_RELEASE_CHANNEL: candidate
           CRYSTRA_CANDIDATE_TAG: ${{ steps.request.outputs.candidate_tag }}
       - run: npm run provenance:verify -- "$RUNNER_TEMP/candidate"
-      - run: npm run release:qualify -- "$RUNNER_TEMP/candidate"
+      # Runs qualify:clean-profile, qualify:lifecycle, qualify:provider-routing
+      # and qualify:real-harness against the exact built candidate archive.
+      - run: node scripts/run-release-qualification.mjs "$RUNNER_TEMP/candidate"
+        env:
+          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
       - run: test -f "$RUNNER_TEMP/candidate/release-qualification.json"
+      - run: tar -czf "$RUNNER_TEMP/candidate/qualification-evidence.tar.gz" -C "$RUNNER_TEMP/candidate" qualification-evidence
       - uses: actions/upload-artifact@v7
         with:
           name: crystra-dsh-${{ steps.request.outputs.candidate_tag }}
@@ -69,4 +69,4 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.release-app.outputs.token }}
           CANDIDATE_TAG: ${{ steps.request.outputs.candidate_tag }}
-        run: gh release create "$CANDIDATE_TAG" "$RUNNER_TEMP/candidate"/* --repo firestige/crystra-dsh --target "$GITHUB_SHA" --prerelease --verify-tag=false --title "$CANDIDATE_TAG"
+        run: gh release create "$CANDIDATE_TAG" "$RUNNER_TEMP/candidate"/*.tgz "$RUNNER_TEMP/candidate"/*.json "$RUNNER_TEMP/candidate"/SHA256SUMS "$RUNNER_TEMP/candidate"/qualification-evidence.tar.gz --repo firestige/crystra-dsh --target "$GITHUB_SHA" --prerelease --verify-tag=false --title "$CANDIDATE_TAG"

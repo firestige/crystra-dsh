@@ -133,3 +133,16 @@ test("marketplace support metadata covers every package and the shared security 
   await Promise.all(["marketplace/icon.svg", "CHANGELOG.md", "SECURITY.md", "docs/release-lifecycle.md"]
     .map((file) => readFile(path.join(root, file), "utf8")));
 });
+
+
+test("qualification cannot claim PASS without execution receipts", async () => {
+  const directory=await mkdtemp(path.join(os.tmpdir(),"crystra-unexecuted-gates-"));
+  try {
+    await writeFile(path.join(directory,"release-metadata.json"),JSON.stringify({
+      packageVersion:"0.1.0",candidateTag:"crystra-dsh-v0.1.0-rc.1",commit:"a".repeat(40),
+    }));
+    const result=spawnSync(process.execPath,[path.join(root,"scripts/write-release-qualification.mjs"),directory],{encoding:"utf8"});
+    assert.equal(result.status,1,result.stdout);
+    assert.match(result.stderr,/QUALIFICATION_RECEIPT_REQUIRED/);
+  } finally {await rm(directory,{recursive:true,force:true});}
+});

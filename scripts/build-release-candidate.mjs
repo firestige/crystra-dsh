@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { createProvenanceStatement, validateReleaseRequest, validateRepository } from "./lib/foundation-policy.mjs";
 import { packWorkspaces } from "./lib/package-artifacts.mjs";
 import { assertCandidateTag } from "./lib/release-policy.mjs";
+import {verifyPublishedInputs} from "./lib/published-inputs.mjs";
 
 const root = new URL("../", import.meta.url).pathname;
 const output = resolve(process.argv[2] ?? resolve(root, "artifacts/candidate"));
@@ -31,14 +32,7 @@ try {
   const compatibilityFile = resolve(root, "config/dsh-compatibility.json");
   const manifest = JSON.parse(await readFile(resolve(root,"package.json"),"utf8"));
   const componentInputs = JSON.parse(await readFile(resolve(root,"config/development-inputs.json"),"utf8")).inputs;
-  for (const input of Object.values(componentInputs)) {
-    const coordinate = manifest.dependencies[input.package];
-    if (!coordinate.startsWith("https://github.com/")) throw new Error("PUBLISHED_COMPONENT_DEPENDENCIES_REQUIRED");
-    const response=await fetch(coordinate);
-    if (!response.ok) throw new Error(`COMPONENT_DOWNLOAD_FAILED: ${input.package}`);
-    const bytes=new Uint8Array(await response.arrayBuffer());
-    if (createHash("sha256").update(bytes).digest("hex")!==input.sha256) throw new Error(`COMPONENT_DIGEST_MISMATCH: ${input.package}`);
-  }
+  const services = await verifyPublishedInputs(root);
   await rm(output, { recursive: true, force: true });
   await mkdir(output, { recursive: true });
   const archives = await packWorkspaces({ root, output });
@@ -56,7 +50,7 @@ try {
   const compatibility = {
     schemaVersion: "crystra.dsh.release-compatibility@1.0.0", packageVersion: repository.version,
     dsh: repository.dshVersion, node: "24.12.0", npm: "11.6.2",
-    components: componentInputs, packageVersions: repository.packageVersions,
+    services, components: componentInputs, packageVersions: repository.packageVersions,
     packages: packages.map(({ package: name }) => name),
   };
   await writeFile(resolve(output, "compatibility-matrix.json"), `${JSON.stringify(compatibility, null, 2)}\n`, { flag: "wx" });

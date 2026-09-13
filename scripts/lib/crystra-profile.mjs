@@ -15,7 +15,8 @@ export async function prepareProfile(home) {
   const env={...process.env,DSH_HOME:home};
   if(dsh(['--version'],env).trim()!=='0.1.1-rc.2') throw new Error('DSH_VERSION_MISMATCH: use the pinned binary via CRYSTRA_DSH_BINARY');
   const inputs=JSON.parse(await readFile(resolve(repository,'config/development-inputs.json'),'utf8')).inputs;
-  const overrides=Object.fromEntries(Object.values(inputs).map(input=>[input.package,`file:${resolve(repository,'.crystra-inputs',input.artifact)}`]));
+  const manifest=JSON.parse(await readFile(resolve(repository,'package.json'),'utf8'));
+  const overrides=Object.fromEntries(Object.values(inputs).filter(input=>manifest.dependencies[input.package].startsWith('file:')).map(input=>[input.package,`file:${resolve(repository,'.crystra-inputs',input.artifact)}`]));
   dsh(['plugin','--profile','web','config','set','--location=project','--json','overrides',JSON.stringify(overrides)],env);
   dsh(['plugin','--profile','web','config','set','--location=project','--json','allowBuilds',JSON.stringify({'better-sqlite3':true})],env);
   return env;

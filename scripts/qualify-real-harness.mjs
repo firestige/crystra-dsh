@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 
-import { packWorkspaces } from "./lib/package-artifacts.mjs";
+import { qualificationArchives } from "./lib/qualification-artifacts.mjs";
 import {prepareProfile,assertSinglePlugin} from "./lib/crystra-profile.mjs";
 import { resolveQualificationExecutionAsset } from "./lib/qualification-execution-asset.mjs";
 
@@ -157,7 +157,7 @@ let fixtureServer;
 let harnessLog = "";
 try {
   const packages = join(temporary, "packages");
-  const archives = await packWorkspaces({ root, output: packages });
+  const archives = await qualificationArchives({ root, output: packages });
   const pluginArchive = archives[0];
   if (archives.length !== 1) throw new Error("HARNESS_ARCHIVE_COUNT");
 
