@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
-  <title id="title">CRYSTRA</title>
+  <title id="title">Crystra</title>
   <rect width="128" height="128" rx="24" fill="#151517"/>
-  <path d="M22 35h18l10 49 14-35h14l12 35 8-49h18l-15 70H84L70 70l-15 35H37z" fill="#f9fafb"/>
-  <circle cx="103" cy="24" r="10" fill="#5eead4"/>
+  <path d="M64 16 104 40 104 88 64 112 24 88 24 40Z" fill="#5eead4"/>
+  <path d="M64 16 64 64 24 40Z" fill="#ccfbf1"/>
+  <path d="M24 40 64 64 24 88Z" fill="#99f6e4"/>
+  <path d="M24 88 64 64 64 112Z" fill="#2dd4bf"/>
+  <path d="M64 112 64 64 104 88Z" fill="#0d9488"/>
+  <path d="M104 40 64 64 104 88Z" fill="#14b8a6"/>
+  <path d="M64 16 104 40 64 64Z" fill="#5eead4"/>
+  <path d="m82 45-18-10-25 15v28l25 15 18-10V70L64 81 51 73V55l13-8 18 11Z" fill="#f0fdfa"/>
 </svg>

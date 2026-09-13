@@ -2,15 +2,15 @@
   "schemaVersion": "crystra.dsh.development-inputs@1.0.0",
   "inputs": {
     "execution": {
-      "repository": "firestige/wsr-execution",
-      "revision": "cd7f178b4658a23ec992748a9a8b5f47beafd4de",
+      "repository": "firestige/crystra-execution",
+      "revision": "0a708b59250cccda43ff6054000cb3af380d6906",
       "package": "crystra-execution",
       "version": "0.1.0",
       "artifact": "crystra-execution-0.1.0.tgz",
-      "sha256": "ac36a5fe0d859906b8eed7954b7649347a3a50f74a730bc6bf2d3f670d0cde15"
+      "sha256": "cba51e9253a0622c7a316f4e06520318853f40ee59c3a537b22975882e4a1262"
     },
     "ui": {
-      "repository": "firestige/wsr-ui",
+      "repository": "firestige/crystra-ui",
       "revision": "482f6f175052bf770efbbbfe0b8ef54a6c365c45",
       "package": "crystra-ui-core",
       "version": "0.1.0",

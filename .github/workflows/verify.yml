@@ -42,6 +42,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm rebuild better-sqlite3
       - run: node scripts/build-client-bundles.mjs
+      - run: git diff --exit-code -- lib/client.js
       - run: npm test
         env:
           CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome

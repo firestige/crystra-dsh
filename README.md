@@ -6,7 +6,7 @@ Execution and Studio are internal modules of this plugin. `crystra-execution` an
 
 ## Current development state
 
-The new distribution starts at `0.1.0`; no Crystra release is claimed by this source checkout. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. Existing repository URLs remain until the coordinated repository rename. Production candidates reject local file dependencies and require exact published GitHub Release assets.
+The new distribution starts at `0.1.0`; no Crystra release is claimed by this source checkout. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. The eight repositories now use their Crystra coordinates. Production candidates reject local file dependencies and require exact published GitHub Release assets.
 
 Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. Check out the configured Execution and UI commits under `.crystra-inputs/sources/execution` and `.crystra-inputs/sources/ui`, then run:
 
