@@ -17,79 +17,26 @@ import { assertCompositionDump, commandFailureDetail, localSuiteOverrideYaml, lo
 
 const root = resolve(import.meta.dirname, "..");
 
-test("the repository admits independently versioned compatible bundles", async () => {
-  const report = await validateRepository(root);
-
-  assert.deepEqual(report.packages.map(({ name }) => name), [
-    "dsh-wsr-execution",
-    "dsh-wsr-studio",
-    "dsh-wsr",
-  ]);
-  assert.equal(report.version, "0.2.12");
-  assert.deepEqual(report.packageVersions, {
-    "dsh-wsr-execution": "0.2.10",
-    "dsh-wsr-studio": "0.1.4",
-    "dsh-wsr": "0.2.11",
-  });
-  assert.equal(report.dshVersion, "0.1.1-rc.2");
-  assert.deepEqual(report.displayNames, {
-    "dsh-wsr-execution": "WSR",
-    "dsh-wsr-studio": "WSR Studio",
-  });
+test("one root plugin owns both internal adapters", async () => {
+  const report=await validateRepository(root);
+  assert.deepEqual(report.packages.map(p=>p.name),["dsh-crystra"]);
+  assert.equal(report.version,"0.1.0");
 });
 
-test("an old Execution owner coordinate cannot qualify the current DSH adapter", async () => {
-  const temporary = await mkdtemp(join(tmpdir(), "wsr-dsh-old-owner-"));
-  const repository = join(temporary, "repository");
+test("changed development dependency bytes fail closed", async () => {
+  const temporary=await mkdtemp(join(tmpdir(),"crystra-input-drift-"));
   try {
-    await cp(root, repository, {
-      recursive: true,
-      filter: (path) => ![".git", "artifacts", "node_modules"].includes(basename(path)),
-    });
-    const compatibilityPath = join(repository, "config/dsh-compatibility.json");
-    const compatibility = JSON.parse(await readFile(compatibilityPath, "utf8"));
-    compatibility.executionOwner = {
-      ...compatibility.executionOwner,
-      version: "0.2.1",
-      release: "0.2.1",
-      coordinate: "https://github.com/firestige/wsr-execution/releases/download/0.2.1/wsr-execution-0.2.1.tgz",
-      assetSha256: "a".repeat(64),
-      revision: "b".repeat(40),
-      qualificationCoordinate: "https://github.com/firestige/wsr-execution/releases/download/0.2.1/release-qualification.json",
-    };
-    await writeFile(compatibilityPath, `${JSON.stringify(compatibility, null, 2)}\n`);
-
-    await assert.rejects(
-      validateRepository(repository),
-      (error) => error instanceof BoundaryViolation && error.code === "EXECUTION_OWNER_EVIDENCE_DRIFT",
-    );
-  } finally {
-    await rm(temporary, { recursive: true, force: true });
-  }
-});
-
-test("the suite composes compatible Execution and Studio versions without an activation or UI identity", async () => {
-  const suite = JSON.parse(await readFile(join(root, "packages/suite/package.json"), "utf8"));
-  const patch = await readFile(join(root, "packages/suite/cordis.patch.yml"), "utf8");
-
-  assert.deepEqual(suite.dependencies, {
-    "dsh-wsr-execution": "^0.2.10",
-    "dsh-wsr-studio": "^0.1.4",
-  });
-  assert.equal(suite.wsr.displayName, undefined);
-  assert.equal(suite.main, undefined);
-  assert.equal(suite.exports, undefined);
-  assert.match(patch, /id: wsr-execution/u);
-  assert.match(patch, /id: wsr-studio/u);
-  assert.match(patch, /id: ui-workspace[\s\S]*disabled: true/u);
-  assert.doesNotMatch(patch, /id: wsr-suite|name: ['"]?dsh-wsr['"]?$/mu);
+    await cp(root,temporary,{recursive:true,filter:path=>![".git","node_modules","artifacts"].includes(basename(path))});
+    await writeFile(join(temporary,".crystra-inputs/crystra-execution-0.1.0.tgz"),"changed");
+    await assert.rejects(validateRepository(temporary),/COMPONENT_DIGEST_MISMATCH/);
+  } finally {await rm(temporary,{recursive:true,force:true});}
 });
 
 test("source-relative imports cannot escape a package boundary", () => {
   assert.throws(
     () => validateSourceFile({
-      packageRoot: "/repo/packages/execution",
-      path: "/repo/packages/execution/src/adapter.js",
+      packageRoot: "/repo/modules/execution",
+      path: "/repo/modules/execution/src/adapter.js",
       source: 'import value from "../../../execution-system/src/private.js";',
     }),
     (error) => error instanceof BoundaryViolation && error.code === "SOURCE_RELATIVE_IMPORT",
@@ -99,8 +46,8 @@ test("source-relative imports cannot escape a package boundary", () => {
 test("copied domain implementation is rejected from DSH adapter packages", () => {
   assert.throws(
     () => validateSourceFile({
-      packageRoot: "/repo/packages/studio",
-      path: "/repo/packages/studio/src/domain/evidence-store.js",
+      packageRoot: "/repo/modules/studio",
+      path: "/repo/modules/studio/src/domain/evidence-store.js",
       source: "export class EvidenceStore {}",
     }),
     (error) => error instanceof BoundaryViolation && error.code === "COPIED_DOMAIN_IMPLEMENTATION",
@@ -109,31 +56,31 @@ test("copied domain implementation is rejected from DSH adapter packages", () =>
 
 test("DSH-specific Delivery UI and Evidence gateway adapter paths remain available to Wave 7", () => {
   assert.doesNotThrow(() => validateSourceFile({
-    packageRoot: "/repo/packages/execution",
-    path: "/repo/packages/execution/src/client/delivery/index.js",
+    packageRoot: "/repo/modules/execution",
+    path: "/repo/modules/execution/src/client/delivery/index.js",
     source: "export const registerDeliveryInventory = () => undefined;",
   }));
   assert.doesNotThrow(() => validateSourceFile({
-    packageRoot: "/repo/packages/studio",
-    path: "/repo/packages/studio/src/host/evidence/index.js",
+    packageRoot: "/repo/modules/studio",
+    path: "/repo/modules/studio/src/host/evidence/index.js",
     source: "export const registerEvidenceGateway = () => undefined;",
   }));
 });
 
-test("domain owners cannot acquire a reverse dependency on WSR DSH packages", () => {
+test("domain owners cannot acquire a reverse dependency on CRYSTRA DSH packages", () => {
   assert.throws(
     () => validateDependencyGraph([
-      { name: "wsr-execution", repositoryRole: "domain-owner", dependencies: { "dsh-wsr-execution": "1.0.0" } },
+      { name: "crystra-execution", repositoryRole: "domain-owner", dependencies: { "dsh-crystra": "1.0.0" } },
     ]),
     (error) => error instanceof BoundaryViolation && error.code === "REVERSE_DEPENDENCY",
   );
 });
 
 test("provenance binds sorted artifact digests to one repository revision", async () => {
-  const temporary = await mkdtemp(join(tmpdir(), "wsr-dsh-provenance-"));
+  const temporary = await mkdtemp(join(tmpdir(), "crystra-dsh-provenance-"));
   try {
-    const execution = join(temporary, "dsh-wsr-execution-0.0.0-development.tgz");
-    const studio = join(temporary, "dsh-wsr-studio-0.0.0-development.tgz");
+    const execution = join(temporary, "dsh-crystra-execution-0.0.0-development.tgz");
+    const studio = join(temporary, "dsh-crystra-studio-0.0.0-development.tgz");
     await writeFile(execution, "execution\n");
     await writeFile(studio, "studio\n");
 
@@ -143,10 +90,10 @@ test("provenance binds sorted artifact digests to one repository revision", asyn
       version: "0.0.0-development",
     });
 
-    assert.equal(statement.schemaVersion, "wsr.dsh.provenance@1.0.0");
+    assert.equal(statement.schemaVersion, "crystra.dsh.provenance@1.0.0");
     assert.deepEqual(statement.subjects.map(({ name }) => name), [
-      "dsh-wsr-execution-0.0.0-development.tgz",
-      "dsh-wsr-studio-0.0.0-development.tgz",
+      "dsh-crystra-execution-0.0.0-development.tgz",
+      "dsh-crystra-studio-0.0.0-development.tgz",
     ]);
     assert.ok(statement.subjects.every(({ sha256 }) => /^[0-9a-f]{64}$/u.test(sha256)));
   } finally {
@@ -154,27 +101,10 @@ test("provenance binds sorted artifact digests to one repository revision", asyn
   }
 });
 
-test("pack inventory requires license, notice, generated client and only declared adapter sources", () => {
-  assert.doesNotThrow(() => validatePackInventory({
-    name: "dsh-wsr-execution",
-    files: [
-      "package/LICENSE",
-      "package/NOTICE.md",
-      "package/README.md",
-      "package/cordis.patch.yml",
-      "package/lib/client.js",
-      "package/package.json",
-      "package/src/client/browser-entry.js",
-      "package/src/index.js",
-    ],
-  }));
-  assert.throws(
-    () => validatePackInventory({
-      name: "dsh-wsr-execution",
-      files: ["package/package.json", "package/src/domain/delivery.js"],
-    }),
-    (error) => error instanceof BoundaryViolation && error.code === "PACK_INVENTORY",
-  );
+test("one archive must include both adapters and exclude tests", () => {
+  const files=["LICENSE","NOTICE.md","README.md","cordis.patch.yml","lib/client.js","package.json","src/index.js","modules/execution/src/index.js","modules/studio/src/index.js"].map(p=>`package/${p}`);
+  assert.doesNotThrow(()=>validatePackInventory({name:"dsh-crystra",files}));
+  assert.throws(()=>validatePackInventory({name:"dsh-crystra",files:[...files,"package/modules/execution/src/private.test.js"]}),/PACK_INVENTORY/);
 });
 
 test("candidate construction permits only an exact clean candidate", () => {
@@ -199,33 +129,33 @@ test("suite qualification removes direct component layers and keeps one suite la
   assert.deepEqual(suiteOnlyLayers([
     "@deepseek-ai/dsh-base",
     "@deepseek-ai/dsh-web-app",
-    "dsh-wsr-execution",
-    "dsh-wsr-studio",
-    "dsh-wsr",
+    "dsh-crystra-execution",
+    "dsh-crystra-studio",
+    "dsh-crystra",
   ]), [
     "@deepseek-ai/dsh-base",
     "@deepseek-ai/dsh-web-app",
-    "dsh-wsr",
+    "dsh-crystra",
   ]);
 });
 
 test("suite reconcile collapses repeated add layers deterministically", () => {
   assert.deepEqual(reconcileSuiteLayers([
     "@deepseek-ai/dsh-base",
-    "dsh-wsr-execution",
-    "dsh-wsr-studio",
-    "dsh-wsr",
-    "dsh-wsr",
-  ]), ["@deepseek-ai/dsh-base", "dsh-wsr"]);
+    "dsh-crystra-execution",
+    "dsh-crystra-studio",
+    "dsh-crystra",
+    "dsh-crystra",
+  ]), ["@deepseek-ai/dsh-base", "dsh-crystra"]);
 });
 
 test("composed config requires each expected activation exactly once", () => {
   assert.doesNotThrow(() => assertCompositionDump(
-    "id: wsr-execution\nname: dsh-wsr-execution\nid: wsr-studio\nname: dsh-wsr-studio\n",
-    ["wsr-execution", "wsr-studio"],
+    "id: crystra-execution\nname: dsh-crystra-execution\nid: crystra-studio\nname: dsh-crystra-studio\n",
+    ["crystra-execution", "crystra-studio"],
   ));
   assert.throws(
-    () => assertCompositionDump("id: wsr-execution\nid: wsr-execution\n", ["wsr-execution"]),
+    () => assertCompositionDump("id: crystra-execution\nid: crystra-execution\n", ["crystra-execution"]),
     /CLEAN_PROFILE_ACTIVATION_COUNT/u,
   );
 });
@@ -236,24 +166,24 @@ test("clean-profile command failures preserve package-manager stdout and stderr"
 
 test("local suite qualification resolves independently versioned dependencies only from supplied archives", () => {
   assert.deepEqual(localSuiteOverrides({
-    execution: "/tmp/dsh-wsr-execution-0.2.10.tgz",
-    studio: "/tmp/dsh-wsr-studio-0.1.4.tgz",
+    execution: "/tmp/dsh-crystra-execution-0.2.10.tgz",
+    studio: "/tmp/dsh-crystra-studio-0.1.4.tgz",
   }), {
-    "dsh-wsr-execution@0.2.10": "file:/tmp/dsh-wsr-execution-0.2.10.tgz",
-    "dsh-wsr-studio@0.1.4": "file:/tmp/dsh-wsr-studio-0.1.4.tgz",
+    "dsh-crystra-execution@0.2.10": "file:/tmp/dsh-crystra-execution-0.2.10.tgz",
+    "dsh-crystra-studio@0.1.4": "file:/tmp/dsh-crystra-studio-0.1.4.tgz",
   });
   assert.deepEqual(localSuiteOverrides({
-    execution: "/tmp/dsh-wsr-execution.tgz",
-    studio: "/tmp/dsh-wsr-studio.tgz",
+    execution: "/tmp/dsh-crystra-execution.tgz",
+    studio: "/tmp/dsh-crystra-studio.tgz",
   }, { execution: "0.2.1", studio: "0.1.1" }), {
-    "dsh-wsr-execution@0.2.1": "file:/tmp/dsh-wsr-execution.tgz",
-    "dsh-wsr-studio@0.1.1": "file:/tmp/dsh-wsr-studio.tgz",
+    "dsh-crystra-execution@0.2.1": "file:/tmp/dsh-crystra-execution.tgz",
+    "dsh-crystra-studio@0.1.1": "file:/tmp/dsh-crystra-studio.tgz",
   });
 });
 
 test("pnpm 11 local qualification overrides are rendered into workspace policy", () => {
   assert.equal(localSuiteOverrideYaml({
-    "dsh-wsr-execution@0.2.1": "file:/tmp/execution.tgz",
-    "dsh-wsr-studio@0.1.1": "file:/tmp/studio.tgz",
-  }), 'overrides:\n  "dsh-wsr-execution@0.2.1": "file:/tmp/execution.tgz"\n  "dsh-wsr-studio@0.1.1": "file:/tmp/studio.tgz"\n');
+    "dsh-crystra-execution@0.2.1": "file:/tmp/execution.tgz",
+    "dsh-crystra-studio@0.1.1": "file:/tmp/studio.tgz",
+  }), 'overrides:\n  "dsh-crystra-execution@0.2.1": "file:/tmp/execution.tgz"\n  "dsh-crystra-studio@0.1.1": "file:/tmp/studio.tgz"\n');
 });

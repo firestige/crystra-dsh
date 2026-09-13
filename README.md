@@ -1,61 +1,42 @@
-# WSR for DeepSeek Harness
+# Crystra for DeepSeek Harness
 
-This repository is the release authority for the WSR Execution, WSR Studio, and combined WSR suite integrations for DeepSeek Harness.
+Crystra turns repeatable workflow steps into deterministic execution, reducing unnecessary agent and LLM calls. This repository owns the single public DSH plugin **dsh-crystra**; its target registration repository is **firestige/crystra-dsh**.
 
-Release set `0.2.12` qualifies Execution `0.2.10`, Studio `0.1.4`, and suite `0.2.11` coordinates.
+Execution and Studio are internal modules of this plugin. `crystra-execution` and `crystra-ui-core` remain ordinary, independently versioned component dependencies. Domain implementations stay in their component repositories.
 
-Workspace packages:
+## Current development state
 
-- `dsh-wsr-execution` — display name `WSR`
-- `dsh-wsr-studio` — display name `WSR Studio`
-- `dsh-wsr` — compatible combination suite with no additional UI identity
+The new distribution starts at `0.1.0`; no Crystra release is claimed by this source checkout. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. Existing repository URLs remain until the coordinated repository rename. Production candidates reject local file dependencies and require exact published GitHub Release assets.
 
-Packages follow semantic versioning independently. The suite accepts
-`dsh-wsr-execution@^0.2.10` and `dsh-wsr-studio@^0.1.4`. DeepSeek Harness
-compatibility remains fixed at `0.1.1-rc.2`; immutable release evidence records
-the exact Execution owner revision and asset digest used for qualification.
-The current owner package is qualified from stable asset
-`wsr-execution-0.2.7.tgz` in release `0.2.7` (SHA-256
-`bb3718360946d114251def2f1a975ee783974c2c0d959dbb4289e8955f4b5acc`).
-There is no ambient npm resolution of `wsr-execution`: DSH profiles install that
-asset explicitly as a top-level root because DSH blocks exotic transitive
-dependencies.
-
-## Development gates
-
-Use Node `24.12.0` and npm `11.6.2`:
+Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. Check out the configured Execution and UI commits under `.crystra-inputs/sources/execution` and `.crystra-inputs/sources/ui`, then run:
 
 ```sh
+node scripts/prepare-development-artifacts.mjs
 npm ci --ignore-scripts --no-audit --no-fund
-npm test
+npm rebuild better-sqlite3
 npm run build
+npm test
 npm run pack:verify
-npm run qualify:clean-profile
-npm run qualify:real-harness
-WSR_QUALIFY_TERMINAL=1 npm run qualify:real-harness
 ```
 
-`WSR_QUALIFY_TERMINAL=1` adds deterministic completed/failed/cancelled owner
-facts and exact adapter-private historical associations to the temporary clean
-profile. The real Host and Chrome then verify terminal inventory, the current
-Session's latest terminal Delivery, and reload without invoking a Provider.
+The build emits one CSP-compatible browser bundle with module identity `dsh-crystra`. Its Cordis patch registers one plugin and the internal Workspace override. Archives include source and license attribution; internal modules have no separate plugin manifests.
 
-`npm run build` generates the two CSP-compatible browser bundles and verifies
-workspace identity, compatibility, dependency direction, activation
-composition, and the active fixed-version Workspace UI fork. `npm run
-boundaries:check -- <external-package.json...>` additionally rejects
-domain-owner repositories that depend back on a `dsh-wsr*` package.
+## Isolated integration checks
 
-`npm run pack:verify` creates temporary archives and checks their actual tar inventories, including license and source notices. `npm run qualify:clean-profile` uses temporary DSH homes, the pinned local DSH CLI, and the immutable Execution owner asset; it performs no publication. `npm run qualify:real-harness` additionally boots the real Host and Chrome against a clean profile. DSH `0.1.1-rc.2` emits no CSP header, so the automated bundle gate separately rejects `eval`, `new Function`, and inline-script injection; qualification does not claim a CSP header supplied by DSH.
+Use DSH `0.1.1-rc.2`. Set `CRYSTRA_DSH_BINARY` to that version's executable when the global DSH differs. Checks use temporary DSH homes and profiles:
 
-The Release Candidate workflow runs clean-profile, lifecycle, real-Harness,
-downstream-outage, and remote-artifact gates before creating an immutable
-prerelease. Release Promote verifies the same bytes and qualification record,
-publishes changed component packages before the compatible suite through npm OIDC, and
-uses the scoped release App for the final GitHub release. See [release and
-installation lifecycle](docs/release-lifecycle.md), [changelog](CHANGELOG.md),
-and [security policy](SECURITY.md).
+```sh
+npm run qualify:clean-profile
+npm run qualify:lifecycle
+npm run qualify:provider-routing
+npm run qualify:real-harness
+CRYSTRA_QUALIFY_TERMINAL=1 npm run qualify:real-harness
+```
 
-See [foundation boundaries](docs/foundation-boundaries.md) for repository ownership and the deferred Workspace UI fork decision.
+Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, and downstream unavailability. The terminal fixture mode supplies deterministic owner facts without invoking an LLM. DSH 0.1.1-rc.2 supplies no CSP header; the bundle check separately rejects dynamic code and inline-script injection.
 
-Project context and system authorities remain in https://github.com/firestige/workflow-self-recursive.
+The normal installation target is DSH's plugin installation plus Crystra's own setup and service diagnostics. That initialization work follows the single-plugin merge; it is not yet implemented here. No independent public product installer is shipped by this repository.
+
+New RC tags use `crystra-dsh-v<version>-rc.N`. Stable promotion reuses qualified bytes through GitHub Releases and retains its manual release gate. There is no npm publication stage. Historical release records describe their original artifacts, not this new distribution.
+
+See [foundation boundaries](docs/foundation-boundaries.md), [source notice](NOTICE.md), and [security policy](SECURITY.md).

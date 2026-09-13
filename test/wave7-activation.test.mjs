@@ -3,83 +3,29 @@ import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import vm from "node:vm";
+import React from "react";
+import * as ReactDOM from "react-dom";
 
 const root = resolve(import.meta.dirname, "..");
 const json = async (path) => JSON.parse(await readFile(join(root, path), "utf8"));
 
-test("Execution and Studio activate one Host and one generated browser module each", async () => {
-  const execution = await json("packages/execution/package.json");
-  const studio = await json("packages/studio/package.json");
-  assert.equal(execution.wsr.foundationOnly, false);
-  assert.equal(studio.wsr.foundationOnly, false);
-  assert.equal(execution.exports["./client"], "./lib/client.js");
-  assert.equal(studio.exports["./client"], "./lib/client.js");
-  assert.deepEqual(execution.dsh.client, {
-    inject: [
-      "@deepseek-ai/dsh-client-connection",
-      "@deepseek-ai/dsh-client-runtime",
-      "@deepseek-ai/dsh-client-ui-conversation",
-      "@deepseek-ai/dsh-client-ui-primitives",
-    ],
-    platform: "web",
-  });
-  assert.deepEqual(studio.dsh.client, {
-    inject: [
-      "@deepseek-ai/dsh-client-connection",
-      "@deepseek-ai/dsh-client-ui-conversation",
-      "@deepseek-ai/dsh-client-ui-primitives",
-    ],
-    platform: "web",
-  });
-  const ownerAsset = "https://github.com/firestige/wsr-execution/releases/download/0.2.7/wsr-execution-0.2.7.tgz";
-  assert.equal(execution.dependencies?.["wsr-execution"], undefined);
-  assert.equal(execution.peerDependencies["wsr-execution"], "^0.2.0");
-  assert.deepEqual(execution.wsr.ownerAsset, {
-    url: ownerAsset,
-    sha256: "bb3718360946d114251def2f1a975ee783974c2c0d959dbb4289e8955f4b5acc",
-  });
-  const rootManifest = await json("package.json");
-  assert.equal(rootManifest.devDependencies["wsr-execution"], ownerAsset);
-  assert.equal(execution.dependencies["@deepseek-ai/dsh-client-ui-workspace"], "0.1.1-rc.2");
-  assert.equal(execution.wsr.ownerRevision, "de2335c7a869aff7c010100bcb809fe2d499dced");
-
-  const lock = await json("package-lock.json");
-  const owner = lock.packages["node_modules/wsr-execution"];
-  assert.equal(owner.version, "0.2.7");
-  assert.equal(owner.resolved, ownerAsset);
-  assert.equal(owner.integrity, "sha512-62APEeTLDR4OSXZT6qOrhHK1TLT1iglTjl/Bkel6cgq0+UZlFfkvGgvTvfvcI9BlloCAtWr55LA9DGRrciz+oQ==");
-
-  const compatibility = await json("config/dsh-compatibility.json");
-  assert.deepEqual(compatibility.executionOwner, {
-    schemaVersion: "execution.owner-release@1.0.0",
-    package: "wsr-execution",
-    repository: "firestige/wsr-execution",
-    version: "0.2.7",
-    release: "0.2.7",
-    coordinate: ownerAsset,
-    assetSha256: "bb3718360946d114251def2f1a975ee783974c2c0d959dbb4289e8955f4b5acc",
-    revision: "de2335c7a869aff7c010100bcb809fe2d499dced",
-    qualificationCoordinate: "https://github.com/firestige/wsr-execution/releases/download/0.2.7/release-qualification.json",
-    projection: "execution.delivery-control-plane@1.0.0",
-  });
-
-  const cleanQualifier = await readFile(join(root, "scripts/qualify-clean-profile.mjs"), "utf8");
-  assert.match(cleanQualifier, /resolveQualificationExecutionAsset/u);
-  const qualificationAsset = await readFile(join(root, "scripts/lib/qualification-execution-asset.mjs"), "utf8");
-  assert.match(qualificationAsset, /compatibility\.executionOwner\.coordinate/u);
-  assert.doesNotMatch(cleanQualifier, /releases\/download\/0\.2\.1\/wsr-execution-0\.2\.1\.tgz/u);
-  assert.match(cleanQualifier, /ownerRequired: true,[\s\S]*id: "execution"/u);
-  assert.match(cleanQualifier, /ownerRequired: true,[\s\S]*id: "suite"/u);
+test("one plugin activates its internal Host and browser modules", async () => {
+  const manifest=await json("package.json");
+  assert.equal(manifest.name,"dsh-crystra");
+  assert.equal(manifest.exports["./client"],"./lib/client.js");
+  assert.ok(manifest.dependencies["crystra-execution"]);
+  assert.ok(manifest.dependencies["crystra-ui-core"]);
+  assert.equal(manifest.peerDependencies["crystra-execution"],undefined);
 });
 
 test("the real Harness qualification boots the v2 runner with repository Role Provider bindings", async () => {
   const source = await readFile(join(root, "scripts/qualify-real-harness.mjs"), "utf8");
   assert.match(source, /schemaVersion: "execution\.config@2\.0\.0"/u);
   assert.match(source, /implementationKey: "runner\.v2"/u);
-  assert.match(source, /\.wsr", "role-provider-bindings\.json"/u);
+  assert.match(source, /\.crystra", "role-provider-bindings\.json"/u);
   assert.match(source, /"role\.greeter"[\s\S]*provider\.copilot[\s\S]*"role\.reviewer"[\s\S]*provider\.codex/u);
-  assert.match(source, /basename\(path\)\.startsWith\("dsh-wsr-"\)/u);
-  assert.doesNotMatch(source, /dsh-wsr-0\.2\.1\.tgz/u);
+  assert.match(source, /archives\.length !== 1/u);
+  assert.doesNotMatch(source, /dsh-crystra-0\.2\.1\.tgz/u);
   assert.match(source, /summary[^\n]*Technical details/u);
 });
 
@@ -113,24 +59,24 @@ test("the real Harness qualifies Statistics with the shared semantic typography 
 });
 
 test("generated clients use one module identity and no private source or direct downstream transport", async () => {
-  const execution = await readFile(join(root, "packages/execution/lib/client.js"), "utf8");
-  const studio = await readFile(join(root, "packages/studio/lib/client.js"), "utf8");
-  assert.match(execution, /id: "dsh-wsr-execution"/u);
-  assert.match(studio, /id: "dsh-wsr-studio"/u);
-  assert.doesNotMatch(execution, /execution-system\/src|\/wsr list/u);
+  const execution = await readFile(join(root, "lib/client.js"), "utf8");
+  const studio = await readFile(join(root, "lib/client.js"), "utf8");
+  assert.match(execution, /id: "dsh-crystra"/u);
+  assert.match(studio, /id: "dsh-crystra"/u);
+  assert.doesNotMatch(execution, /execution-system\/src|\/crystra list/u);
   assert.doesNotMatch(studio, /EVIDENCE_UPSTREAM|EVOLUTION_UPSTREAM|fetch\(["']https?:/u);
   assert.doesNotMatch(`${execution}\n${studio}`, /\beval\s*\(|new Function|document\.write/u);
 
-  for (const [source, expected] of [[execution, "dsh-wsr-execution"], [studio, "dsh-wsr-studio"]]) {
+  for (const [source, expected] of [[execution, "dsh-crystra"]]) {
     let definition;
     vm.runInNewContext(source, {
       TextDecoder, TextEncoder, URL, URLSearchParams,
       window: { __ModuleLoader__: { load(value) { definition = value; } } },
     });
     assert.equal(definition.id, expected);
-    const React = { memo(component) { return component; } };
     const loaded = definition.factory((name) => {
       if (name === "react") return React;
+      if (name === "react-dom") return ReactDOM;
       if (name === "react/jsx-runtime") return { jsx() {}, jsxs() {} };
       if (name === "@deepseek-ai/dsh-client-runtime/client") return { defineStore() {} };
       if (name === "@deepseek-ai/dsh-client-ui-primitives") return {
@@ -144,14 +90,9 @@ test("generated clients use one module identity and no private source or direct 
   }
 });
 
-test("Cordis patches carry real required configuration without adding suite UI", async () => {
-  const execution = await readFile(join(root, "packages/execution/cordis.patch.yml"), "utf8");
-  const studio = await readFile(join(root, "packages/studio/cordis.patch.yml"), "utf8");
-  const suite = await readFile(join(root, "packages/suite/cordis.patch.yml"), "utf8");
-  assert.match(execution, /configFile: \/__REQUIRED__\/execution-config\.yaml/u);
-  assert.match(execution, /id: ui-workspace[\s\S]*name: ['"]@deepseek-ai\/dsh-client-ui-workspace['"][\s\S]*disabled: true/u);
-  assert.match(execution, /bindingFile: \/__REQUIRED__\/dsh-intake-bindings\.json/u);
-  assert.match(studio, /hostConfigFile: \/__REQUIRED__\/wsr-loopback-host\.json/u);
-  assert.doesNotMatch(suite, /wsr-suite|sidebar/u);
-  assert.match(suite, /id: ui-workspace[\s\S]*disabled: true/u);
+test("one Cordis patch registers only Crystra and its workspace override", async () => {
+  const patch=await readFile(join(root,"cordis.patch.yml"),"utf8");
+  assert.match(patch,/id: crystra\n\s+name: 'dsh-crystra'/);
+  assert.match(patch,/id: ui-workspace[\s\S]*disabled: true/);
+  assert.doesNotMatch(patch,/dsh-crystra-(?:execution|studio)|__REQUIRED__/);
 });

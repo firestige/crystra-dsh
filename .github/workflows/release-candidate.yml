@@ -33,7 +33,7 @@ jobs:
         run: test "$(dsh --version)" = 0.1.1-rc.2
       - run: npm test
         env:
-          WSR_CHROME_BINARY: /usr/bin/google-chrome
+          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
       - run: npm run build
       - run: npm run pack:verify
       - name: Verify immutable remote owner artifact
@@ -43,30 +43,30 @@ jobs:
       - run: npm run qualify:provider-routing
       - run: npm run qualify:real-harness
         env:
-          WSR_CHROME_BINARY: /usr/bin/google-chrome
+          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
       - name: Build candidate artifact set
         run: npm run release:candidate -- "$RUNNER_TEMP/candidate"
         env:
-          WSR_RELEASE_CHANNEL: candidate
-          WSR_CANDIDATE_TAG: ${{ steps.request.outputs.candidate_tag }}
+          CRYSTRA_RELEASE_CHANNEL: candidate
+          CRYSTRA_CANDIDATE_TAG: ${{ steps.request.outputs.candidate_tag }}
       - run: npm run provenance:verify -- "$RUNNER_TEMP/candidate"
       - run: npm run release:qualify -- "$RUNNER_TEMP/candidate"
       - run: test -f "$RUNNER_TEMP/candidate/release-qualification.json"
       - uses: actions/upload-artifact@v7
         with:
-          name: wsr-dsh-${{ steps.request.outputs.candidate_tag }}
+          name: crystra-dsh-${{ steps.request.outputs.candidate_tag }}
           path: ${{ runner.temp }}/candidate/*
           if-no-files-found: error
           retention-days: 30
       - id: release-app
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.WSR_RELEASE_CLIENT_ID }}
-          private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}
+          client-id: ${{ vars.CRYSTRA_RELEASE_CLIENT_ID }}
+          private-key: ${{ secrets.CRYSTRA_RELEASE_APP_PRIVATE_KEY }}
           owner: firestige
-          repositories: wsr-dsh
+          repositories: crystra-dsh
       - name: Create immutable candidate release
         env:
           GH_TOKEN: ${{ steps.release-app.outputs.token }}
           CANDIDATE_TAG: ${{ steps.request.outputs.candidate_tag }}
-        run: gh release create "$CANDIDATE_TAG" "$RUNNER_TEMP/candidate"/* --repo firestige/wsr-dsh --target "$GITHUB_SHA" --prerelease --verify-tag=false --title "$CANDIDATE_TAG"
+        run: gh release create "$CANDIDATE_TAG" "$RUNNER_TEMP/candidate"/* --repo firestige/crystra-dsh --target "$GITHUB_SHA" --prerelease --verify-tag=false --title "$CANDIDATE_TAG"

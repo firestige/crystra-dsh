@@ -1,13 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
-import { validateExecutionOwnerRelease } from "./execution-owner-release.mjs";
 
-const EXPECTED_PACKAGES = Object.freeze([
-  Object.freeze({ path: "packages/execution", name: "dsh-wsr-execution", displayName: "WSR", role: "execution-adapter" }),
-  Object.freeze({ path: "packages/studio", name: "dsh-wsr-studio", displayName: "WSR Studio", role: "studio-adapter" }),
-  Object.freeze({ path: "packages/suite", name: "dsh-wsr", role: "compatible-composition" }),
-]);
+const EXPECTED_PACKAGES = Object.freeze([{path: ".", name: "dsh-crystra"}]);
 const SOURCE_EXTENSION = /\.(?:[cm]?js|tsx?)$/u;
 const IMPORT_SPECIFIER = /(?:\bimport\s*(?:[^'"()]*?\s+from\s*)?|\bexport\s+[^'"()]*?\s+from\s*|\bimport\s*\(|\brequire\s*\()\s*['"]([^'"]+)['"]/gu;
 
@@ -93,27 +88,11 @@ export function validateDependencyGraph(manifests, domainOwnerRoles = [
 }
 
 export function validatePackInventory({ name, files }) {
-  const common = [
-    "package/LICENSE",
-    "package/NOTICE.md",
-    "package/README.md",
-    "package/cordis.patch.yml",
-    "package/package.json",
-  ];
-  const actual = [...new Set(files)].sort();
-  const required = name === "dsh-wsr-execution" || name === "dsh-wsr-studio"
-    ? [...common, "package/lib/client.js", "package/src/index.js"]
-    : name === "dsh-wsr" ? common : undefined;
-  const allowed = name === "dsh-wsr-execution"
-    ? /^(?:package\/(?:LICENSE|NOTICE\.md|README\.md|cordis\.patch\.yml|package\.json|lib\/client\.js|skills\/workflow-execution\/SKILL\.md|src\/(?:action-presentation|client|host|intake)\/[^/].*|src\/index\.js))$/u
-    : name === "dsh-wsr-studio"
-      ? /^(?:package\/(?:LICENSE|NOTICE\.md|README\.md|cordis\.patch\.yml|package\.json|lib\/client\.js|src\/(?:client|host)\/[^/].*|src\/index\.js))$/u
-      : name === "dsh-wsr" ? /^(?:package\/(?:LICENSE|NOTICE\.md|README\.md|cordis\.patch\.yml|package\.json))$/u : undefined;
-  const invalid = required === undefined || allowed === undefined
-    || required.some((entry) => !actual.includes(entry))
-    || actual.some((entry) => !allowed.test(entry) || /(?:^|\/)test(?:s)?\/|\.test\.[cm]?[jt]sx?$/u.test(entry));
-  if (invalid) {
-    throw new BoundaryViolation("PACK_INVENTORY", `${name}: ${actual.join(", ")}`);
+  const required = ["package/LICENSE", "package/NOTICE.md", "package/README.md", "package/package.json", "package/cordis.patch.yml", "package/src/index.js", "package/lib/client.js", "package/modules/execution/src/index.js", "package/modules/studio/src/index.js"];
+  const allowed = /^package\/(?:LICENSE|NOTICE\.md|README\.md|package\.json|cordis\.patch\.yml|lib\/client\.js|src\/.+|modules\/(?:execution|studio)\/(?:src\/.+|README\.md|NOTICE\.md)|skills\/.+)$/u;
+  if (name !== "dsh-crystra" || required.some(file => !files.includes(file))
+      || files.some(file => !allowed.test(file) || /(?:^|\/)test(?:s)?\/|\.test\.[cm]?[jt]sx?$/u.test(file))) {
+    throw new BoundaryViolation("PACK_INVENTORY", name);
   }
 }
 
@@ -126,134 +105,38 @@ export function validateReleaseRequest({ channel, clean, commit, version }) {
   }
 }
 
-function validatePackage(manifest, expected, dshVersion) {
-  if (manifest.name !== expected.name) throw new BoundaryViolation("PACKAGE_IDENTITY", `${expected.path} is ${manifest.name}`);
-  if (typeof manifest.version !== "string" || !/^\d+\.\d+\.\d+$/u.test(manifest.version)) throw new BoundaryViolation("VERSION_INVALID", `${manifest.name} is ${manifest.version}`);
-  if (manifest.license !== "Apache-2.0") throw new BoundaryViolation("LICENSE_MISSING", `${manifest.name} is not Apache-2.0`);
-  if (manifest.dsh?.bundle?.patch !== "./cordis.patch.yml") throw new BoundaryViolation("BUNDLE_PATCH_MISSING", expected.name);
-  if (manifest.dsh?.compatibility?.dsh !== dshVersion) throw new BoundaryViolation("DSH_VERSION_DRIFT", expected.name);
-  if (manifest.peerDependencies?.["@deepseek-ai/dsh"] !== dshVersion) throw new BoundaryViolation("DSH_VERSION_DRIFT", expected.name);
-  if (manifest.wsr?.role !== expected.role || manifest.wsr?.foundationOnly !== false) {
-    throw new BoundaryViolation("FOUNDATION_SCOPE", expected.name);
-  }
-  if (expected.displayName === undefined) {
-    if (manifest.wsr?.displayName !== undefined || manifest.main !== undefined || manifest.exports !== undefined || manifest.dsh?.client !== undefined) {
-      throw new BoundaryViolation("ACTIVATION_LEAKAGE", `${expected.name} must be composition-only`);
-    }
-  } else {
-    if (manifest.wsr?.displayName !== expected.displayName) {
-      throw new BoundaryViolation("DISPLAY_IDENTITY", `${expected.name} is ${manifest.wsr?.displayName ?? "missing"}`);
-    }
-    if (manifest.exports?.["./client"] !== "./lib/client.js" || manifest.dsh?.client?.platform !== "web") {
-      throw new BoundaryViolation("CLIENT_ACTIVATION_MISSING", expected.name);
-    }
-  }
-}
-
-function satisfiesCaret(range, version) {
-  const lowerMatch = /^\^(\d+)\.(\d+)\.(\d+)$/u.exec(range ?? "");
-  const versionMatch = /^(\d+)\.(\d+)\.(\d+)$/u.exec(version ?? "");
-  if (lowerMatch === null || versionMatch === null) return false;
-  const lower = lowerMatch.slice(1).map(Number);
-  const candidate = versionMatch.slice(1).map(Number);
-  const upper = lower[0] > 0
-    ? [lower[0] + 1, 0, 0]
-    : lower[1] > 0
-      ? [0, lower[1] + 1, 0]
-      : [0, 0, lower[2] + 1];
-  const compare = (left, right) => left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
-  return compare(candidate, lower) >= 0 && compare(candidate, upper) < 0;
-}
-
-function patchRows(patch) {
-  return [...patch.matchAll(/^\s*- id:\s*([^\s#]+)\s*$[\s\S]*?^\s+name:\s*['"]?([^'"\s#]+)['"]?\s*$/gmu)]
-    .map((match) => Object.freeze({ id: match[1], name: match[2] }));
-}
-
-function validatePatch(name, patch) {
-  const workspaceForkOverride = /^- id: ui-workspace\s*$\n\s+name: ['"]@deepseek-ai\/dsh-client-ui-workspace['"]\s*$\n\s+disabled: true\s*$/mu.test(patch);
-  const rows = patchRows(patch).filter((row) => !(workspaceForkOverride && row.id === "ui-workspace"));
-  const expected = name === "dsh-wsr-execution"
-    ? [{ id: "wsr-execution", name: "dsh-wsr-execution" }]
-    : name === "dsh-wsr-studio"
-      ? [{ id: "wsr-studio", name: "dsh-wsr-studio" }]
-      : [
-          { id: "wsr-execution", name: "dsh-wsr-execution" },
-          { id: "wsr-studio", name: "dsh-wsr-studio" },
-        ];
-  if (JSON.stringify(rows) !== JSON.stringify(expected)) {
-    throw new BoundaryViolation("ACTIVATION_GRAPH", `${name} patch is ${JSON.stringify(rows)}`);
-  }
-  if (["dsh-wsr-execution", "dsh-wsr"].includes(name) !== workspaceForkOverride) {
-    throw new BoundaryViolation("WORKSPACE_UI_FORK_ACTIVATION", name);
-  }
-}
-
 export async function validateRepository(root) {
   const repositoryRoot = resolve(root);
-  const rootManifest = await json(resolve(repositoryRoot, "package.json"));
+  const manifest = await json(resolve(repositoryRoot, "package.json"));
   const policy = await json(resolve(repositoryRoot, "config/boundary-policy.json"));
   const compatibility = await json(resolve(repositoryRoot, "config/dsh-compatibility.json"));
-  let owner;
-  try { owner = validateExecutionOwnerRelease(compatibility.executionOwner); }
-  catch { throw new BoundaryViolation("EXECUTION_OWNER_RECORD_INVALID", "config/dsh-compatibility.json"); }
-  const version = rootManifest.version;
-  const dshVersion = compatibility.dsh;
-
-  if (rootManifest.private !== true) throw new BoundaryViolation("ROOT_PUBLISHABLE", "root package must remain private");
-  if (JSON.stringify(rootManifest.workspaces) !== JSON.stringify(policy.workspacePackages)) {
-    throw new BoundaryViolation("WORKSPACE_DRIFT", "root workspaces differ from the boundary policy");
+  if (manifest.name !== "dsh-crystra" || manifest.private === true || manifest.workspaces !== undefined) {
+    throw new BoundaryViolation("PACKAGE_IDENTITY", "only the root dsh-crystra plugin may be distributed");
   }
-  if (compatibility.workspaceUiFork?.strategy !== "fixed-version-fork"
-    || compatibility.workspaceUiFork?.sourceVersion !== dshVersion
-    || compatibility.workspaceUiFork?.activation !== "active-in-wave7"
-    || owner.projection !== "execution.delivery-control-plane@1.0.0") {
-    throw new BoundaryViolation("WORKSPACE_UI_FORK_DRIFT", "the active fixed-version fork or owner projection coordinate changed");
+  if (manifest.repository?.url !== "git+https://github.com/firestige/crystra-dsh.git") throw new BoundaryViolation("REPOSITORY_IDENTITY", manifest.name);
+  if (manifest.license !== "Apache-2.0") throw new BoundaryViolation("LICENSE_MISSING", manifest.name);
+  if (manifest.dsh?.compatibility?.dsh !== compatibility.dsh || manifest.peerDependencies?.["@deepseek-ai/dsh"] !== compatibility.dsh) throw new BoundaryViolation("DSH_VERSION_DRIFT", manifest.name);
+  if (manifest.exports?.["./client"] !== "./lib/client.js" || manifest.dsh?.client?.platform !== "web") throw new BoundaryViolation("CLIENT_ACTIVATION_MISSING", manifest.name);
+  if (manifest.dsh?.bundle?.patch !== "./cordis.patch.yml") throw new BoundaryViolation("BUNDLE_PATCH_MISSING", manifest.name);
+  const patch = await readFile(resolve(repositoryRoot, "cordis.patch.yml"), "utf8");
+  const names = [...patch.matchAll(/^\s+name:\s*['"]([^'"]+)['"]/gmu)].map(match => match[1]);
+  if (names.join(",") !== "@deepseek-ai/dsh-client-ui-workspace,dsh-crystra") throw new BoundaryViolation("ACTIVATION_GRAPH", names.join(","));
+  const inputs = await json(resolve(repositoryRoot, "config/development-inputs.json"));
+  for (const input of Object.values(inputs.inputs)) {
+    if (manifest.dependencies?.[input.package] === undefined || !/^[0-9a-f]{40}$/u.test(input.revision)) throw new BoundaryViolation("COMPONENT_DEPENDENCY", input.package);
+    const coordinate = manifest.dependencies[input.package];
+    if (coordinate.startsWith("file:")) {
+      const expected = `file:.crystra-inputs/${input.artifact}`;
+      if (coordinate !== expected || await sha256(resolve(repositoryRoot, coordinate.slice(5))) !== input.sha256) throw new BoundaryViolation("COMPONENT_DIGEST_MISMATCH", input.package);
+    } else if (!/^https:\/\/github\.com\/firestige\/crystra-[^/]+\/releases\/download\/[^/]+\/[^/]+\.tgz$/u.test(coordinate)) throw new BoundaryViolation("COMPONENT_COORDINATE", coordinate);
   }
-
-  const packages = [];
-  for (const expected of EXPECTED_PACKAGES) {
-    const packageRoot = resolve(repositoryRoot, expected.path);
-    const manifest = await json(resolve(packageRoot, "package.json"));
-    validatePackage(manifest, expected, dshVersion);
-    validatePatch(manifest.name, await readFile(resolve(packageRoot, "cordis.patch.yml"), "utf8"));
-    for (const path of await filesUnder(packageRoot)) {
-      if (!SOURCE_EXTENSION.test(path)) continue;
-      validateSourceFile({ packageRoot, path, source: await readFile(path, "utf8"), policy });
-    }
-    packages.push(Object.freeze({ name: manifest.name, path: expected.path, manifest }));
-  }
-
-  const suite = packages[2].manifest;
-  exactKeys(suite.dependencies, ["dsh-wsr-execution", "dsh-wsr-studio"], "SUITE_DEPENDENCY_GRAPH", suite.name);
-  for (const pkg of packages.slice(0, 2)) {
-    const dependencyVersion = suite.dependencies[pkg.name];
-    if (!satisfiesCaret(dependencyVersion, pkg.manifest.version)) throw new BoundaryViolation("SUITE_VERSION_DRIFT", `${pkg.name} is ${dependencyVersion}`);
-  }
-  const execution = packages[0].manifest;
-  if (execution.wsr?.ownerRevision !== owner.revision
-    || execution.wsr?.ownerAsset?.sha256 !== owner.assetSha256
-    || !satisfiesCaret(execution.peerDependencies?.["wsr-execution"], owner.version)
-    || execution.wsr?.ownerAsset?.url !== owner.coordinate) {
-    throw new BoundaryViolation("EXECUTION_OWNER_EVIDENCE_DRIFT", execution.name);
-  }
-  for (const pkg of packages.slice(0, 2)) {
-    for (const field of ["dependencies", "devDependencies", "optionalDependencies"]) {
-      for (const dependency of Object.keys(pkg.manifest[field] ?? {})) {
-        if (EXPECTED_PACKAGES.some(({ name }) => name === dependency)) {
-          throw new BoundaryViolation("BUNDLE_COUPLING", `${pkg.name} ${field} includes ${dependency}`);
-        }
-      }
+  if (Object.keys(manifest.dependencies).some(name => name.startsWith("dsh-crystra-") || name.startsWith("dsh-wsr"))) throw new BoundaryViolation("BUNDLE_COUPLING", manifest.name);
+  for (const directory of ["src", "modules/execution/src", "modules/studio/src"]) {
+    for (const path of await filesUnder(resolve(repositoryRoot, directory))) {
+      if (SOURCE_EXTENSION.test(path)) validateSourceFile({packageRoot: repositoryRoot, path, source: await readFile(path,"utf8"), policy});
     }
   }
-
-  return Object.freeze({
-    dshVersion,
-    displayNames: Object.freeze(Object.fromEntries(EXPECTED_PACKAGES.filter(({ displayName }) => displayName !== undefined).map(({ name, displayName }) => [name, displayName]))),
-    packages: Object.freeze(packages),
-    packageVersions: Object.freeze(Object.fromEntries(packages.map(({ name, manifest }) => [name, manifest.version]))),
-    version,
-  });
+  return Object.freeze({dshVersion:compatibility.dsh, version:manifest.version, packages:[{name:manifest.name,path:".",manifest}],packageVersions:{[manifest.name]:manifest.version},displayNames:{[manifest.name]:"Crystra"}});
 }
 
 async function sha256(path) {
@@ -268,8 +151,8 @@ export async function createProvenanceStatement({ artifacts, commit, version }) 
   }
   if (subjects.length === 0) throw new BoundaryViolation("PROVENANCE_EMPTY", "no artifacts supplied");
   return Object.freeze({
-    schemaVersion: "wsr.dsh.provenance@1.0.0",
-    repository: "https://github.com/firestige/wsr-dsh",
+    schemaVersion: "crystra.dsh.provenance@1.0.0",
+    repository: "https://github.com/firestige/crystra-dsh",
     commit,
     version,
     subjects: Object.freeze(subjects),

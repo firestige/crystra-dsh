@@ -22,12 +22,12 @@ export function validateExecutionOwnerRelease(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)
     || Object.keys(value).sort().join(",") !== KEYS
     || value.schemaVersion !== "execution.owner-release@1.0.0"
-    || value.package !== "wsr-execution"
-    || value.repository !== "firestige/wsr-execution"
+    || value.package !== "crystra-execution"
+    || value.repository !== "firestige/crystra-execution"
     || !VERSION.test(value.version) || value.release !== value.version
     || !REVISION.test(value.revision) || !SHA256.test(value.assetSha256)
     || value.projection !== "execution.delivery-control-plane@1.0.0"
-    || value.coordinate !== expectedCoordinate(value, `wsr-execution-${value.version}.tgz`)
+    || value.coordinate !== expectedCoordinate(value, `crystra-execution-${value.version}.tgz`)
     || value.qualificationCoordinate !== expectedCoordinate(value, "release-qualification.json")) {
     fail("EXECUTION_OWNER_RECORD_INVALID");
   }
@@ -64,7 +64,7 @@ async function fetchBytes(coordinate) {
 
 async function resolveRevision(repository, release) {
   const response = await fetch(`https://api.github.com/repos/${repository}/git/ref/tags/${encodeURIComponent(release)}`, {
-    headers: { accept: "application/vnd.github+json", "user-agent": "wsr-dsh-owner-release-gate" },
+    headers: { accept: "application/vnd.github+json", "user-agent": "crystra-dsh-owner-release-gate" },
   });
   if (!response.ok) fail("EXECUTION_OWNER_REMOTE_UNAVAILABLE");
   const body = await response.json();

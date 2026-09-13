@@ -18,9 +18,32 @@ jobs:
         with:
           node-version: 24.12.0
           cache: npm
+      - name: Read independent development component inputs
+        id: inputs
+        run: |
+          echo "execution_repo=$(jq -er .inputs.execution.repository config/development-inputs.json)" >> "$GITHUB_OUTPUT"
+          echo "execution_sha=$(jq -er .inputs.execution.revision config/development-inputs.json)" >> "$GITHUB_OUTPUT"
+          echo "ui_repo=$(jq -er .inputs.ui.repository config/development-inputs.json)" >> "$GITHUB_OUTPUT"
+          echo "ui_sha=$(jq -er .inputs.ui.revision config/development-inputs.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.inputs.outputs.execution_repo }}
+          ref: ${{ steps.inputs.outputs.execution_sha }}
+          path: .crystra-inputs/sources/execution
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.inputs.outputs.ui_repo }}
+          ref: ${{ steps.inputs.outputs.ui_sha }}
+          path: .crystra-inputs/sources/ui
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.23.0
+      - run: node scripts/prepare-development-artifacts.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm rebuild better-sqlite3
+      - run: node scripts/build-client-bundles.mjs
       - run: npm test
         env:
-          WSR_CHROME_BINARY: /usr/bin/google-chrome
+          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
       - run: npm run build
       - run: npm run pack:verify

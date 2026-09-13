@@ -4,11 +4,7 @@ import { spawnSync } from "node:child_process";
 
 import { BoundaryViolation, validatePackInventory } from "./foundation-policy.mjs";
 
-const WORKSPACES = Object.freeze([
-  "dsh-wsr-execution",
-  "dsh-wsr-studio",
-  "dsh-wsr",
-]);
+
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: "utf8", ...options });
@@ -26,23 +22,17 @@ export async function packWorkspaces({ root, output }) {
   const destination = resolve(output);
   await mkdir(destination, { recursive: true });
   const before = new Set(await readdir(destination));
-  for (const workspace of WORKSPACES) {
-    run("npm", ["pack", "--silent", "--pack-destination", destination, "--workspace", workspace], { cwd: repositoryRoot });
-  }
+  run("npm", ["pack", "--silent", "--pack-destination", destination], {cwd: repositoryRoot});
   const archives = (await readdir(destination))
     .filter((entry) => entry.endsWith(".tgz") && !before.has(entry))
     .sort()
     .map((entry) => resolve(destination, entry));
-  if (archives.length !== WORKSPACES.length) {
+  if (archives.length !== 1) {
     throw new BoundaryViolation("PACK_COUNT", `created ${archives.length} archives`);
   }
   for (const archive of archives) {
     const listing = run("tar", ["-tzf", archive]).trim().split("\n").filter(Boolean).sort();
-    const name = basename(archive).startsWith("dsh-wsr-execution-")
-      ? "dsh-wsr-execution"
-      : basename(archive).startsWith("dsh-wsr-studio-")
-        ? "dsh-wsr-studio"
-        : "dsh-wsr";
+    const name = "dsh-crystra";
     validatePackInventory({ name, files: listing });
   }
   return Object.freeze(archives);

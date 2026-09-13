@@ -1,26 +1,13 @@
-# Monorepo foundation boundaries
+# Crystra plugin boundaries
 
-`wsr-dsh` is the only release authority for WSR DSH adapters. It is not a domain authority.
+The root `dsh-crystra` package is the only public plugin. The target release and registration authority is `firestige/crystra-dsh`.
 
-## Package ownership
+- `modules/execution` owns the DSH Execution adapter, Host integration and Delivery presentation.
+- `modules/studio` owns the Studio Host gateway and client composition.
+- Root Host/client entries compose both modules and preserve their Cordis lifecycle.
 
-- `packages/execution` owns DSH-specific Execution adapter, Host and client integration only. The displayed product name is `WSR`.
-- `packages/studio` owns DSH-specific Studio adapter, Host gateway and client composition only. The displayed product name is `WSR Studio`.
-- `packages/suite` owns exact version composition only. It has no module entry, display name, Host activation or UI registration.
+Execution, Delivery, Manifest, Runner, Evaluation, Evidence, Evolution, Workflow Package and shared Contracts remain in their component repositories. Ordinary component dependencies are allowed. Source-relative imports across repositories, copied domain implementations and reverse dependencies on a DSH plugin fail boundary checks.
 
-Execution, Delivery, Manifest, Runner, BI/Evaluation, Evidence, Evolution, Workflow Package and shared Contract implementations remain in their formal owner repositories and must be consumed through published package/API coordinates at exact compatible versions. Source-relative imports across repository boundaries and copied/shadow domain implementations fail the boundary check.
+The development input manifest binds exact component commits and archive digests until published new assets exist. Release candidates require immutable GitHub asset coordinates. Neither old release artifacts nor the combination repository's working tree are development inputs.
 
-Domain owner repositories must not depend on any `dsh-wsr*` package. Their manifests can be passed to `npm run boundaries:check -- <manifest...>` to enforce the reverse-dependency rule during assembly.
-
-## Deferred Workspace UI fork
-
-The active Wave 7 strategy is a fixed-version composition fork of
-`@deepseek-ai/dsh-client-ui-workspace@0.1.1-rc.2`. WSR owns the one
-`sidebar.workspaces` slot and renders the upstream Workspace component as a
-React child beside Delivery; it neither vendors Harness source nor reparents
-DOM. Exact npm integrity, source hashes, and MIT attribution ship with the
-Execution bundle.
-
-## Release state
-
-The repository can build and verify development archives plus deterministic checksum provenance. Stable promotion and publication remain disabled until #122 qualifies the final Execution, Studio and suite artifacts. No source checkout or local workspace is a final release prerequisite.
+The fixed-version composition fork of `@deepseek-ai/dsh-client-ui-workspace@0.1.1-rc.2` owns the Workspace sidebar slot and renders the upstream Workspace component beside Delivery. It does not reparent DOM. The single root bundle ships exact upstream attribution and hashes. React and ReactDOM resolve from the DSH host.

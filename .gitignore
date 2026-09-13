@@ -2,3 +2,6 @@ node_modules/
 artifacts/
 *.tgz
 .DS_Store
+
+# Verified local component artifacts used before candidate publication
+.crystra-inputs/

@@ -5,28 +5,16 @@ import { dirname, resolve } from "node:path";
 import { build } from "esbuild";
 
 const root = resolve(import.meta.dirname, "..");
-const bundles = Object.freeze([
-  Object.freeze({
-    id: "dsh-wsr-execution",
-    entry: "packages/execution/src/client/browser-entry.js",
-    output: "packages/execution/lib/client.js",
-    fixedFork: {
-      module: "@deepseek-ai/dsh-client-ui-workspace",
-      source: "node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js",
-    },
-    external: [
-      "react",
-      "@deepseek-ai/dsh-client-ui-primitives",
-      "@deepseek-ai/dsh-client-ui-workspace",
-    ],
-  }),
-  Object.freeze({
-    id: "dsh-wsr-studio",
-    entry: "packages/studio/src/client/browser-entry.js",
-    output: "packages/studio/lib/client.js",
-    external: ["react", "@deepseek-ai/dsh-client-ui-primitives"],
-  }),
-]);
+const bundles = Object.freeze([{
+  id: "dsh-crystra",
+  entry: "src/client/index.js",
+  output: "lib/client.js",
+  fixedFork: {
+    module: "@deepseek-ai/dsh-client-ui-workspace",
+    source: "node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js",
+  },
+  external: ["react", "react-dom", "@deepseek-ai/dsh-client-ui-primitives", "@deepseek-ai/dsh-client-ui-workspace"],
+}]);
 
 for (const bundle of bundles) {
   const result = await build({

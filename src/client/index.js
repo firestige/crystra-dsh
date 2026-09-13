@@ -1,0 +1,9 @@
+import * as execution from '../../modules/execution/src/client/browser-entry.js';
+import * as studio from '../../modules/studio/src/client/browser-entry.js';
+
+export const name = 'crystra-client';
+export const inject = [...new Set([...execution.inject, ...studio.inject])];
+export function apply(ctx) {
+  ctx.plugin(execution);
+  ctx.plugin(studio);
+}
