@@ -41,7 +41,7 @@ test("qualifies the host Copilot login without exposing credential material", as
   assert.equal(prepared.observed.started, true);
   assert.equal(prepared.observed.stopped, true);
   assert.deepEqual(result, {
-    schemaVersion: "wsr.local-provider-auth-qualification@1.0.0",
+    schemaVersion: "crystra.local-provider-auth-qualification@1.0.0",
     provider: "provider.copilot",
     runtimeVersion: "1.0.78",
     authenticated: true,

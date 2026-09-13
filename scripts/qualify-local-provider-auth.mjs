@@ -11,7 +11,7 @@ function failure(code) {
 }
 
 async function defaultRuntime() {
-  const providerModule = resolve(import.meta.dirname, "../node_modules/wsr-execution/dist/providers/copilot/index.js");
+  const providerModule = resolve(import.meta.dirname, "../node_modules/crystra-execution/dist/providers/copilot/index.js");
   const provider = await import(pathToFileURL(providerModule).href);
   if (typeof provider.resolveInstalledCopilotSdkRuntime !== "function") throw failure("COPILOT_RUNTIME_UNAVAILABLE");
   return provider.resolveInstalledCopilotSdkRuntime();
@@ -52,7 +52,7 @@ export async function qualifyCopilotLocalAuth({
       throw failure("COPILOT_ACCEPTANCE_MODEL_UNAVAILABLE");
     }
     return Object.freeze({
-      schemaVersion: "wsr.local-provider-auth-qualification@1.0.0",
+      schemaVersion: "crystra.local-provider-auth-qualification@1.0.0",
       provider: "provider.copilot",
       runtimeVersion: COPILOT_VERSION,
       authenticated: true,

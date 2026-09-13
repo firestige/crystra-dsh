@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       candidate_tag:
-        description: Qualified release-set prerelease tag, for example 0.2.2-rc.1
+        description: Qualified release-set prerelease tag, for example crystra-dsh-v0.1.0-rc.1
         required: true
         type: string
 
@@ -15,31 +15,27 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24.12.0
-          registry-url: https://registry.npmjs.org
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Download exact candidate release assets
         env:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_TAG: ${{ inputs.candidate_tag }}
-        run: gh release download "$CANDIDATE_TAG" --repo firestige/wsr-dsh --dir "$RUNNER_TEMP/candidate"
+        run: gh release download "$CANDIDATE_TAG" --repo firestige/crystra-dsh --dir "$RUNNER_TEMP/candidate"
       - name: Verify qualification and immutable artifact bytes
         run: npm run release:verify -- "$RUNNER_TEMP/candidate"
-      - name: Publish components before the exact suite through npm OIDC
-        run: node scripts/publish-npm-set.mjs "$RUNNER_TEMP/candidate"
       - id: release-app
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.WSR_RELEASE_CLIENT_ID }}
-          private-key: ${{ secrets.WSR_RELEASE_APP_PRIVATE_KEY }}
+          client-id: ${{ vars.CRYSTRA_RELEASE_CLIENT_ID }}
+          private-key: ${{ secrets.CRYSTRA_RELEASE_APP_PRIVATE_KEY }}
           owner: firestige
-          repositories: wsr-dsh
+          repositories: crystra-dsh
       - name: Create final GitHub release from the qualified bytes
         env:
           GH_TOKEN: ${{ steps.release-app.outputs.token }}
@@ -48,4 +44,4 @@ jobs:
         run: |
           VERSION="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1])).packageVersion' "$RUNNER_TEMP/candidate/release-metadata.json")"
           COMMIT="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1])).commit' "$RUNNER_TEMP/candidate/release-metadata.json")"
-          gh release create "$VERSION" "$RUNNER_TEMP/candidate"/* --repo firestige/wsr-dsh --target "$COMMIT" --verify-tag=false --title "$VERSION" --notes "Promoted from qualified candidate $CANDIDATE_TAG."
+          gh release create "crystra-dsh-v$VERSION" "$RUNNER_TEMP/candidate"/* --repo firestige/crystra-dsh --target "$COMMIT" --verify-tag=false --title "$VERSION" --notes "Promoted from qualified candidate $CANDIDATE_TAG."

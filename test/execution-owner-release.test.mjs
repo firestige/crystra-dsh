@@ -10,15 +10,14 @@ const root = resolve(import.meta.dirname, "..");
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 test("the single owner-release record binds version, coordinate, revision and remote bytes", async () => {
-  const compatibility = JSON.parse(await readFile(resolve(root, "config/dsh-compatibility.json"), "utf8"));
-  const owner = validateExecutionOwnerRelease(compatibility.executionOwner);
+  const owner = {schemaVersion:"execution.owner-release@1.0.0",package:"crystra-execution",repository:"firestige/crystra-execution",projection:"execution.delivery-control-plane@1.0.0"};
   const bytes = Buffer.from("published-owner-artifact");
   const record = {
     ...owner,
     version: "0.3.0", release: "0.3.0",
-    coordinate: "https://github.com/firestige/wsr-execution/releases/download/0.3.0/wsr-execution-0.3.0.tgz",
+    coordinate: "https://github.com/firestige/crystra-execution/releases/download/0.3.0/crystra-execution-0.3.0.tgz",
     assetSha256: sha256(bytes), revision: "a".repeat(40),
-    qualificationCoordinate: "https://github.com/firestige/wsr-execution/releases/download/0.3.0/release-qualification.json",
+    qualificationCoordinate: "https://github.com/firestige/crystra-execution/releases/download/0.3.0/release-qualification.json",
   };
   await assert.doesNotReject(verifyExecutionOwnerRelease(record, {
     fetchBytes: async (coordinate) => {
@@ -26,7 +25,7 @@ test("the single owner-release record binds version, coordinate, revision and re
       return bytes;
     },
     resolveRevision: async (repository, release) => {
-      assert.deepEqual([repository, release], ["firestige/wsr-execution", "0.3.0"]);
+      assert.deepEqual([repository, release], ["firestige/crystra-execution", "0.3.0"]);
       return record.revision;
     },
   }));
@@ -36,11 +35,11 @@ test("same-version local rebuild and coordinate/revision drift fail closed", asy
   const published = Buffer.from("published-0.2.1");
   const owner = {
     schemaVersion: "execution.owner-release@1.0.0",
-    package: "wsr-execution", repository: "firestige/wsr-execution",
+    package: "crystra-execution", repository: "firestige/crystra-execution",
     version: "0.2.1", release: "0.2.1",
-    coordinate: "https://github.com/firestige/wsr-execution/releases/download/0.2.1/wsr-execution-0.2.1.tgz",
+    coordinate: "https://github.com/firestige/crystra-execution/releases/download/0.2.1/crystra-execution-0.2.1.tgz",
     assetSha256: sha256(published), revision: "f".repeat(40),
-    qualificationCoordinate: "https://github.com/firestige/wsr-execution/releases/download/0.2.1/release-qualification.json",
+    qualificationCoordinate: "https://github.com/firestige/crystra-execution/releases/download/0.2.1/release-qualification.json",
     projection: "execution.delivery-control-plane@1.0.0",
   };
   await assert.rejects(verifyExecutionOwnerRelease(owner, {
@@ -51,5 +50,5 @@ test("same-version local rebuild and coordinate/revision drift fail closed", asy
     fetchBytes: async () => published,
     resolveRevision: async () => "b".repeat(40),
   }), /EXECUTION_OWNER_REVISION_MISMATCH/u);
-  assert.throws(() => validateExecutionOwnerRelease({ ...owner, coordinate: "/tmp/wsr-execution-0.2.1.tgz" }), /EXECUTION_OWNER_RECORD_INVALID/u);
+  assert.throws(() => validateExecutionOwnerRelease({ ...owner, coordinate: "/tmp/crystra-execution-0.2.1.tgz" }), /EXECUTION_OWNER_RECORD_INVALID/u);
 });

@@ -1,10 +1,5 @@
 {
-  "schemaVersion": "wsr.dsh.boundary-policy@1.0.0",
-  "workspacePackages": [
-    "packages/execution",
-    "packages/studio",
-    "packages/suite"
-  ],
+  "schemaVersion": "crystra.dsh.boundary-policy@1.0.0",
   "domainOwnerRoles": [
     "domain-owner",
     "execution-owner",
@@ -21,15 +16,20 @@
   ],
   "forbiddenSourceCoordinates": [
     "execution-system/src/",
-    "wsr-execution/src/",
+    "crystra-execution/src/",
     "evidence-system/src/",
-    "wsr-evidence/src/",
+    "crystra-evidence/src/",
     "evolution-system/src/",
-    "wsr-evolution/src/",
+    "crystra-evolution/src/",
     "system-contracts/src/",
-    "wsr-contracts/src/",
+    "crystra-contracts/src/",
     "workflow-package/src/",
-    "wsr-workflow-package/src/",
-    "wsr-ui/packages/bi/src/"
+    "crystra-workflow-package/src/",
+    "crystra-ui/packages/bi/src/"
+  ],
+  "publicPackage": "dsh-crystra",
+  "internalModules": [
+    "modules/execution",
+    "modules/studio"
   ]
 }

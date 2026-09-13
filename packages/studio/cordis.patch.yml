@@ -1,5 +1,0 @@
-- insert:
-    - id: wsr-studio
-      name: 'dsh-wsr-studio'
-      config:
-        hostConfigFile: /__REQUIRED__/wsr-loopback-host.json

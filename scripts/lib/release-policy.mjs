@@ -12,7 +12,7 @@ const REQUIRED_GATES = Object.freeze([
 ]);
 
 export function assertCandidateTag(candidateTag, packageVersion) {
-  if (candidateTag === packageVersion || !new RegExp(`^${packageVersion.replaceAll(".", "\\.")}-rc\\.[1-9][0-9]*$`, "u").test(candidateTag)) {
+  if (candidateTag === packageVersion || !new RegExp(`^crystra-dsh-v${packageVersion.replaceAll(".", "\\.")}-rc\\.[1-9][0-9]*$`, "u").test(candidateTag)) {
     throw new Error(`PRERELEASE_TAG_REQUIRED: ${candidateTag}`);
   }
 }
@@ -33,7 +33,7 @@ export function assertPromotionEligible({ finalTag, candidateTag, commit, metada
   assertCandidateTag(candidateTag, finalTag);
   if (!COMMIT.test(commit)) throw new Error(`PROMOTION_COMMIT_INVALID: ${commit}`);
   if (!SHA256.test(metadataSha256)) throw new Error(`PROMOTION_METADATA_DIGEST_INVALID: ${metadataSha256}`);
-  if (qualification?.schemaVersion !== "wsr.dsh.release-qualification@1.0.0"
+  if (qualification?.schemaVersion !== "crystra.dsh.release-qualification@1.0.0"
     || qualification.packageVersion !== finalTag
     || qualification.candidateTag !== candidateTag
     || qualification.commit !== commit

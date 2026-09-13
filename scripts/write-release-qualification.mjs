@@ -8,7 +8,7 @@ try {
   const bytes = await readFile(resolve(directory, "release-metadata.json"));
   const metadata = JSON.parse(bytes);
   const qualification = {
-    schemaVersion: "wsr.dsh.release-qualification@1.0.0", packageVersion: metadata.packageVersion,
+    schemaVersion: "crystra.dsh.release-qualification@1.0.0", packageVersion: metadata.packageVersion,
     candidateTag: metadata.candidateTag, commit: metadata.commit,
     artifactMetadataSha256: `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
     gates: { cleanProfile: "PASS", lifecycle: "PASS", realHarness: "PASS", loopbackOutage: "PASS", providerRouting: "PASS", remoteArtifacts: "PASS" },

@@ -10,9 +10,9 @@ import { resolveQualificationExecutionAsset } from "../scripts/lib/qualification
 const root = resolve(import.meta.dirname, "..");
 
 test("qualification uses an explicit digest-bound local Execution artifact only when both dev inputs are present", async () => {
-  const temporary = await mkdtemp(join(tmpdir(), "wsr-dsh-dev-execution-"));
+  const temporary = await mkdtemp(join(tmpdir(), "crystra-dsh-dev-execution-"));
   try {
-    const artifact = join(temporary, "wsr-execution-0.2.6.tgz");
+    const artifact = join(temporary, "crystra-execution-0.2.6.tgz");
     const bytes = Buffer.from("immutable dev artifact");
     await writeFile(artifact, bytes);
     const digest = createHash("sha256").update(bytes).digest("hex");
@@ -25,16 +25,16 @@ test("qualification uses an explicit digest-bound local Execution artifact only 
     });
     assert.deepEqual(await resolveQualificationExecutionAsset({
       compatibility,
-      env: { WSR_EXECUTION_DEV_ARTIFACT: artifact, WSR_EXECUTION_DEV_ARTIFACT_SHA256: digest },
+      env: { CRYSTRA_EXECUTION_DEV_ARTIFACT: artifact, CRYSTRA_EXECUTION_DEV_ARTIFACT_SHA256: digest },
     }), { coordinate: artifact, sha256: digest, source: "dev-local" });
 
     await assert.rejects(resolveQualificationExecutionAsset({
       compatibility,
-      env: { WSR_EXECUTION_DEV_ARTIFACT: artifact },
+      env: { CRYSTRA_EXECUTION_DEV_ARTIFACT: artifact },
     }), /EXECUTION_DEV_ARTIFACT_INPUT_INCOMPLETE/u);
     await assert.rejects(resolveQualificationExecutionAsset({
       compatibility,
-      env: { WSR_EXECUTION_DEV_ARTIFACT: artifact, WSR_EXECUTION_DEV_ARTIFACT_SHA256: "b".repeat(64) },
+      env: { CRYSTRA_EXECUTION_DEV_ARTIFACT: artifact, CRYSTRA_EXECUTION_DEV_ARTIFACT_SHA256: "b".repeat(64) },
     }), /EXECUTION_DEV_ARTIFACT_DIGEST_MISMATCH/u);
   } finally {
     await rm(temporary, { recursive: true, force: true });
@@ -42,9 +42,9 @@ test("qualification uses an explicit digest-bound local Execution artifact only 
 });
 
 test("all owner qualification entry points consume the shared dev-only artifact selector", async () => {
+  const profile = await readFile(join(root,"scripts/lib/crystra-profile.mjs"),"utf8");
+  assert.match(profile,/validateRepository/);
   for (const file of [
-    "scripts/qualify-clean-profile.mjs",
-    "scripts/qualify-lifecycle.mjs",
     "scripts/qualify-provider-routing.mjs",
     "scripts/qualify-real-harness.mjs",
   ]) {

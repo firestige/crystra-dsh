@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { packWorkspaces } from "./lib/package-artifacts.mjs";
 
-const temporary = await mkdtemp(join(tmpdir(), "wsr-dsh-pack-"));
+const temporary = await mkdtemp(join(tmpdir(), "crystra-dsh-pack-"));
 try {
   const archives = await packWorkspaces({ root: new URL("../", import.meta.url).pathname, output: temporary });
   process.stdout.write(`verified ${archives.length} package archives\n`);

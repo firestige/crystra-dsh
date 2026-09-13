@@ -12,8 +12,8 @@ const compatibility = JSON.parse(await readFile(resolve(root, "config/dsh-compat
 const executionAsset = await resolveQualificationExecutionAsset({ compatibility });
 
 async function loadExecution() {
-  if (executionAsset.source === "stable-owner") return { module: await import("wsr-execution") };
-  const temporary = await mkdtemp(join(tmpdir(), "wsr-dsh-provider-routing-"));
+  if (executionAsset.source === "stable-owner") return { module: await import("crystra-execution") };
+  const temporary = await mkdtemp(join(tmpdir(), "crystra-dsh-provider-routing-"));
   const extracted = join(temporary, "package");
   const result = spawnSync("tar", ["-xzf", executionAsset.coordinate, "-C", temporary], { encoding: "utf8" });
   if (result.error !== undefined || result.status !== 0) {
@@ -66,7 +66,7 @@ try {
   });
   const evidence = bindings.resolvedRoles.map(({ roleId, agentProviderId, agentProviderAdapterKey, modelProviderId, modelId }) => ({ roleId, agentProviderId, agentProviderAdapterKey, modelProviderId, modelId }));
   if (new Set(evidence.map(({ agentProviderId }) => agentProviderId)).size !== 2) throw new Error("PROVIDER_ROUTING_COLLAPSED");
-  process.stdout.write(`${JSON.stringify({ schemaVersion: "wsr.dsh.provider-routing-qualification@1.0.0", executionAsset, credentialMaterialRead: false, roles: evidence }, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify({ schemaVersion: "crystra.dsh.provider-routing-qualification@1.0.0", executionAsset, credentialMaterialRead: false, roles: evidence }, null, 2)}\n`);
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`);
   process.exitCode = 1;

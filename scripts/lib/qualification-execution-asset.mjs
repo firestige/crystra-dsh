@@ -9,8 +9,14 @@ function fail(code) {
 }
 
 export async function resolveQualificationExecutionAsset({ compatibility, env = process.env }) {
-  const artifact = env.WSR_EXECUTION_DEV_ARTIFACT;
-  const expectedDigest = env.WSR_EXECUTION_DEV_ARTIFACT_SHA256;
+  let artifact = env.CRYSTRA_EXECUTION_DEV_ARTIFACT;
+  let expectedDigest = env.CRYSTRA_EXECUTION_DEV_ARTIFACT_SHA256;
+  if (artifact === undefined && expectedDigest === undefined && compatibility.executionOwner === undefined) {
+    const root = resolve(import.meta.dirname, "../..");
+    const input = JSON.parse(await readFile(resolve(root,"config/development-inputs.json"),"utf8")).inputs.execution;
+    artifact = resolve(root,".crystra-inputs",input.artifact);
+    expectedDigest = input.sha256;
+  }
   if ((artifact === undefined) !== (expectedDigest === undefined)) fail("EXECUTION_DEV_ARTIFACT_INPUT_INCOMPLETE");
   if (artifact === undefined) {
     return Object.freeze({

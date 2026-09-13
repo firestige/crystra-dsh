@@ -1,32 +1,15 @@
 {
-  "schemaVersion": "wsr.dsh.marketplace@1.0.0",
+  "schemaVersion": "crystra.dsh.marketplace@1.0.0",
   "packages": [
     {
-      "name": "dsh-wsr-execution",
-      "displayName": "WSR",
-      "version": "0.2.10",
-      "summary": "Operate WSR Intake, Deliveries, Actions, and canonical results in DSH.",
-      "icon": "./icon.svg",
-      "license": "Apache-2.0",
-      "security": "../SECURITY.md"
-    },
-    {
-      "name": "dsh-wsr-studio",
-      "displayName": "WSR Studio",
-      "version": "0.1.4",
-      "summary": "Read Evidence and Evolution evaluation views through the loopback Host gateway.",
-      "icon": "./icon.svg",
-      "license": "Apache-2.0",
-      "security": "../SECURITY.md"
-    },
-    {
-      "name": "dsh-wsr",
-      "displayName": "WSR suite",
-      "version": "0.2.11",
-      "summary": "Install the qualified compatible WSR Execution and Studio pair.",
+      "name": "dsh-crystra",
+      "displayName": "Crystra",
+      "version": "0.1.0",
+      "summary": "Workflow execution and analysis in one DSH plugin.",
       "icon": "./icon.svg",
       "license": "Apache-2.0",
       "security": "../SECURITY.md"
     }
-  ]
+  ],
+  "repository": "firestige/crystra-dsh"
 }
