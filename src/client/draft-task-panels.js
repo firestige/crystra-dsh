@@ -2,11 +2,13 @@
 export function createDraftTaskPanel({React,Core,source,renderers={}}){
  const h=React.createElement;
  const missing=reason=>h('p',{role:'status'},`草案投影不可用：${reason}`);
- function Gate({gates}){
+ function Gate({gates,context}){
   const [selected,setSelected]=React.useState(gates[0]?.id);
+  const [inspected,setInspected]=React.useState();
   const data=gates.find(gate=>gate.id===selected);
   if(!data)return missing('没有可展示的已提供 Gate');
-  return h(Core.TaskGatePanel,{queue:gates.map(({id,question,impact})=>({id,question,impact})),selectedId:data.id,data,onSelect:setSelected});
+  if(inspected){const back=()=>setInspected(undefined);return renderers.gateContext?.(data.id,inspected,context,back)??h(React.Fragment,null,h(Core.Button,{onClick:back},'返回当前审核问题'),missing('未提供此证据的精确上下文'));}
+  return h(Core.TaskGatePanel,{queue:gates.map(({id,question,impact})=>({id,question,impact})),selectedId:data.id,data,onSelect:id=>{setInspected(undefined);setSelected(id);},onInspect:renderers.gateContext?id=>{if(data.evidence.some(e=>e.id===id))setInspected(id);}:undefined});
  }
  return function DraftTaskPanel({taskId,surface}){
   const state=React.useSyncExternalStore(source.subscribe,source.getSnapshot,source.getSnapshot);
@@ -19,7 +21,7 @@ export function createDraftTaskPanel({React,Core,source,renderers={}}){
   let view;
   if(surface==='grilling')view=h(Core.TaskRequirementsPanel,{data});
   else if(surface==='delivery')view=h(Core.TaskDeliveryPanel,{data});
-  else if(surface==='gate')view=h(Gate,{key:snapshot.snapshotRevision,gates:data.gates});
+  else if(surface==='gate')view=h(Gate,{key:snapshot.snapshotRevision,gates:data.gates,context});
   else if(surface==='plan')view=h(Core.TaskPlanPanel,{data,
    summaryGraph:renderers.planSummary?.(context)??missing('计划图尚未提供'),
    renderDocument:identity=>renderers.planDocument?.(identity,context)??missing('计划文档尚未提供'),

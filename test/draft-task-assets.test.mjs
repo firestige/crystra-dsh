@@ -29,3 +29,16 @@ test('retained asset callbacks cannot navigate after source revocation or run id
  const view=r.executionPlan(id=>selected=id,context);view.props.onSelect('wave-node');assert.equal(selected,'wave1');
  selected=undefined;state={state:'invalid'};view.props.onSelect('wave-node');assert.equal(selected,undefined);assert.equal(r.planSummary(context),undefined);
 });
+test('Gate context is admitted only for the exact declared evidence item and remains inert text',()=>{
+ const gateSurfaces={...surfaces,gate:{state:'available',value:{gates:[{id:'G-3',evidence:[{id:'ev1'}]}]}}};
+ const a={gateContexts:[{gateId:'G-3',evidenceId:'ev1',context:{id:'ev1',kind:'receipt',title:'Exact receipt',summary:'Draft only',sections:[{title:'Body',body:'quoted content'}],references:'evidence:ev1@r1'}}]};
+ assert.equal(validateTaskAssets(a,gateSurfaces),true);
+ for(const mutate of [v=>v.gateContexts[0].gateId='G-5',v=>v.gateContexts[0].evidenceId='foreign',v=>v.gateContexts[0].context.id='foreign',v=>v.gateContexts.push(v.gateContexts[0]),v=>v.gateContexts[0].context.sections[0].body={},v=>v.gateContexts[0].context.url='https://example.com']){const copy=structuredClone(a);mutate(copy);assert.equal(validateTaskAssets(copy,gateSurfaces),false);}
+});
+test('context renderer preserves exact Gate/evidence pairing and drops revoked content',async()=>{
+ const {createTaskAssetRenderers}=await import('../src/client/draft-task-assets.js');const binding={taskId:'t'};
+ let state={state:'valid',projection:{binding,snapshotRevision:'s1',assets:{gateContexts:[{gateId:'G-3',evidenceId:'e1',context:{id:'e1',title:'Receipt'}}]}}};
+ const r=createTaskAssetRenderers({React:{createElement:(type,props)=>({type,props})},Core:{TaskEvidenceContext:'context'},source:{getSnapshot:()=>state}}),ctx={binding,snapshotRevision:'s1'};
+ assert.equal(r.gateContext('G-3','e1',ctx,()=>{}).props.data.title,'Receipt');assert.equal(r.gateContext('G-5','e1',ctx,()=>{}),undefined);
+ state={state:'invalid'};assert.equal(r.gateContext('G-3','e1',ctx,()=>{}),undefined);
+});

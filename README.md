@@ -107,3 +107,8 @@ session membership before showing Input; archived or revoked bindings hide it.
 An owner Task always uses its formal Delivery correlation and cannot inherit a
 draft session. Task and Workflow drafts may use separate native sessions, so
 navigation preserves each unsent draft without mixing conversation histories.
+
+Task `assets.gateContexts` optionally supplies read-only evidence context for an
+exact Gate and declared evidence item. The public context component renders
+quoted text only; it cannot approve, execute or follow embedded locators. Missing
+Plan/Trace associations remain explicit unavailable views with a return control.
