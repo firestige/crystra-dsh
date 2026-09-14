@@ -78,3 +78,11 @@ snapshots and crystallization projections. Missing edits, relations, sessions,
 Agent events or measured results remain unavailable. No design fixture is
 bundled. Workflow reads use `workflow/catalog/read` and
 `workflow/projection/read` on the loopback `/crystra-exploration` channel.
+
+When Workflow exploration is explicitly configured, the read-only
+`crystra_workflow_draft_read` tool resolves the live Agent's registered workspace
+and requires the projection's exact native session binding. It reads only the
+requested resource revision and returns at most 10,000 characters per call,
+with a content digest and continuation offset. Source expiry or session binding
+changes reject the read. Draft references added to native Input neither submit
+a message nor grant permission to edit, adopt, execute or publish.
