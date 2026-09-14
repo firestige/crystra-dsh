@@ -31,3 +31,15 @@ test('mounts with the overlay props supplied by the host, without a child-slot r
  shell.props.onOpenSettings();
  assert.equal(runtime.navigation.getSnapshot().surface,'harness');
 });
+test('new task enters the blank Harness without creating a persisted session',()=>{
+ const entries=new Map();let cleared=0,created=0;
+ const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const Core={CrystraShell(){},Button(){},BiSurface(){}};
+ const controller={getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}};
+ const runtime=createProductSurface({React,Core,controller,renderAnalysis(){}});
+ runtime.apply({sessions:{clear(){cleared++;}},workspaces:{startSession(){created++;}},slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});
+ entries.get('shell.overlay')({}).children[1].props.onNewTask();
+ assert.equal(created,0,'a blank draft must not create Session+Agent');
+ assert.equal(cleared,1);
+ assert.equal(runtime.navigation.getSnapshot().surface,'harness');
+});

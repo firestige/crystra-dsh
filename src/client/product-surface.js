@@ -7,7 +7,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  function Page(){
   const nav=React.useSyncExternalStore(navigation.subscribe,navigation.getSnapshot,navigation.getSnapshot);
   const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
-  if(nav.route.page.startsWith('analysis-'))return renderAnalysis(nav.route.page);
+  if(nav.route.page.startsWith('analysis-'))return renderAnalysis(nav.route.page,navigation.navigate);
   if(nav.route.page==='tasks')return React.createElement(Core.Surface,{as:'section','data-section-id':'task-browser-content'},
    React.createElement(Core.Typography,{as:'h1',variant:'page-title'},'全部任务'),
    state.taskList.phase==='error'?React.createElement('p',{role:'alert'},state.taskList.error?.message):null,
@@ -33,7 +33,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
      React.createElement(Core.CrystraShell,{
       route:nav.route.page,selectedId:nav.route.id,tasks:state.taskList.items.map(t=>({id:t.task_id,title:t.task_id})),workflows:[],
       onNavigate:navigation.navigate,onOpenHarness:navigation.openHarness,
-      onNewTask:()=>{navigation.openHarness();ctx.workspaces.startSession();},
+      onNewTask:()=>{navigation.openHarness();ctx.sessions.clear();},
       onOpenSettings:navigation.openHarness,
      },React.createElement(Page)));
    }
