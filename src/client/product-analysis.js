@@ -28,7 +28,7 @@ export function createProductAnalysis({React,Core,gateway,controller}) {
   function Analysis({page,onNavigate}){
     return React.createElement(Core.CrystraAnalysisFrame,{page,onNavigate},
       page==='analysis-traces'?React.createElement(Trace):page==='analysis-overview'?React.createElement(Overview):
-        React.createElement('section',{'data-section-id':'comparison-analysis',className:'obs-scroll'},React.createElement('p',{role:'status'},'研究报表的数据接口尚未接入。')));
+        React.createElement('section',{'data-section-id':'comparison-analysis',className:'obs-scroll'},React.createElement('p',{role:'status'},'对比分析的数据接口尚未接入。')));
   }
   return {Analysis,trace};
 }
