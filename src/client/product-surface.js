@@ -8,6 +8,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  const navigation=createProductNavigation(storage);
  let clearSession=()=>{};
  const newTask=()=>{navigation.navigate("new-task");clearSession();};
+ const saveBrowserView=view=>{const nav=navigation.getSnapshot();if(nav.route.page==='tasks')navigation.saveContext({...nav.context,view});};
  let sidebarCollapsed=false;
  try{sidebarCollapsed=storage?.getItem("crystra.sidebar.collapsed")==="true";}catch{}
  const saveSidebar=collapsed=>{sidebarCollapsed=collapsed===true;try{storage?.setItem("crystra.sidebar.collapsed",String(sidebarCollapsed));}catch{}};
@@ -25,6 +26,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
   if(nav.route.page==='new-task')return null;
   if(nav.route.page.startsWith('analysis-'))return renderAnalysis(nav.route.page,navigation.navigate);
   if(nav.route.page==='tasks')return React.createElement(Core.TaskBrowser,{
+   initialViewState:typeof nav.context.view==='string'?nav.context.view:undefined,onViewStateChange:saveBrowserView,
    tasks:projectEvidenceTasks(state.taskList.items),phase:state.taskList.phase==='idle'?'loading':state.taskList.phase,error:state.taskList.error?.message,
    onOpen:id=>navigation.navigate('task',id),onNewTask:newTask,onRefresh:()=>{void controller.loadTasks();},
    hasMore:typeof state.taskList.page?.next_cursor==='string'&&state.taskList.page.next_cursor.length>0,

@@ -56,3 +56,13 @@ test('sidebar preference survives a new surface without changing navigation or s
  assert.equal(mount().initialSidebarCollapsed,false);
  assert.equal(values.get('crystra.sidebar.collapsed'),'false');
 });
+test('Task Browser returns to its own saved view without placing it on Task context',()=>{
+ const entries=new Map();const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const Core={CrystraShell(){},TaskBrowser(){},Button(){},BiSurface(){}};
+ const runtime=createProductSurface({React,Core,controller:{getSnapshot:()=>({taskList:{phase:'ready',items:[]}}),subscribe(){}},renderAnalysis(){}});
+ runtime.apply({slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});
+ const Page=entries.get('shell.overlay')({}).children[1].children[0].type;
+ const browser=Page();const saved='{"version":1,"view":"list"}';browser.props.onViewStateChange(saved);browser.props.onOpen('task-a');
+ browser.props.onViewStateChange('late');assert.equal(runtime.navigation.getSnapshot().context.view,undefined);
+ runtime.navigation.back();assert.equal(Page().props.initialViewState,saved);
+});
