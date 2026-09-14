@@ -62,3 +62,8 @@ test('Workflow-only exploration requires pinned sources and at least one configu
  const {workflowFile,...empty}=value;assert.throws(()=>normalizePluginConfiguration({exploration:empty}),/CRYSTRA_CONFIG_INVALID/);
  assert.throws(()=>normalizePluginConfiguration({exploration:{...value,workflowFile:'relative'}}),/CRYSTRA_CONFIG_INVALID/);
 });
+test('resource authoring needs an explicit isolated root and boolean write opt-in',()=>{
+ const value={workflowFile:'/tmp/w.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:true,resourceDraftRoot:'/tmp/candidates',allowResourceWrites:true};
+ assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
+ for(const changed of [{...value,resourceDraftRoot:'relative'},{...value,resourceDraftRoot:undefined},{...value,allowResourceWrites:'true'}])assert.throws(()=>normalizePluginConfiguration({exploration:changed}),/CRYSTRA_CONFIG_INVALID/);
+});

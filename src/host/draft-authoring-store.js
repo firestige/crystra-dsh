@@ -15,8 +15,8 @@ const digest=value=>createHash('sha256').update(canonical(value)).digest('hex');
 export function createDraftAuthoringStore({root,isolation,getContext,validateCandidate}){
  if(!isAbsolute(root)||isolation!=='draft-authoring-only'||typeof getContext!=='function'||typeof validateCandidate!=='function')fail('ISOLATED_STORE_REQUIRED');
  const file=join(root,'draft-state.json'),lock=join(root,'.commit-lock');
- function context(write=false){
-  const value=getContext();
+ async function context(write=false){
+  const value=await getContext();
   if(value?.environment!=='exploration'||value.draftId!=='crystra-ui-exploration'||value.revision!=='draft.1')fail('EXPLORATION_REQUIRED');
   if(value.accessAllowed!==true)fail('ACCESS_REQUIRED');
   if(write&&value.writeAllowed!==true)fail('WRITE_NOT_ALLOWED');
@@ -32,14 +32,14 @@ export function createDraftAuthoringStore({root,isolation,getContext,validateCan
   return data;
  }
  return {
-  async read(){const binding=context();const data=await load(binding);if(digest(context())!==digest(binding))fail('STORE_BINDING_CHANGED');return data;},
+  async read(){const binding=await context();const data=await load(binding);if(digest(await context())!==digest(binding))fail('STORE_BINDING_CHANGED');return data;},
   async commit(input){
    const proposal=JSON.parse(canonical(input));
    if(!proposal||Object.keys(proposal).some(key=>!['proposalId','workspaceId','resourceId','baseRevision','candidateRevision','candidate','sourceRefs'].includes(key))||
       !['proposalId','workspaceId','resourceId','candidateRevision'].every(key=>text(proposal[key]))||
       !(proposal.baseRevision===null||text(proposal.baseRevision))||!Object.hasOwn(proposal,'candidate')||
       !Array.isArray(proposal.sourceRefs)||!proposal.sourceRefs.length||!proposal.sourceRefs.every(text))fail('INVALID_PROPOSAL');
-   const binding=context(true);
+   const binding=await context(true);
    if(proposal.workspaceId!==binding.workspaceId||proposal.resourceId!==binding.resourceId)fail('PROPOSAL_BINDING_CHANGED');
    if(Buffer.byteLength(canonical(proposal),'utf8')>1_000_000)fail('PROPOSAL_TOO_LARGE');
    await mkdir(root,{recursive:true,mode:0o700});
@@ -48,7 +48,7 @@ export function createDraftAuthoringStore({root,isolation,getContext,validateCan
    try{
     const current=await load(binding),hash=digest(proposal);
     const previous=Object.hasOwn(current.proposals,proposal.proposalId)?current.proposals[proposal.proposalId]:undefined;
-    if(previous){if(previous.hash!==hash)fail('PROPOSAL_CONFLICT');if(digest(context(true))!==digest(binding))fail('STORE_BINDING_CHANGED');return previous.result;}
+    if(previous){if(previous.hash!==hash)fail('PROPOSAL_CONFLICT');if(digest(await context(true))!==digest(binding))fail('STORE_BINDING_CHANGED');return previous.result;}
     if(proposal.baseRevision!==current.currentRevision)fail('REVISION_CONFLICT');
     if(current.revisions.some(revision=>revision.revision===proposal.candidateRevision))fail('IMMUTABLE_REVISION');
     if(await validateCandidate(JSON.parse(canonical(proposal.candidate)),{...binding})!==true)fail('CANDIDATE_INVALID');
@@ -60,7 +60,7 @@ export function createDraftAuthoringStore({root,isolation,getContext,validateCan
     const bytes=canonical(next);if(Buffer.byteLength(bytes,'utf8')>2_000_000)fail('STORE_FULL');
     temporary=join(root,`.draft-${randomUUID()}.tmp`);const handle=await open(temporary,'wx',0o600);
     try{await handle.writeFile(bytes);await handle.sync();}finally{await handle.close();}
-    if(digest(context(true))!==digest(binding))fail('STORE_BINDING_CHANGED');
+    if(digest(await context(true))!==digest(binding))fail('STORE_BINDING_CHANGED');
     await rename(temporary,file);temporary=undefined;
     return result;
    }finally{if(temporary)await rm(temporary,{force:true});await rm(lock,{recursive:true,force:true});}

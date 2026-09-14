@@ -22,6 +22,13 @@ test('Workflow file gateway binds exact definitions and revokes stale source rea
  assert.equal((await port.readForSession(agentRequest,{...authority,path:'/other'})).ok,false);
  assert.equal((await port.handle('resource/read',{...request,resourceRevision:'latest'})).ok,false);
  assert.equal((await port.handle('resource/read',{...request,path:'../README.md'})).ok,false);
+ const editor=createDraftWorkflowFileGateway({file,sourceLockFile:join(root,'lock.json'),sourceLockDigest:sha(lock),allowFixtures:true,now:()=>Date.parse('2026-09-15T00:00:00Z'),resourceDraftRoot:join(root,'drafts'),allowResourceWrites:true});
+ const save={...selection,proposal:{proposalId:'p1',resourceId:'readme',path:'README.md',baseRevision:'resource-r1',baseContent:'Exact content',content:'Candidate'}};
+ assert.equal((await port.handle('resources/save',save)).ok,false);
+ const receipt=await editor.handle('resources/save',save);assert.equal(receipt.value.content,'Candidate');
+ assert.equal((await editor.handle('resources/read',selection)).value.files[0].content,'Candidate');
+ assert.equal((await editor.readForSession({...agentRequest,resourceRevision:receipt.value.revision},authority)).value.content,'Candidate');
+ assert.equal(projection.resources.value.workspace.files[0].content,'Exact content');
  await writeFile(join(root,'design.md'),'changed');assert.equal((await port.handle('catalog/read',{})).ok,false);
  }finally{await rm(root,{recursive:true,force:true});}
 });

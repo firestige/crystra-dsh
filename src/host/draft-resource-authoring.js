@@ -7,15 +7,15 @@ const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex
 export function createDraftResourceAuthoring({root,resources,getContext}){
  const initial=getContext();
  const identity=value=>JSON.stringify(['environment','draftId','revision','sourceLockDigest','workspaceId'].map(key=>value[key]));
- const binding=identity(initial);
- const context=()=>{const current=getContext();if(identity(current)!==binding)fail('STORE_BINDING_CHANGED');return current;};
+ const binding=Promise.resolve(initial).then(identity).then(value=>({value}),error=>({error}));
+ const context=async()=>{const expected=await binding;if(Object.hasOwn(expected,'error'))throw expected.error;const current=await getContext();if(identity(current)!==expected.value)fail('STORE_BINDING_CHANGED');return current;};
  const catalog=structuredClone(resources),keys=new Set();
  for(const source of catalog){const key=JSON.stringify([source.resourceId,source.path]);
   if(keys.has(key)||!['resourceId','path','revision','content'].every(k=>typeof source[k]==='string')||!source.resourceId||!source.path||!source.revision||source.revision.startsWith('draft-sha256:'))fail('INVALID_RESOURCE_CATALOG');keys.add(key);
  }
  function resolve(resourceId,path){const source=catalog.find(item=>item.resourceId===resourceId&&item.path===path);if(!source)fail('RESOURCE_UNAVAILABLE');
   const stream=JSON.stringify([resourceId,path]);
-  const store=createDraftAuthoringStore({root:join(root,hash(stream)),isolation:'draft-authoring-only',getContext:()=>({...context(),resourceId:stream}),
+  const store=createDraftAuthoringStore({root:join(root,hash(stream)),isolation:'draft-authoring-only',getContext:async()=>({...await context(),resourceId:stream}),
    validateCandidate:c=>c?.resourceId===resourceId&&c.path===path&&typeof c.content==='string'&&c.content.length<=500000});return {source,store,stream};
  }
  const projection=(source,revision,content)=>({authority:'draft',resourceId:source.resourceId,path:source.path,revision,content});
@@ -38,7 +38,7 @@ export function createDraftResourceAuthoring({root,resources,getContext}){
    if(!prior)fail('REVISION_CONFLICT');if(prior.content!==request.baseContent)fail('CONTENT_CONFLICT');
    const candidate={resourceId:request.resourceId,path:request.path,content:request.content};
    const revision='draft-sha256:'+hash([request.proposalId,request.resourceId,request.path,request.baseRevision,request.baseContent,request.content]);
-   await store.commit({proposalId:request.proposalId,workspaceId:context().workspaceId,resourceId:stream,baseRevision:request.baseRevision===source.revision?null:request.baseRevision,candidateRevision:revision,candidate,sourceRefs:[source.revision,source.path]});
+   await store.commit({proposalId:request.proposalId,workspaceId:(await context()).workspaceId,resourceId:stream,baseRevision:request.baseRevision===source.revision?null:request.baseRevision,candidateRevision:revision,candidate,sourceRefs:[source.revision,source.path]});
    return projection(source,revision,request.content);
   },
  };

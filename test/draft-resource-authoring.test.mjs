@@ -33,3 +33,16 @@ test('exact revision reads never silently advance to a newer resource candidate'
  current={...context,accessAllowed:false};await assert.rejects(port.readRevision('r','notes.txt',first.revision),/ACCESS_REQUIRED/);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+test('asynchronous source checks gate reads and reject revoked writes before commit',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-resource-async-'));let allowed=true;try{
+ const port=createDraftResourceAuthoring({root,resources,getContext:async()=>({...context,writeAllowed:allowed})});
+ assert.equal((await port.read('r','notes.txt')).content,'source');await port.save(request);
+ allowed=false;await assert.rejects(port.save({...request,proposalId:'p2'}),/WRITE_NOT_ALLOWED/);
+ assert.equal((await port.read('r','notes.txt')).content,'edited');
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+test('failed asynchronous initial authority is retained as a rejected read without an unhandled promise',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-resource-rejected-'));try{
+ const port=createDraftResourceAuthoring({root,resources,getContext:async()=>{throw Error('SOURCE_REVOKED');}});await new Promise(resolve=>setImmediate(resolve));await assert.rejects(port.read('r','notes.txt'),/SOURCE_REVOKED/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
