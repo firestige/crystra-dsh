@@ -470,6 +470,14 @@ try {
   await Promise.all([cdp.command("Runtime.enable"), cdp.command("Page.enable"), cdp.command("Log.enable")]);
 
   await cdp.command("Page.bringToFront");
+  // Qualify the new default product surface and its public return path before
+  // retaining the complete native Harness/session/Studio checks below.
+  await waitFor(async () => cdp.evaluate(`(() => {
+    const shell=document.querySelector('[data-crystra-theme]');
+    const back=document.querySelector('button[aria-label="切换到 DeepSeek Harness"]');
+    if(!shell || !back || back.getBoundingClientRect().width===0)return false;
+    back.click();return true;
+  })()`), "CRYSTRA_PRODUCT_RETURN_TO_HARNESS_UNAVAILABLE");
   await waitFor(async () => cdp.evaluate(`document.querySelector('textarea:not(:disabled)') !== null`), "HARNESS_WORKSPACE_PICKER_UNAVAILABLE");
   const workspaceSelected = await cdp.evaluate(`(() => {
     const input = document.querySelector('textarea:not(:disabled)');
