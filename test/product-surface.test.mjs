@@ -37,7 +37,7 @@ test('new task keeps Crystra shell and exposes the dedicated native Input withou
  const Core={CrystraShell(){},Button(){},BiSurface(){}};
  const controller={getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}};
  const runtime=createProductSurface({React,Core,controller,renderAnalysis(){}});
- runtime.apply({sessions:{clear(){cleared++;}},workspaces:{startSession(){created++;}},slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});
+ runtime.apply({sessions:{clear(){assert.equal(runtime.navigation.getSnapshot().route.page,'new-task','leave Task binding before clearing current session');cleared++;}},workspaces:{startSession(){created++;}},slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});
  entries.get('shell.overlay')({}).children[1].props.onNewTask();
  assert.equal(created,0,'a blank draft must not create Session+Agent');
  assert.equal(cleared,1);

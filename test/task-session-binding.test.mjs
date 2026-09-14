@@ -24,3 +24,9 @@ test('stale, corrupt and not-yet-ready sources cannot authorize a binding',()=>{
  assert.equal(resolveTaskSessionBinding('t',good,{...sessions('s'),phase:'loading'}).kind,'unavailable');
  assert.equal(resolveTaskSessionBinding('',good,sessions('s')).kind,'unavailable');
 });
+test('explicit selection must remain a formal candidate owned by this runtime',()=>{
+ const state=ready([delivery('d1','t','s1'),delivery('d2','t','foreign')]);
+ assert.equal(resolveTaskSessionBinding('t',state,sessions('s1'),'s1').kind,'bound');
+ assert.equal(resolveTaskSessionBinding('t',state,sessions('s1'),'foreign').kind,'unavailable');
+ assert.equal(resolveTaskSessionBinding('t',state,sessions('s1','unrelated'),'unrelated').kind,'unavailable');
+});

@@ -71,3 +71,11 @@ export function createDeliveryControlPlaneClient(rpc) {
   };
   return Object.freeze(client);
 }
+
+// One read stream per injected RPC service; product pages reuse Execution's poller.
+const sharedClients=new WeakMap();
+export function getSharedDeliveryControlPlaneClient(rpc){
+ let client=sharedClients.get(rpc);
+ if(!client){client=createDeliveryControlPlaneClient(rpc);sharedClients.set(rpc,client);}
+ return client;
+}

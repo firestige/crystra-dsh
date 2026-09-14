@@ -1,4 +1,6 @@
 import React from 'react';
+import {getSharedDeliveryControlPlaneClient} from '../../modules/execution/src/client/delivery/control-plane-port.js';
+import {createTaskInputController} from './task-input-controller.js';
 import * as Core from 'crystra-ui-core';
 import sharedStyles from 'crystra-ui-core/styles.css';
 import {createEvaluateController} from '../../modules/studio/src/client/evaluate-model.js';
@@ -12,6 +14,11 @@ export function apply(ctx){
  const gateway=createStudioGatewayPort(ctx);
  const controller=createEvaluateController({catalogCoordinates:Core.CATALOG_COORDINATES,gateway,storage});
  const {Analysis}=createProductAnalysis({React,Core,gateway,controller});
- const surface=createProductSurface({React,Core,controller,storage,sharedStyles,renderAnalysis:(page,onNavigate)=>React.createElement(Analysis,{page,onNavigate})});
+ const controlPlane=getSharedDeliveryControlPlaneClient(ctx.connection.rpc);
+ const taskInput=createTaskInputController({inventory:controlPlane.inventory,sessions:ctx.sessions});
+ const surface=createProductSurface({React,Core,controller,storage,sharedStyles,taskInput,renderAnalysis:(page,onNavigate)=>React.createElement(Analysis,{page,onNavigate})});
+ const syncTask=()=>{const nav=surface.navigation.getSnapshot();taskInput.setTask(nav.surface==='crystra'&&nav.route.page==='task'?nav.route.id:undefined);};
+ const stop=surface.navigation.subscribe(syncTask);syncTask();
+ ctx.effect(()=>()=>{stop();taskInput.dispose();},'crystra-product: task input binding');
  return surface.apply(ctx);
 }

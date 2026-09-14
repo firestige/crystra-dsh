@@ -3,7 +3,7 @@ import { Button, DisclosureRow, IconCheckOutline16, IconCopyOutline16, JsonTree,
 import * as workspaceUi from "@deepseek-ai/dsh-client-ui-workspace";
 
 import { createCrystraCommandView, registerActionPresentation } from "../action-presentation/view.js";
-import { createDeliveryControlPlaneClient } from "./delivery/control-plane-port.js";
+import { getSharedDeliveryControlPlaneClient } from "./delivery/control-plane-port.js";
 import { registerSessionDeliveryView } from "./delivery/session-delivery-view.js";
 import { applyDeliverySidebar } from "./delivery-inventory/sidebar.js";
 
@@ -13,7 +13,7 @@ export const inject = Object.freeze([
 ]);
 
 export function apply(ctx) {
-  const controlPlane = createDeliveryControlPlaneClient(ctx.connection.rpc);
+  const controlPlane = getSharedDeliveryControlPlaneClient(ctx.connection.rpc);
   const refresh = () => { void controlPlane.refresh(); };
   refresh();
   const timer = setInterval(refresh, 2_000);
