@@ -21,7 +21,8 @@ export function createDraftWorkflowIntegration({React,Core,gateway,renderMarkdow
   }));
   return {title:p.entry.title,description:'条件草案 · '+revision,panels};
  }
- return {getSnapshot:adapter.getSnapshot,subscribe:adapter.subscribe,select,
+ const bindings={subscribe:adapter.subscribe,getSnapshot:()=>{const s=adapter.getSnapshot();return {state:s.phase==='ready'?'valid':'invalid',authority:'draft',entries:s.workflows.filter(row=>row.projection.inputBinding).map(row=>({definitionId:row.context.definitionId,revision:row.context.definitionRevision,...row.projection.inputBinding}))};}};
+ return {bindings,getSnapshot:adapter.getSnapshot,subscribe:adapter.subscribe,select,
   directory(){const s=adapter.getSnapshot();return {entries:s.workflows.map(row=>row.projection.entry),phase:s.phase==='ready'?'ready':s.phase==='idle'?'loading':'unavailable'};},
   start:adapter.refresh,dispose:adapter.dispose};
 }

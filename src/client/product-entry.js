@@ -1,3 +1,4 @@
+import {createWorkflowInputController} from './workflow-input-controller.js';
 import {createDraftWorkflowIntegration} from './draft-workflow-integration.js';
 import {MarkdownText} from '@deepseek-ai/dsh-client-ui-primitives';
 import {createDraftTaskIntegration} from './draft-task-integration.js';
@@ -20,13 +21,14 @@ export function apply(ctx){
  const drafts=createDraftTaskIntegration({React,Core,source:evaluation,gateway:{call:(endpoint,payload)=>ctx.connection.rpc.call('/crystra-exploration',endpoint,payload)}});
  const controller=drafts.controller;
  const workflowDrafts=createDraftWorkflowIntegration({React,Core,renderMarkdown:text=>React.createElement(MarkdownText,{text}),gateway:{call:(endpoint,payload)=>ctx.connection.rpc.call('/crystra-exploration','workflow/'+endpoint,payload)}});
+ const workflowInput=createWorkflowInputController({bindings:workflowDrafts.bindings,workspaces:ctx.workspaces,sessions:ctx.sessions});
  const controlPlane=getSharedDeliveryControlPlaneClient(ctx.connection.rpc);
  const {Analysis,dispose:disposeAnalysis}=createProductAnalysis({React,Core,gateway,controller,inventory:controlPlane.inventory});
  const taskInput=createTaskInputController({inventory:controlPlane.inventory,sessions:ctx.sessions});
- const surface=createProductSurface({React,Core,controller,storage,sharedStyles,taskInput,workflowDrafts,renderTaskPanels:drafts.renderTaskPanels,renderAnalysis:(page,onNavigate)=>React.createElement(Analysis,{page,onNavigate})});
- const syncTask=()=>{const nav=surface.navigation.getSnapshot();taskInput.setTask(nav.surface==='crystra'&&nav.route.page==='task'?nav.route.id:undefined);};
+ const surface=createProductSurface({React,Core,controller,storage,sharedStyles,taskInput,workflowInput,workflowDrafts,renderTaskPanels:drafts.renderTaskPanels,renderAnalysis:(page,onNavigate)=>React.createElement(Analysis,{page,onNavigate})});
+ const syncTask=()=>{const nav=surface.navigation.getSnapshot();taskInput.setTask(nav.surface==='crystra'&&nav.route.page==='task'?nav.route.id:undefined);workflowInput.setWorkflow(nav.surface==='crystra'&&nav.route.page==='workflow'?{definitionId:nav.route.id,revision:nav.route.revision}:undefined);};
  const stop=surface.navigation.subscribe(syncTask);syncTask();
- ctx.effect(()=>()=>{stop();taskInput.dispose();disposeAnalysis();drafts.dispose();workflowDrafts.dispose();},'crystra-product: task input binding');
+ ctx.effect(()=>()=>{stop();taskInput.dispose();workflowInput.dispose();disposeAnalysis();drafts.dispose();workflowDrafts.dispose();},'crystra-product: task input binding');
  void drafts.start();void workflowDrafts.start();
  return surface.apply(ctx);
 }

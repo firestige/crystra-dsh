@@ -36,6 +36,7 @@ export function admitWorkflowDraft(projection,context,now=Date.now()){
  for(const key of ['environment','draftId','revision','adapterId','definitionId','definitionRevision','workspaceId','sourceLockDigest'])if(projection.binding[key]!==context[key])return invalid('DRAFT_BINDING_CHANGED');
  if(!['service','fixture'].includes(projection.provenance)||(projection.provenance==='fixture'&&context.allowFixtures!==true))return invalid('FIXTURE_NOT_ENABLED');
  if(!text(projection.snapshotRevision)||!Number.isFinite(Date.parse(projection.expiresAt))||new Date(projection.expiresAt).toISOString()!==projection.expiresAt||Date.parse(projection.expiresAt)<=now)return invalid('SNAPSHOT_EXPIRED');
+ if(!optional(projection.inputBinding,b=>object(b)&&['workspaceId','packageRoot','sessionId'].every(k=>text(b[k])&&b[k].length<=4096)&&(/^(?:\/|[A-Za-z]:[\\/])/.test(b.packageRoot))))return invalid('INPUT_BINDING_INVALID');
  const entry=projection.entry;if(!object(entry)||entry.definitionId!==context.definitionId||entry.revision!==context.definitionRevision||!text(entry.title)||entry.status!=='DRAFT'||typeof entry.isLatest!=='boolean'||!['purpose','packageName','createdAt','updatedAt','thumbnail'].every(k=>optional(entry[k],v=>typeof v==='string'))||!optional(entry.pinned,v=>typeof v==='boolean')||!optional(entry.nodeCount,v=>Number.isInteger(v)&&v>=0))return invalid('DIRECTORY_IDENTITY_INVALID');
  for(const key of ['studio','resources','crystallization']){
   const surface=projection[key];if(!object(surface))return invalid('SURFACE_INVALID');

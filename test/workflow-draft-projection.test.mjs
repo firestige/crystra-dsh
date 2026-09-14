@@ -27,3 +27,7 @@ test('malformed display metadata is rejected before React receives it',()=>{
  const p=structuredClone(projection);mutate(p);assert.equal(admitWorkflowDraft(p,context,now).state,'invalid');
  }
 });
+test('optional native Input binding requires exact bounded identities and an absolute package root',()=>{
+ for(const inputBinding of [{workspaceId:'native',packageRoot:'relative',sessionId:'s'},{workspaceId:'native',packageRoot:'/package',sessionId:{}},null])assert.equal(admitWorkflowDraft({...projection,inputBinding},context,now).state,'invalid');
+ assert.equal(admitWorkflowDraft({...projection,inputBinding:{workspaceId:'native',packageRoot:'/package',sessionId:'s'}},context,now).state,'valid');
+});
