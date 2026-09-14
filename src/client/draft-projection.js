@@ -1,3 +1,4 @@
+import {validateDraftSurfaceValue} from "./draft-surface-values.js";
 /** Exploration-only envelope admission. This does not validate domain claims or authorize effects.
  * context must come from the trusted adapter selection, never from response.binding.
  * Consumers must re-admit on context changes and expiry before displaying the projection.
@@ -31,6 +32,7 @@ export function admitDraftProjection(response,context,now=Date.now()) {
    if(!text(surface.reason)||Object.keys(surface).some(key=>!['state','reason'].includes(key)))return invalid('INVALID_SURFACES');
   }else if(surface.state==='available'){
    if(!object(surface.value)||Object.keys(surface).some(key=>!['state','value'].includes(key)))return invalid('INVALID_SURFACES');
+   if(!validateDraftSurfaceValue(name,surface.value))return invalid('INVALID_SURFACE_VALUE');
   }else return invalid('INVALID_SURFACES');
  }
  return {state:'valid',authority:'draft',projection:response};

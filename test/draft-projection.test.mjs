@@ -42,3 +42,9 @@ test('a future draft cannot opt itself in by matching an unsupported context',()
  const {context,response}=example();context.revision='draft.2';response.binding.revision='draft.2';
  assert.equal(admitDraftProjection(response,context,now).state,'invalid');
 });
+test('available draft surfaces require their full consumer shape before admission',()=>{
+ const {context,response}=example();response.surfaces.grilling={state:'available',value:{}};
+ assert.equal(admitDraftProjection(response,context,now).reason,'INVALID_SURFACE_VALUE');
+ response.surfaces.grilling.value={heading:'h',summary:'s',briefSummary:'b',topics:[],fields:[],changes:[]};
+ assert.equal(admitDraftProjection(response,context,now).state,'valid');
+});
