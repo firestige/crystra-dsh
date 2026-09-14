@@ -75,3 +75,13 @@ test('Workflow directory uses the accepted component and explicitly distinguishe
  const tree=Page();assert.equal(tree.type,Core.WorkflowExplorer);assert.equal(tree.props.phase,'unavailable');assert.equal(tree.props.onNewWorkflow,undefined);
  tree.props.onOpen('definition-a','r2');assert.deepEqual(runtime.navigation.getSnapshot().route,{page:'workflow',id:'definition-a',revision:'r2'});
 });
+test('Workflow workbench retains the requested definition and revision with an unbound input',()=>{
+ const entries=new Map();const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const Core={CrystraShell(){},WorkflowWorkbench(){},Button(){},BiSurface(){}};
+ const runtime=createProductSurface({React,Core,controller:{getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}},renderAnalysis(){}});
+ runtime.apply({slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});runtime.navigation.navigate('workflow','exact-definition','revision-a');
+ const Page=entries.get('shell.overlay')({}).children[1].children[0].type;
+ const first=Page();assert.equal(first.type,Core.WorkflowWorkbench);assert.equal(first.props.definitionId,'exact-definition');assert.equal(first.props.revision,'revision-a');assert.equal(first.props.page,'studio');
+ first.props.onPageChange('resources');assert.equal(Page().props.page,'resources');assert.equal(entries.get('shell.overlay')({}).props['data-crystra-native-input'],undefined);
+ runtime.navigation.saveContext({workbench:'invalid'});assert.equal(Page().props.page,'studio');
+});

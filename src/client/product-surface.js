@@ -24,6 +24,12 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
    panels:{...Object.fromEntries(['grilling','plan','execution','gate','delivery'].map(page=>[page,React.createElement('p',{role:'status'},'该工作面的正式投影尚未接入。')])),...renderTaskPanels?.(nav.route.id)},
   });
   if(nav.route.page==='workflows')return React.createElement(Core.WorkflowExplorer,{entries:[],phase:'unavailable',onOpen:(id,revision)=>navigation.navigate('workflow',id,revision)});
+  if(nav.route.page==='workflow')return React.createElement(Core.WorkflowWorkbench,{
+   key:JSON.stringify([nav.route.id,nav.route.revision]),definitionId:nav.route.id,revision:nav.route.revision,title:nav.route.id,description:'工作流定义尚未解析',
+   page:['studio','resources','crystallization'].includes(nav.context.workbench)?nav.context.workbench:'studio',onPageChange:workbench=>navigation.saveContext({...nav.context,workbench}),
+   input:React.createElement('p',{role:'status'},'此工作流尚未关联当前实例中的包工作区与会话。'),
+   panels:Object.fromEntries(['studio','resources','crystallization'].map(page=>[page,React.createElement('p',{role:'status'},'此工作面的精确版本投影尚未接入。')])),
+  });
   if(nav.route.page==='new-task')return null;
   if(nav.route.page.startsWith('analysis-'))return renderAnalysis(nav.route.page,navigation.navigate);
   if(nav.route.page==='tasks')return React.createElement(Core.TaskBrowser,{
