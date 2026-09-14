@@ -27,6 +27,9 @@ test("changed development dependency bytes fail closed", async () => {
   const temporary=await mkdtemp(join(tmpdir(),"crystra-input-drift-"));
   try {
     await cp(root,temporary,{recursive:true,filter:path=>![".git","node_modules","artifacts"].includes(basename(path))});
+    const manifest=JSON.parse(await readFile(join(temporary,"package.json"),"utf8"));
+    manifest.dependencies["crystra-execution"]="file:.crystra-inputs/crystra-execution-0.1.0.tgz";
+    await writeFile(join(temporary,"package.json"),JSON.stringify(manifest));
     await writeFile(join(temporary,".crystra-inputs/crystra-execution-0.1.0.tgz"),"changed");
     await assert.rejects(validateRepository(temporary),/COMPONENT_DIGEST_MISMATCH/);
   } finally {await rm(temporary,{recursive:true,force:true});}

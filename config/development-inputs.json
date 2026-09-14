@@ -7,7 +7,7 @@
       "package": "crystra-execution",
       "version": "0.1.0",
       "artifact": "crystra-execution-0.1.0.tgz",
-      "sha256": "cba51e9253a0622c7a316f4e06520318853f40ee59c3a537b22975882e4a1262"
+      "sha256": "bcaa1400dd601450abe3b494474cd9b6a9e590552c8421e0784a4f5d614a3b35"
     },
     "ui": {
       "repository": "firestige/crystra-ui",
