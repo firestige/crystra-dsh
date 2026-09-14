@@ -1,3 +1,4 @@
+import {installNativeSessionHeader} from './native-session-header.js';
 import {attachWorkflowInputGeometry} from "./workflow-input-geometry.js";
 import {projectEvidenceTasks} from './task-browser-projection.js';
 import {nativeInputLayoutStyles} from './native-input-layout.js';
@@ -53,7 +54,17 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  return {navigation,
   apply(ctx){
    clearSession=()=>ctx.sessions.clear();
+   const headerTarget={
+    getSnapshot(){const nav=navigation.getSnapshot();if(nav.surface!=='crystra')return undefined;
+     const workflow=workflowSource.getSnapshot(),input=inputSource.getSnapshot();
+     if(activeWorkflow(nav,workflow))return workflow.sessionId;
+     if(nav.route.page==='task'&&input.kind==='active'&&input.taskId===nav.route.id)return input.sessionId;
+     return undefined;
+    },
+    subscribe(fn){const stops=[navigation.subscribe(fn),inputSource.subscribe(fn),workflowSource.subscribe(fn)];return()=>stops.forEach(stop=>stop());},
+   };
    function Overlay(){
+    React.useEffect(()=>installNativeSessionHeader({React,slots:ctx.slots,target:headerTarget}),[]);
     const nav=React.useSyncExternalStore(navigation.subscribe,navigation.getSnapshot,navigation.getSnapshot);
     const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
     React.useEffect(()=>{void controller.loadTasks();},[]);
