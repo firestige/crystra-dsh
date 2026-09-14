@@ -6,7 +6,7 @@ Execution and Studio are internal modules of this plugin. `crystra-execution` an
 
 ## Current development state
 
-The qualified [dsh-crystra RC2](https://github.com/firestige/crystra-dsh/releases/tag/crystra-dsh-v0.1.0-rc.2) is available in the [Crystra RC1 combination](https://github.com/firestige/crystra/releases/tag/crystra-v0.1.0-rc.1). Install its exact archive using DSH 0.1.1-rc.2; see the [quickstart](https://github.com/firestige/crystra/blob/main/docs/guides/quickstart.md). The distribution starts at `0.1.0`. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. The eight repositories now use their Crystra coordinates. Production candidates reject local file dependencies and require exact published GitHub Release assets.
+Install the exact qualified archive selected by the [Crystra quickstart](https://github.com/firestige/crystra/blob/main/docs/guides/quickstart.md) using DSH 0.1.1-rc.2. The combination manifest records its component revisions, release URLs, digests and qualification evidence. The distribution starts at `0.1.0`. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. The eight repositories now use their Crystra coordinates. Production candidates reject local file dependencies and require exact published GitHub Release assets.
 
 Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. The current checkout consumes qualified component RCs by exact URL and digest:
 
