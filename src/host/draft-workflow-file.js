@@ -23,11 +23,22 @@ export function createDraftWorkflowFileGateway({file,sourceLockFile,sourceLockDi
   try{
    if(endpoint==='catalog/read'&&!keys(payload,[]))fail('INVALID_REQUEST');
    else if(endpoint==='projection/read'&&!keys(payload,['definitionId','definitionRevision','workspaceId']))fail('INVALID_REQUEST');
-   else if(!['catalog/read','projection/read'].includes(endpoint))fail('INVALID_REQUEST');
+   else if(endpoint==='resource/read'&&!keys(payload,['definitionId','definitionRevision','workspaceId','resourceId','path','resourceRevision']))fail('INVALID_REQUEST');
+   else if(!['catalog/read','projection/read','resource/read'].includes(endpoint))fail('INVALID_REQUEST');
    const workflows=await load();
    if(endpoint==='catalog/read')return {ok:true,value:{authority:'draft',workflows:workflows.map(({context,projection})=>({context,entry:projection.entry,expiresAt:projection.expiresAt,snapshotRevision:projection.snapshotRevision}))}};
    const workflow=workflows.find(({context})=>['definitionId','definitionRevision','workspaceId'].every(key=>context[key]===payload[key]));
-   if(!workflow)fail('DRAFT_BINDING_UNAVAILABLE');return {ok:true,value:workflow.projection};
+   if(!workflow)fail('DRAFT_BINDING_UNAVAILABLE');
+   if(endpoint==='resource/read'){
+    const p=workflow.projection;if(p.resources.state!=='available')fail('RESOURCE_UNAVAILABLE');
+    const resource=p.resources.value.catalog.find(r=>r.id===payload.resourceId);
+    if(!resource?.files.some(f=>f.path===payload.path))fail('RESOURCE_UNAVAILABLE');
+    const file=p.resources.value.workspace.files.find(f=>f.path===payload.path);
+    const revision=file?.revision??p.snapshotRevision;
+    if(!file||file.truncated||revision!==payload.resourceRevision)fail('REVISION_UNAVAILABLE');
+    return {ok:true,value:{authority:'draft',provenance:p.provenance,definitionId:workflow.context.definitionId,definitionRevision:workflow.context.definitionRevision,workspaceId:workflow.context.workspaceId,snapshotRevision:p.snapshotRevision,expiresAt:p.expiresAt,resourceId:payload.resourceId,path:file.path,revision,content:file.content}};
+   }
+   return {ok:true,value:workflow.projection};
   }catch(error){return {ok:false,error:{code:'DRAFT_UNAVAILABLE',message:error.code==='ENOENT'?'DRAFT_FILE_MISSING':error.message}};}
  }};
 }

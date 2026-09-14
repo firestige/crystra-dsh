@@ -16,3 +16,11 @@ test('native Input receives only an explicitly bound current Workflow projection
  assert.deepEqual(port.bindings.getSnapshot().entries,[{definitionId:'wf',revision:'r1',workspaceId:'native-w',packageRoot:'/package',sessionId:'s'}]);
  rows=[];assert.deepEqual(port.bindings.getSnapshot().entries,[]);
 });
+test('resource discussion quotes its exact revision and refuses a stale projection callback',()=>{
+ const quoted=[];let rows=[{context:{definitionId:'wf',definitionRevision:'r1'},projection:{snapshotRevision:'snapshot-a',entry:{title:'W'},inputBinding:{},studio:{state:'unavailable',reason:'missing'},crystallization:{state:'unavailable',reason:'missing'},resources:{state:'available',value:{workspace:{files:[{path:'README.md',revision:'file-r1',content:'body',truncated:false}]},catalog:[{id:'r',files:[{path:'README.md'}]}]}}}}];
+ const adapter={getSnapshot:()=>({phase:'ready',workflows:rows}),subscribe(){},refresh(){},dispose(){}};
+ const React={createElement:(type,props,...children)=>({type,props,children})};const port=createDraftWorkflowIntegration({React,Core:{},adapter,quote:r=>quoted.push(r),canQuote:()=>true});
+ const discuss=port.select('wf','r1').panels.resources.children[1].children[0].props.onDiscuss;
+ discuss({resourceId:'r',path:'README.md'});assert.equal(quoted[0].resourceRevision,'file-r1');assert.equal(quoted[0].revision,'r1');
+ rows=[];discuss({resourceId:'r',path:'README.md'});assert.equal(quoted.length,1);
+});

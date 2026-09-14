@@ -1,3 +1,4 @@
+import {createWorkflowDraftReference} from './workflow-draft-reference.js';
 import {createWorkflowInputController} from './workflow-input-controller.js';
 import {createDraftWorkflowIntegration} from './draft-workflow-integration.js';
 import {MarkdownText} from '@deepseek-ai/dsh-client-ui-primitives';
@@ -13,15 +14,17 @@ import {createStudioGatewayPort} from '../../modules/studio/src/client/studio.js
 import {createProductSurface} from './product-surface.js';
 import {createProductAnalysis} from './product-analysis.js';
 export const name='crystra-product-client';
-export const inject=['slots','connection','workspaces','sessions'];
+export const inject=['slots','connection','workspaces','sessions','conversation'];
 export function apply(ctx){
  const storage=typeof window==='undefined'?undefined:window.sessionStorage;
  const gateway=createStudioGatewayPort(ctx);
  const evaluation=createEvaluateController({catalogCoordinates:Core.CATALOG_COORDINATES,gateway,storage});
  const drafts=createDraftTaskIntegration({React,Core,source:evaluation,gateway:{call:(endpoint,payload)=>ctx.connection.rpc.call('/crystra-exploration',endpoint,payload)}});
  const controller=drafts.controller;
- const workflowDrafts=createDraftWorkflowIntegration({React,Core,renderMarkdown:text=>React.createElement(MarkdownText,{text}),gateway:{call:(endpoint,payload)=>ctx.connection.rpc.call('/crystra-exploration','workflow/'+endpoint,payload)}});
- const workflowInput=createWorkflowInputController({bindings:workflowDrafts.bindings,workspaces:ctx.workspaces,sessions:ctx.sessions});
+ let workflowInput,workflowReference;
+ const workflowDrafts=createDraftWorkflowIntegration({React,Core,quote:reference=>workflowReference?.(reference),canQuote:()=>workflowInput?.getSnapshot().kind==='active',renderMarkdown:text=>React.createElement(MarkdownText,{text}),gateway:{call:(endpoint,payload)=>ctx.connection.rpc.call('/crystra-exploration','workflow/'+endpoint,payload)}});
+ workflowInput=createWorkflowInputController({bindings:workflowDrafts.bindings,workspaces:ctx.workspaces,sessions:ctx.sessions});
+ workflowReference=createWorkflowDraftReference({input:workflowInput,sessions:ctx.sessions,conversation:ctx.conversation});
  const controlPlane=getSharedDeliveryControlPlaneClient(ctx.connection.rpc);
  const {Analysis,dispose:disposeAnalysis}=createProductAnalysis({React,Core,gateway,controller,inventory:controlPlane.inventory});
  const taskInput=createTaskInputController({inventory:controlPlane.inventory,sessions:ctx.sessions});
