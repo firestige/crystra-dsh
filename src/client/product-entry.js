@@ -1,7 +1,8 @@
 import React from 'react';
 import {getSharedDeliveryControlPlaneClient} from '../../modules/execution/src/client/delivery/control-plane-port.js';
 import {createTaskInputController} from './task-input-controller.js';
-import * as Core from 'crystra-ui-core';
+import {BiSurface,Button,CATALOG_COORDINATES,CrystraAnalysisFrame,CrystraTraceContent,CrystraShell,DashboardMetricPanel,Surface,TaskBrowser,TaskWorkbench,TaskRequirementsPanel,TaskPlanPanel,TaskExecutionPanel,TaskGatePanel,TaskDeliveryPanel,TextInput,Typography,WorkflowExplorer,WorkflowWorkbench,compileTraceView,decodeEvidencePage,loadRecordedTrace} from 'crystra-ui-core';
+const Core=Object.freeze({BiSurface,Button,CATALOG_COORDINATES,CrystraAnalysisFrame,CrystraTraceContent,CrystraShell,DashboardMetricPanel,Surface,TaskBrowser,TaskWorkbench,TaskRequirementsPanel,TaskPlanPanel,TaskExecutionPanel,TaskGatePanel,TaskDeliveryPanel,TextInput,Typography,WorkflowExplorer,WorkflowWorkbench,compileTraceView,decodeEvidencePage,loadRecordedTrace});
 import sharedStyles from 'crystra-ui-core/styles.css';
 import {createEvaluateController} from '../../modules/studio/src/client/evaluate-model.js';
 import {createStudioGatewayPort} from '../../modules/studio/src/client/studio.js';

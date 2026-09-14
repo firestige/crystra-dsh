@@ -60,7 +60,7 @@
     "@deepseek-ai/dsh-client-ui-workspace": "0.1.1-rc.2",
     "@deepseek-ai/dsh-tools": "0.1.1-rc.2",
     "crystra-execution": "https://github.com/firestige/crystra-execution/releases/download/crystra-execution-v0.1.0-rc.2/crystra-execution-0.1.0.tgz",
-    "crystra-ui-core": "https://github.com/firestige/crystra-ui/releases/download/crystra-ui-v0.1.0-rc.1/crystra-ui-core-0.1.0.tgz",
+    "crystra-ui-core": "https://github.com/firestige/crystra-ui/releases/download/crystra-ui-v0.1.0-rc.2/crystra-ui-core-0.1.0.tgz",
     "tar": "7.5.21",
     "@github/copilot": "1.0.78",
     "@langchain/core": "1.2.9",

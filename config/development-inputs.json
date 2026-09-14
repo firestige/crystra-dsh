@@ -11,11 +11,11 @@
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "482f6f175052bf770efbbbfe0b8ef54a6c365c45",
+      "revision": "4f3d22a78d8e9f474299d6a4b5a8739e03a8f0ad",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
-      "sha256": "da095799c375300900135dbdfd72497ae93079093a20b0d0629dd25996822792"
+      "sha256": "884ff9c2a344846fad787cde91eea5833e467d60b2f840e45211a92a399f361f"
     }
   }
 }
