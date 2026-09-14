@@ -41,7 +41,7 @@ export function createDraftAuthoringStore({root,isolation,getContext,validateCan
       !Array.isArray(proposal.sourceRefs)||!proposal.sourceRefs.length||!proposal.sourceRefs.every(text))fail('INVALID_PROPOSAL');
    const binding=context(true);
    if(proposal.workspaceId!==binding.workspaceId||proposal.resourceId!==binding.resourceId)fail('PROPOSAL_BINDING_CHANGED');
-   if(canonical(proposal).length>1_000_000)fail('PROPOSAL_TOO_LARGE');
+   if(Buffer.byteLength(canonical(proposal),'utf8')>1_000_000)fail('PROPOSAL_TOO_LARGE');
    await mkdir(root,{recursive:true,mode:0o700});
    try{await mkdir(lock,{mode:0o700});}catch(error){if(error.code==='EEXIST')fail('STORE_BUSY');throw error;}
    let temporary;
@@ -57,7 +57,7 @@ export function createDraftAuthoringStore({root,isolation,getContext,validateCan
      revisions:[...current.revisions,{revision:proposal.candidateRevision,baseRevision:proposal.baseRevision,candidate:proposal.candidate,sourceRefs:proposal.sourceRefs}],
      events:[...current.events,{eventId,workspaceId:binding.workspaceId,resourceId:binding.resourceId,beforeRevision:proposal.baseRevision,afterRevision:proposal.candidateRevision,status:'pending'}],
      proposals:{...current.proposals,[proposal.proposalId]:{hash,result}}};
-    const bytes=canonical(next);if(bytes.length>2_000_000)fail('STORE_FULL');
+    const bytes=canonical(next);if(Buffer.byteLength(bytes,'utf8')>2_000_000)fail('STORE_FULL');
     temporary=join(root,`.draft-${randomUUID()}.tmp`);const handle=await open(temporary,'wx',0o600);
     try{await handle.writeFile(bytes);await handle.sync();}finally{await handle.close();}
     if(digest(context(true))!==digest(binding))fail('STORE_BINDING_CHANGED');

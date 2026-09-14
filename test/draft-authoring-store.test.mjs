@@ -41,3 +41,10 @@ test('concurrent writers cannot both advance the same base revision',async()=>{
  release();await pending;assert.equal((await first.read()).revisions.length,1);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+test('enforces storage limits in UTF-8 bytes for non-ASCII resources',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-authoring-test-'));try{
+ const store=createDraftAuthoringStore({root,isolation:'draft-authoring-only',getContext:()=>context,validateCandidate:()=>true});
+ await assert.rejects(store.commit({...proposal,candidate:{text:'晶'.repeat(350000)}}),/PROPOSAL_TOO_LARGE/);
+ assert.equal((await store.read()).revisions.length,0);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
