@@ -8,6 +8,6 @@ Accepted UI designs are recorded under `packages/studio/design/`. Full page desi
 | DSH Crystra | Shared Shell/sidebar host behavior, navigation/session ownership, file dialogs, Markdown rendering and input integration |
 | Crystra | Page and cross-page semantics, acceptance decisions, reviewed previews, source/asset provenance and business handoff |
 
-New branding does not silently rename npm packages, RPC paths or compatibility coordinates. The repositories and released package identities currently retain their legacy names.
+Crystra packages and repositories use the explicit rename mapping. The public plugin is dsh-crystra from firestige/crystra-dsh; ordinary dependencies are crystra-execution and crystra-ui-core. Exact RC URLs and digests, rather than legacy aliases, select installed inputs.
 
 The accepted designs are source requirements; preview-only page composition and fixed fixtures must not be exposed as a real data-backed application. In particular, crystallization predictions are distinct from measured Evaluation results; workflow-package owns the resource envelope; draft writes and publication retain their own gates.

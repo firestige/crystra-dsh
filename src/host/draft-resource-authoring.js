@@ -18,18 +18,21 @@ export function createDraftResourceAuthoring({root,resources,getContext}){
   const store=createDraftAuthoringStore({root:join(root,hash(stream)),isolation:'draft-authoring-only',getContext:async()=>({...await context(),resourceId:stream}),
    validateCandidate:c=>c?.resourceId===resourceId&&c.path===path&&typeof c.content==='string'&&c.content.length<=500000});return {source,store,stream};
  }
- const projection=(source,revision,content)=>({authority:'draft',resourceId:source.resourceId,path:source.path,revision,content});
+ const projection=(source,revision,content,event)=>{
+  if(revision!==source.revision&&(!event||event.status!=='pending'||event.afterRevision!==revision||typeof event.eventId!=='string'||!event.eventId))fail('INVALID_STORE');
+  return {authority:'draft',resourceId:source.resourceId,path:source.path,revision,content,notification:revision===source.revision?null:{eventId:event.eventId,status:'pending',resourceRevision:revision}};
+ };
  return {
   async read(resourceId,path){const {source,store}=resolve(resourceId,path);const state=await store.read();
    const current=state.revisions.find(item=>item.revision===state.currentRevision);
-   if(state.currentRevision&&!current)fail('INVALID_STORE');return projection(source,current?.revision??source.revision,current?.candidate.content??source.content);
+   if(state.currentRevision&&!current)fail('INVALID_STORE');return projection(source,current?.revision??source.revision,current?.candidate.content??source.content,state.events.find(e=>e.afterRevision===current?.revision));
   },
   async readRevision(resourceId,path,revision){
    const {source,store}=resolve(resourceId,path),state=await store.read();
    if(revision===source.revision)return projection(source,source.revision,source.content);
    const exact=state.revisions.find(item=>item.revision===revision);
    if(!exact)fail('REVISION_UNAVAILABLE');
-   return projection(source,exact.revision,exact.candidate.content);
+   return projection(source,exact.revision,exact.candidate.content,state.events.find(e=>e.afterRevision===exact.revision));
   },
   async save(request){
    if(!request||Object.keys(request).some(key=>!['proposalId','resourceId','path','baseRevision','baseContent','content'].includes(key))||!['proposalId','resourceId','path','baseRevision','baseContent','content'].every(k=>typeof request[k]==='string'))fail('INVALID_RESOURCE_PROPOSAL');
@@ -38,8 +41,8 @@ export function createDraftResourceAuthoring({root,resources,getContext}){
    if(!prior)fail('REVISION_CONFLICT');if(prior.content!==request.baseContent)fail('CONTENT_CONFLICT');
    const candidate={resourceId:request.resourceId,path:request.path,content:request.content};
    const revision='draft-sha256:'+hash([request.proposalId,request.resourceId,request.path,request.baseRevision,request.baseContent,request.content]);
-   await store.commit({proposalId:request.proposalId,workspaceId:(await context()).workspaceId,resourceId:stream,baseRevision:request.baseRevision===source.revision?null:request.baseRevision,candidateRevision:revision,candidate,sourceRefs:[source.revision,source.path]});
-   return projection(source,revision,request.content);
+   const result=await store.commit({proposalId:request.proposalId,workspaceId:(await context()).workspaceId,resourceId:stream,baseRevision:request.baseRevision===source.revision?null:request.baseRevision,candidateRevision:revision,candidate,sourceRefs:[source.revision,source.path]});
+   return projection(source,revision,request.content,{eventId:result.eventId,status:'pending',afterRevision:result.revision});
   },
  };
 }

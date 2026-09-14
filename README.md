@@ -118,3 +118,7 @@ content and revision checks. A saved candidate invalidates the old graph and
 retained navigation callbacks until a matching projection is supplied. Graph
 identity remains stable across unchanged owner polls. These relations describe
 the conditional source snapshot, not observed runtime calls or Agent adoption.
+
+Resource reads expose the persisted pending notification for the exact candidate
+revision. Reloading preserves it; the UI distinguishes saved draft bytes from
+Agent delivery. Missing or mismatched delivery evidence never becomes a success.

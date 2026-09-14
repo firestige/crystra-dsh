@@ -21,3 +21,9 @@ test('retry after a lost save response reuses the original proposal identity',as
  ids.push(payload.proposal.proposalId);if(fail){fail=false;throw Error('response lost');}return {ok:true,value:{authority:'draft',snapshotRevision:'s1',expiresAt:'expires',resourceId:'r',path:'a.md',revision:'draft-sha256:'+'b'.repeat(64),content:'changed'}};
  }}});await port.load();const proposal={resourceId:'r',path:'a.md',baseRevision:'base',baseContent:'source',content:'changed'};await assert.rejects(port.save(proposal),/response lost/);await port.save(proposal);assert.equal(ids[0],ids[1]);port.dispose();
 });
+test('persisted notification receipts survive reload and reject false delivery claims',async()=>{
+ const revision='draft-sha256:'+'c'.repeat(64);let notification={eventId:'event-c',status:'pending',resourceRevision:revision};
+ const port=createWorkflowResourceAdapter({selection,workspace,catalog,snapshotRevision:'s1',expiresAt:'expires',isCurrent:()=>true,gateway:{call:async()=>({ok:true,value:{authority:'draft',snapshotRevision:'s1',expiresAt:'expires',files:[{resourceId:'r',path:'a.md',revision,content:'candidate',notification}]}})}});
+ await port.load();assert.deepEqual(port.getSnapshot().workspace.files[0].notification,notification);
+ notification={...notification,status:'delivered'};await port.load();assert.equal(port.getSnapshot().phase,'unavailable');assert.equal(port.getSnapshot().workspace.files[0].content,'source');port.dispose();
+});

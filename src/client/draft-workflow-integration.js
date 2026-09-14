@@ -1,3 +1,4 @@
+import {resourceNotificationSummary} from './resource-notifications.js';
 import {createResourceRelationsRenderer} from './workflow-resource-relations.js';
 import {createWorkflowResourceAdapter} from './workflow-resource-adapter.js';
 import {createDraftWorkflowAdapter} from './draft-workflow-adapter.js';
@@ -22,7 +23,8 @@ export function createDraftWorkflowIntegration({React,Core,gateway,renderMarkdow
   if(state.phase!=='ready')return unavailable(state.error??'正在读取隔离资源候选');
   const catalog=value.catalog.map(r=>({...r,files:r.files.map(f=>({...f,...state.workspace.files.find(file=>file.path===f.path)}))}));
   const discuss=reference?selection=>{const r=catalog.find(r=>r.id===selection.resourceId),file=state.workspace.files.find(f=>f.path===selection.path);if(!r?.files.some(f=>f.path===selection.path)||!file||file.truncated)return false;return reference({kind:'resource',resourceId:r.id,path:file.path,resourceRevision:file.revision});}:undefined;
-  return React.createElement(Core.WorkflowResourceViewer,{renderRelations,definitionId:item.context.definitionId,revision:item.context.definitionRevision,workspace:state.workspace,catalog,renderMarkdown,onDiscuss:discuss,onSaveDraft:p.resourceWriteAllowed===true?store.save:undefined});
+  const notification=resourceNotificationSummary(state.workspace.files);
+  return React.createElement('div',{style:{display:'flex',flexDirection:'column',height:'100%',minHeight:0}},notification?React.createElement('p',{role:'status',style:{margin:'4px 12px',fontSize:12}},notification):null,React.createElement('div',{style:{flex:1,minHeight:0}},React.createElement(Core.WorkflowResourceViewer,{renderRelations,definitionId:item.context.definitionId,revision:item.context.definitionRevision,workspace:state.workspace,catalog,renderMarkdown,onDiscuss:discuss,onSaveDraft:p.resourceWriteAllowed===true?store.save:undefined})));
  }
  function select(id,revision){
   const item=adapter.getSnapshot().workflows.find(row=>row.context.definitionId===id&&row.context.definitionRevision===revision);if(!item)return undefined;

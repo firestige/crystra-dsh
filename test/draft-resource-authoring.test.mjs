@@ -46,3 +46,16 @@ test('failed asynchronous initial authority is retained as a rejected read witho
  const port=createDraftResourceAuthoring({root,resources,getContext:async()=>{throw Error('SOURCE_REVOKED');}});await new Promise(resolve=>setImmediate(resolve));await assert.rejects(port.read('r','notes.txt'),/SOURCE_REVOKED/);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('persisted notification state belongs to the exact revision and survives idempotent saves',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-resource-events-'));try{
+ const port=createDraftResourceAuthoring({root,resources,getContext:()=>context});
+ assert.equal((await port.read('r','notes.txt')).notification,null);
+ const first=await port.save(request);assert.equal(first.notification.status,'pending');assert.equal(first.notification.resourceRevision,first.revision);assert.ok(first.notification.eventId);
+ assert.deepEqual((await port.save(request)).notification,first.notification);
+ const next=await port.save({...request,proposalId:'p2',baseRevision:first.revision,baseContent:first.content,content:'next'});
+ assert.notEqual(next.notification.eventId,first.notification.eventId);
+ assert.deepEqual((await port.readRevision('r','notes.txt',first.revision)).notification,first.notification);
+ assert.deepEqual((await port.read('r','notes.txt')).notification,next.notification);
+ }finally{await rm(root,{recursive:true,force:true});}
+});
