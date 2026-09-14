@@ -31,7 +31,7 @@ test('mounts with the overlay props supplied by the host, without a child-slot r
  shell.props.onOpenSettings();
  assert.equal(runtime.navigation.getSnapshot().surface,'harness');
 });
-test('new task enters the blank Harness without creating a persisted session',()=>{
+test('new task keeps Crystra shell and exposes the dedicated native Input without creating a session',()=>{
  const entries=new Map();let cleared=0,created=0;
  const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
  const Core={CrystraShell(){},Button(){},BiSurface(){}};
@@ -41,5 +41,8 @@ test('new task enters the blank Harness without creating a persisted session',()
  entries.get('shell.overlay')({}).children[1].props.onNewTask();
  assert.equal(created,0,'a blank draft must not create Session+Agent');
  assert.equal(cleared,1);
- assert.equal(runtime.navigation.getSnapshot().surface,'harness');
+ assert.equal(runtime.navigation.getSnapshot().surface,'crystra');
+ assert.equal(runtime.navigation.getSnapshot().route.page,'new-task');
+ const next=entries.get('shell.overlay')({});
+ assert.equal(next.props['data-crystra-native-input'],'hero');
 });

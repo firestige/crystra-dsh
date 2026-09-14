@@ -1,3 +1,4 @@
+import {nativeInputLayoutStyles} from './native-input-layout.js';
 import {createProductNavigation} from './product-navigation.js';
 
 /** Host bridge: the framework retains its conversation tree under the product surface. */
@@ -7,6 +8,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  function Page(){
   const nav=React.useSyncExternalStore(navigation.subscribe,navigation.getSnapshot,navigation.getSnapshot);
   const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
+  if(nav.route.page==='new-task')return null;
   if(nav.route.page.startsWith('analysis-'))return renderAnalysis(nav.route.page,navigation.navigate);
   if(nav.route.page==='tasks')return React.createElement(Core.Surface,{as:'section','data-section-id':'task-browser-content'},
    React.createElement(Core.Typography,{as:'h1',variant:'page-title'},'全部任务'),
@@ -28,12 +30,12 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
     const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
     React.useEffect(()=>{void controller.loadTasks();},[]);
     if(nav.surface==='harness')return null;
-    return React.createElement(Core.BiSurface,{'data-crystra-product-overlay':true,theme:'dark','data-crystra-theme':'dark',className:'crystra-product-overlay'},
-     React.createElement('style',null,sharedStyles+'\n.crystra-product-overlay{position:fixed;inset:0;pointer-events:auto;background:var(--color-background-shell);}'),
+    return React.createElement(Core.BiSurface,{'data-crystra-product-overlay':true,'data-crystra-native-input':nav.route.page==='new-task'?'hero':undefined,theme:'dark','data-crystra-theme':'dark',className:'crystra-product-overlay'},
+     React.createElement('style',null,sharedStyles+nativeInputLayoutStyles+'\n.crystra-product-overlay{position:fixed;inset:0;pointer-events:auto;background:var(--color-background-shell);}'),
      React.createElement(Core.CrystraShell,{
       route:nav.route.page,selectedId:nav.route.id,tasks:state.taskList.items.map(t=>({id:t.task_id,title:t.task_id})),workflows:[],
       onNavigate:navigation.navigate,onOpenHarness:navigation.openHarness,
-      onNewTask:()=>{navigation.openHarness();ctx.sessions.clear();},
+      onNewTask:()=>{ctx.sessions.clear();navigation.navigate('new-task');},
       onOpenSettings:navigation.openHarness,
      },React.createElement(Page)));
    }

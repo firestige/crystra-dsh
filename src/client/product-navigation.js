@@ -1,5 +1,5 @@
 const KEY='crystra.product-navigation@1';
-const PAGES=new Set(['tasks','task','workflows','workflow','analysis-overview','analysis-traces','analysis-reports']);
+const PAGES=new Set(['new-task','tasks','task','workflows','workflow','analysis-overview','analysis-traces','analysis-reports']);
 const CONTEXT=new Set(['workbench','scrollTop','query','view','selectedId']);
 function route(page,id,revision){
  if(!PAGES.has(page))throw new Error('CRYSTRA_ROUTE_INVALID');

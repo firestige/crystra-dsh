@@ -26,3 +26,5 @@ test('workflow navigation requires and restores the exact revision',()=>{
  router.navigate('workflow','wf-1','revision-2');
  assert.equal(createProductNavigation(storage).getSnapshot().route.revision,'revision-2');
 });
+
+test('new Task draft has its own route without inventing a Task identity',()=>{const router=createProductNavigation();router.navigate('new-task');assert.deepEqual(router.getSnapshot().route,{page:'new-task'});});
