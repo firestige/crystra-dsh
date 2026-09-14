@@ -103,3 +103,14 @@ test('Workflow Input is exposed only for the exact active workflow revision',()=
  const overlay=entries.get('shell.overlay')({});assert.equal(overlay.props['data-crystra-native-input'],'workflow');const Page=overlay.children[1].children[0].type;assert.equal(Page().props.input,null);
  runtime.navigation.navigate('workflow','a','r2');assert.equal(entries.get('shell.overlay')({}).props['data-crystra-native-input'],undefined);assert.notEqual(Page().props.input,null);
 });
+test('configured Workflow directory and exact panels revoke without retaining stale content',()=>{
+ const entries=new Map();let enabled=true;
+ const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const Core={CrystraShell(){},WorkflowExplorer(){},WorkflowWorkbench(){},Button(){},BiSurface(){}};
+ const wf={subscribe(){},getSnapshot:()=>enabled,directory:()=>({entries:enabled?[{definitionId:'wf',revision:'r1'}]:[],phase:'ready'}),select:(id,r)=>enabled&&id==='wf'&&r==='r1'?{title:'Exact',panels:{studio:'actual'}}:undefined};
+ const runtime=createProductSurface({React,Core,workflowDrafts:wf,controller:{getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}},renderAnalysis(){}});
+ runtime.apply({slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});runtime.navigation.navigate('workflows');
+ const shell=entries.get('shell.overlay')({}).children[1];assert.equal(shell.props.workflows[0].id,'wf');
+ const Page=shell.children[0].type;assert.equal(Page().props.entries.length,1);
+ runtime.navigation.navigate('workflow','wf','r1');assert.equal(Page().props.panels.studio,'actual');enabled=false;assert.notEqual(Page().props.panels.studio,'actual');
+});

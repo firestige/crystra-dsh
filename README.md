@@ -64,3 +64,17 @@ every five seconds and clears old content within a ten-second read lease or at
 snapshot expiry, whichever comes first. The adapter does not create sessions,
 authorize execution, or supply missing plan graphs/documents/evidence. An owner
 Task with the same ID takes precedence and never inherits the draft projection.
+
+Optional `exploration.workflowFile` uses `crystra-workflow-file@1` with
+`workflows: [{selection, projection}]`. Selection pins `definitionId`,
+`definitionRevision` and `workspaceId`; the binding uses adapter
+`crystra-workflow-file@1` and the same conditional envelope/source lock as Task.
+Configure at least one of `taskFile` or `workflowFile`. Each definition has one
+explicitly selected revision; ambiguous duplicate identities are rejected.
+Workflow projections supply an exact draft directory entry and independent
+`studio`, `resources`, `crystallization` available/unavailable surfaces.
+The public v8 components consume validated maps/layouts, read-only resource
+snapshots and crystallization projections. Missing edits, relations, sessions,
+Agent events or measured results remain unavailable. No design fixture is
+bundled. Workflow reads use `workflow/catalog/read` and
+`workflow/projection/read` on the loopback `/crystra-exploration` channel.

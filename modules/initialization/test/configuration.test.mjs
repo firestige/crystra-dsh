@@ -55,3 +55,10 @@ test('task exploration is disabled by default and requires explicit absolute sou
  assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
  for(const invalid of [{...value,taskFile:'relative'},{...value,sourceLockDigest:'latest'},{...value,allowFixtures:'true'},{...value,extra:true}])assert.throws(()=>normalizePluginConfiguration({exploration:invalid}),/CRYSTRA_CONFIG_INVALID/);
 });
+
+test('Workflow-only exploration requires pinned sources and at least one configured projection',()=>{
+ const value={workflowFile:'/tmp/workflows.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:false};
+ assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
+ const {workflowFile,...empty}=value;assert.throws(()=>normalizePluginConfiguration({exploration:empty}),/CRYSTRA_CONFIG_INVALID/);
+ assert.throws(()=>normalizePluginConfiguration({exploration:{...value,workflowFile:'relative'}}),/CRYSTRA_CONFIG_INVALID/);
+});

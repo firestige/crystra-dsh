@@ -1,26 +1,14 @@
-import {open,realpath} from 'node:fs/promises';
-import {createHash} from 'node:crypto';
-import {isAbsolute,resolve,relative,sep} from 'node:path';
+import {createPinnedDraftReader} from './pinned-draft-reader.js';
 import {admitDraftProjection} from '../client/draft-projection.js';
-const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const fail=code=>{throw new Error(code);};
 const plain=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const keys=(value,names)=>plain(value)&&Object.keys(value).length===names.length&&Object.keys(value).every(k=>names.includes(k));
-async function bounded(file,max){const handle=await open(file,'r');try{const stat=await handle.stat();if(!stat.isFile()||stat.size>max)fail('DRAFT_FILE_INVALID');const bytes=await handle.readFile();if(bytes.length>max)fail('DRAFT_FILE_INVALID');return bytes;}finally{await handle.close();}}
 /** Explicit local configuration only. No arbitrary paths or authority supplied by RPC callers. */
 export function createDraftTaskFileGateway({file,sourceLockFile,sourceLockDigest,allowFixtures=false,now=Date.now}){
- if(!isAbsolute(file)||!isAbsolute(sourceLockFile)||!/^[a-f0-9]{64}$/.test(sourceLockDigest)||typeof allowFixtures!=='boolean')fail('DRAFT_CONFIGURATION_INVALID');
+ if(typeof allowFixtures!=='boolean')fail('DRAFT_CONFIGURATION_INVALID');
+ const read=createPinnedDraftReader({file,sourceLockFile,sourceLockDigest});
  async function load(){
-  const bytes=await bounded(sourceLockFile,1000000);if(hash(bytes)!==sourceLockDigest)fail('DRAFT_SOURCE_CHANGED');
-  const lock=JSON.parse(bytes);if(!isAbsolute(lock.sourceRoot)||!Array.isArray(lock.sources)||!lock.sources.length||lock.sources.length>100)fail('DRAFT_SOURCE_INVALID');
-  const root=await realpath(lock.sourceRoot);
-  for(const item of lock.sources){
-   if(typeof item.path!=='string'||isAbsolute(item.path)||!/^[a-f0-9]{64}$/.test(item.sha256))fail('DRAFT_SOURCE_INVALID');
-   const path=await realpath(resolve(root,item.path)),rel=relative(root,path);
-   if(rel.split(sep)[0]==='..'||isAbsolute(rel))fail('DRAFT_SOURCE_INVALID');
-   if(hash(await bounded(path,2000000))!==item.sha256)fail('DRAFT_SOURCE_CHANGED');
-  }
-  const document=JSON.parse(await bounded(file,4000000));
+  const document=await read();
   if(!keys(document,['format','tasks'])||document.format!=='crystra-task-file@1'||!Array.isArray(document.tasks)||document.tasks.length>100)fail('DRAFT_FILE_INVALID');
   const ids=new Set(),tasks=[];
   for(const item of document.tasks){
@@ -29,7 +17,6 @@ export function createDraftTaskFileGateway({file,sourceLockFile,sourceLockDigest
    const admitted=admitDraftProjection(item.projection,context,now());if(admitted.state!=='valid')fail(admitted.reason);
    ids.add(context.taskId);tasks.push({context,projection:admitted.projection});
   }
-  if(hash(await bounded(sourceLockFile,1000000))!==sourceLockDigest)fail('DRAFT_SOURCE_CHANGED');
   return tasks;
  }
  return {async handle(endpoint,payload){
