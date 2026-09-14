@@ -122,3 +122,15 @@ the conditional source snapshot, not observed runtime calls or Agent adoption.
 Resource reads expose the persisted pending notification for the exact candidate
 revision. Reloading preserves it; the UI distinguishes saved draft bytes from
 Agent delivery. Missing or mismatched delivery evidence never becomes a success.
+
+Optional `exploration.allowResourceNotifications: true` requires resource write
+opt-in. Committed resource changes can be sent to the exact bound native Session
+with non-waking `agent.inject`, followed by the public Session durability flush.
+An explicit retry preserves ordered event identity after failure. The UI labels
+the durable Session receipt separately from model consumption; no model is
+started and no edit, execution or publication permission is granted by a notice.
+
+Native shutdown can cancel unconsumed inbox notices. The current queue state is
+read from public inbox splice history; cancellation is shown explicitly and may
+be retried without duplicating live work. Durable acceptance remains distinct
+from model consumption, including after restart.

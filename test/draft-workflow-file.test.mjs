@@ -29,6 +29,13 @@ test('Workflow file gateway binds exact definitions and revokes stale source rea
  assert.equal((await editor.handle('resources/read',selection)).value.files[0].content,'Candidate');
  assert.equal((await editor.readForSession({...agentRequest,resourceRevision:receipt.value.revision},authority)).value.content,'Candidate');
  assert.equal(projection.resources.value.workspace.files[0].content,'Exact content');
+ let notices=0;
+ const notifier=createDraftWorkflowFileGateway({file,sourceLockFile:join(root,'lock.json'),sourceLockDigest:sha(lock),allowFixtures:true,now:()=>Date.parse('2026-09-15T00:00:00Z'),resourceDraftRoot:join(root,'drafts'),allowResourceWrites:true,allowResourceNotifications:true,deliverNotification:async({event,binding,selection:target,isCurrent})=>{assert.equal(await isCurrent(),true);assert.equal(binding.sessionId,'native-s');assert.equal(target.definitionId,'wf');notices++;return {status:'queued',eventId:event.eventId,resourceRevision:event.afterRevision,sessionId:binding.sessionId,messageId:'notice-'+event.eventId};}});
+ assert.equal((await editor.handle('resources/notify',selection)).ok,false);
+ assert.equal((await notifier.handle('resources/notify',selection)).ok,true);assert.equal(notices,1);
+ assert.equal((await notifier.handle('resources/read',selection)).value.files[0].notification.status,'queued');
+ await notifier.handle('resources/notify',selection);assert.equal(notices,1);
+
  await writeFile(join(root,'design.md'),'changed');assert.equal((await port.handle('catalog/read',{})).ok,false);
  }finally{await rm(root,{recursive:true,force:true});}
 });

@@ -67,3 +67,8 @@ test('resource authoring needs an explicit isolated root and boolean write opt-i
  assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
  for(const changed of [{...value,resourceDraftRoot:'relative'},{...value,resourceDraftRoot:undefined},{...value,allowResourceWrites:'true'}])assert.throws(()=>normalizePluginConfiguration({exploration:changed}),/CRYSTRA_CONFIG_INVALID/);
 });
+test('native resource notifications require explicit authoring and notification opt-in',()=>{
+ const value={workflowFile:'/tmp/w.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:true,resourceDraftRoot:'/tmp/candidates',allowResourceWrites:true,allowResourceNotifications:true};
+ assert.equal(normalizePluginConfiguration({exploration:value}).exploration.allowResourceNotifications,true);
+ for(const changed of [{...value,allowResourceWrites:false},{...value,allowResourceNotifications:'true'}])assert.throws(()=>normalizePluginConfiguration({exploration:changed}),/CRYSTRA_CONFIG_INVALID/);
+});

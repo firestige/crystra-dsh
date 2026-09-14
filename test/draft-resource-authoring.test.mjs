@@ -59,3 +59,10 @@ test('persisted notification state belongs to the exact revision and survives id
  assert.deepEqual((await port.read('r','notes.txt')).notification,next.notification);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+test('resource notification retries preserve event order and the exact queued version receipt',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-resource-notify-'));try{
+ const port=createDraftResourceAuthoring({root,resources,getContext:()=>context});const first=await port.save(request);const second=await port.save({...request,proposalId:'p2',baseRevision:first.revision,baseContent:first.content,content:'next'});const delivered=[];
+ const deliver=async event=>{delivered.push(event.afterRevision);return {status:'queued',eventId:event.eventId,resourceRevision:event.afterRevision,sessionId:'s',messageId:'m-'+event.eventId};};
+ await port.notify('r','notes.txt',deliver);await port.notify('r','notes.txt',deliver);assert.deepEqual(delivered,[first.revision,second.revision]);assert.equal((await port.read('r','notes.txt')).notification.status,'queued');assert.equal((await port.save(request)).notification.status,'queued');assert.equal((await port.readRevision('r','notes.txt',first.revision)).notification.resourceRevision,first.revision);
+ }finally{await rm(root,{recursive:true,force:true});}
+});

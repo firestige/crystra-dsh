@@ -36,13 +36,14 @@ export function normalizePluginConfiguration(input={}) {
   if(ports.evidence===ports.evolution)invalid('services.ports.duplicate');
   let exploration;
   if(input.exploration!==undefined){
-    const value=input.exploration;object(value,['taskFile','workflowFile','resourceDraftRoot','allowResourceWrites','sourceLockFile','sourceLockDigest','allowFixtures'],'exploration');
+    const value=input.exploration;object(value,['taskFile','workflowFile','resourceDraftRoot','allowResourceWrites','allowResourceNotifications','sourceLockFile','sourceLockDigest','allowFixtures'],'exploration');
     if(!/^[a-f0-9]{64}$/.test(value.sourceLockDigest??'')||typeof value.allowFixtures!=='boolean')invalid('exploration');
     if(value.taskFile===undefined&&value.workflowFile===undefined)invalid('exploration');
+    if(value.allowResourceNotifications!==undefined&&(typeof value.allowResourceNotifications!=='boolean'||(value.allowResourceNotifications===true&&value.allowResourceWrites!==true)))invalid('exploration.allowResourceNotifications');
     if(value.allowResourceWrites!==undefined&&typeof value.allowResourceWrites!=='boolean')invalid('exploration.allowResourceWrites');
     if((value.resourceDraftRoot!==undefined||value.allowResourceWrites===true)&&value.workflowFile===undefined)invalid('exploration.workflowFile');
     if(value.allowResourceWrites===true&&value.resourceDraftRoot===undefined)invalid('exploration.resourceDraftRoot');
-    exploration=Object.freeze({...value.resourceDraftRoot!==undefined?{resourceDraftRoot:absolute(value.resourceDraftRoot,'exploration.resourceDraftRoot')}:{},...value.allowResourceWrites!==undefined?{allowResourceWrites:value.allowResourceWrites}:{},...value.taskFile!==undefined?{taskFile:absolute(value.taskFile,'exploration.taskFile')}:{},...value.workflowFile!==undefined?{workflowFile:absolute(value.workflowFile,'exploration.workflowFile')}:{},sourceLockFile:absolute(value.sourceLockFile,'exploration.sourceLockFile'),sourceLockDigest:value.sourceLockDigest,allowFixtures:value.allowFixtures});
+    exploration=Object.freeze({...value.allowResourceNotifications!==undefined?{allowResourceNotifications:value.allowResourceNotifications}:{},...value.resourceDraftRoot!==undefined?{resourceDraftRoot:absolute(value.resourceDraftRoot,'exploration.resourceDraftRoot')}:{},...value.allowResourceWrites!==undefined?{allowResourceWrites:value.allowResourceWrites}:{},...value.taskFile!==undefined?{taskFile:absolute(value.taskFile,'exploration.taskFile')}:{},...value.workflowFile!==undefined?{workflowFile:absolute(value.workflowFile,'exploration.workflowFile')}:{},sourceLockFile:absolute(value.sourceLockFile,'exploration.sourceLockFile'),sourceLockDigest:value.sourceLockDigest,allowFixtures:value.allowFixtures});
   }
   let execution;
   if(input.execution!==undefined) {

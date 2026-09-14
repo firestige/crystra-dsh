@@ -33,6 +33,26 @@ export function createDraftAuthoringStore({root,isolation,getContext,validateCan
  }
  return {
   async read(){const binding=await context();const data=await load(binding);if(digest(await context())!==digest(binding))fail('STORE_BINDING_CHANGED');return data;},
+  async acknowledge(input){
+   const receipt=JSON.parse(canonical(input));
+   if(!receipt||Object.keys(receipt).length!==5||receipt.status!=='queued'||!['eventId','resourceRevision','sessionId','messageId'].every(k=>text(receipt[k])))fail('NOTIFICATION_RECEIPT');
+   const binding=await context(true);await mkdir(root,{recursive:true,mode:0o700});
+   try{await mkdir(lock,{mode:0o700});}catch(error){if(error.code==='EEXIST')fail('STORE_BUSY');throw error;}
+   let temporary;
+   try{
+    const data=await load(binding),index=data.events.findIndex(e=>e.eventId===receipt.eventId),event=data.events[index];
+    if(!event||event.afterRevision!==receipt.resourceRevision)fail('NOTIFICATION_RECEIPT');
+    if(event.status==='queued'){if(digest(event.receipt)!==digest(receipt))fail('NOTIFICATION_RECEIPT');if(digest(await context(true))!==digest(binding))fail('STORE_BINDING_CHANGED');return;}
+    if(event.status!=='pending')fail('NOTIFICATION_RECEIPT');
+    if(data.events.slice(0,index).some(e=>e.status!=='queued'))fail('NOTIFICATION_ORDER');
+    const next={...data,events:data.events.map((e,i)=>i===index?{...e,status:'queued',receipt}:e)},bytes=canonical(next);
+    if(Buffer.byteLength(bytes,'utf8')>2_000_000)fail('STORE_FULL');
+    temporary=join(root,`.draft-${randomUUID()}.tmp`);const handle=await open(temporary,'wx',0o600);
+    try{await handle.writeFile(bytes);await handle.sync();}finally{await handle.close();}
+    if(digest(await context(true))!==digest(binding))fail('STORE_BINDING_CHANGED');
+    await rename(temporary,file);temporary=undefined;
+   }finally{if(temporary)await rm(temporary,{force:true});await rm(lock,{recursive:true,force:true});}
+  },
   async commit(input){
    const proposal=JSON.parse(canonical(input));
    if(!proposal||Object.keys(proposal).some(key=>!['proposalId','workspaceId','resourceId','baseRevision','candidateRevision','candidate','sourceRefs'].includes(key))||

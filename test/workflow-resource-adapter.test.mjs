@@ -27,3 +27,8 @@ test('persisted notification receipts survive reload and reject false delivery c
  await port.load();assert.deepEqual(port.getSnapshot().workspace.files[0].notification,notification);
  notification={...notification,status:'delivered'};await port.load();assert.equal(port.getSnapshot().phase,'unavailable');assert.equal(port.getSnapshot().workspace.files[0].content,'source');port.dispose();
 });
+test('explicit notification retry keeps saved content when native delivery fails',async()=>{
+ const revision='draft-sha256:'+'d'.repeat(64),files=[{resourceId:'r',path:'a.md',revision,content:'saved',notification:{eventId:'e',status:'pending',resourceRevision:revision}}];let retries=0;
+ const port=createWorkflowResourceAdapter({selection,workspace,catalog,snapshotRevision:'s1',expiresAt:'expires',writeAllowed:true,isCurrent:()=>true,gateway:{call:async endpoint=>{if(endpoint==='resources/notify'){retries++;return {ok:false,error:{message:'NOTIFICATION_SESSION_UNAVAILABLE'}};}return {ok:true,value:{authority:'draft',snapshotRevision:'s1',expiresAt:'expires',files}};}}});
+ await port.load();await assert.rejects(port.retryNotifications(),/NOTIFICATION_SESSION_UNAVAILABLE/);assert.equal(retries,1);assert.equal(port.getSnapshot().workspace.files[0].content,'saved');assert.equal(port.getSnapshot().notificationError,'NOTIFICATION_SESSION_UNAVAILABLE');assert.equal(port.getSnapshot().notifying,false);
+});

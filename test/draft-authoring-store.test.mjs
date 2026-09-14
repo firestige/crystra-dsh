@@ -48,3 +48,15 @@ test('enforces storage limits in UTF-8 bytes for non-ASCII resources',async()=>{
  assert.equal((await store.read()).revisions.length,0);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+test('durable delivery acknowledgement is exact, idempotent and cannot reorder pending revisions',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-authoring-ack-'));try{
+ const store=createDraftAuthoringStore({root,isolation:'draft-authoring-only',getContext:()=>context,validateCandidate:()=>true});
+ const first=await store.commit(proposal),second=await store.commit({...proposal,proposalId:'p2',baseRevision:'r1',candidateRevision:'r2'});
+ const receipt=(r)=>({status:'queued',eventId:r.eventId,resourceRevision:r.revision,sessionId:'s',messageId:'m-'+r.eventId});
+ await assert.rejects(store.acknowledge(receipt(second)),/NOTIFICATION_ORDER/);
+ await assert.rejects(store.acknowledge({...receipt(first),resourceRevision:'other'}),/NOTIFICATION_RECEIPT/);
+ await store.acknowledge(receipt(first));await store.acknowledge(receipt(first));
+ await assert.rejects(store.acknowledge({...receipt(first),sessionId:'foreign'}),/NOTIFICATION_RECEIPT/);
+ await store.acknowledge(receipt(second));const state=await store.read();assert.equal(state.revisions.length,2);assert.deepEqual(state.events.map(e=>e.status),['queued','queued']);
+ }finally{await rm(root,{recursive:true,force:true});}
+});

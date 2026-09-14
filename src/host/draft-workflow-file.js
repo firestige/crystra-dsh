@@ -6,8 +6,9 @@ const fail=code=>{throw new Error(code);};
 const plain=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const keys=(value,names)=>plain(value)&&Object.keys(value).length===names.length&&Object.keys(value).every(k=>names.includes(k));
 /** Explicit local configuration only. No arbitrary paths or authority supplied by RPC callers. */
-export function createDraftWorkflowFileGateway({file,sourceLockFile,sourceLockDigest,allowFixtures=false,now=Date.now,resourceDraftRoot,allowResourceWrites=false}){
+export function createDraftWorkflowFileGateway({file,sourceLockFile,sourceLockDigest,allowFixtures=false,now=Date.now,resourceDraftRoot,allowResourceWrites=false,allowResourceNotifications=false,deliverNotification}){
  if((resourceDraftRoot!==undefined&&!isAbsolute(resourceDraftRoot))||typeof allowResourceWrites!=='boolean'||(allowResourceWrites&&!resourceDraftRoot))fail('DRAFT_CONFIGURATION_INVALID');
+ if(typeof allowResourceNotifications!=='boolean'||(allowResourceNotifications&&(!allowResourceWrites||typeof deliverNotification!=='function')))fail('DRAFT_CONFIGURATION_INVALID');
  if(typeof allowFixtures!=='boolean')fail('DRAFT_CONFIGURATION_INVALID');
  const read=createPinnedDraftReader({file,sourceLockFile,sourceLockDigest});
  async function load(){
@@ -22,7 +23,7 @@ export function createDraftWorkflowFileGateway({file,sourceLockFile,sourceLockDi
   }
   return workflows;
  }
- function authoring(workflow){if(!resourceDraftRoot)fail('RESOURCE_STORE_UNAVAILABLE');return createWorkflowResourceAuthoring({root:resourceDraftRoot,writeAllowed:allowResourceWrites,workflow,loadCurrent:async()=>{const rows=await load();return rows.find(row=>row.context.definitionId===workflow.context.definitionId&&row.context.definitionRevision===workflow.context.definitionRevision&&row.context.workspaceId===workflow.context.workspaceId);}});}
+ function authoring(workflow){if(!resourceDraftRoot)fail('RESOURCE_STORE_UNAVAILABLE');return createWorkflowResourceAuthoring({root:resourceDraftRoot,writeAllowed:allowResourceWrites,workflow,inspectNotification:allowResourceNotifications?deliverNotification.inspect:undefined,loadCurrent:async()=>{const rows=await load();return rows.find(row=>row.context.definitionId===workflow.context.definitionId&&row.context.definitionRevision===workflow.context.definitionRevision&&row.context.workspaceId===workflow.context.workspaceId);}});}
  async function resourceRead(workflow,payload){
     const p=workflow.projection;if(p.resources.state!=='available')fail('RESOURCE_UNAVAILABLE');
     const resource=p.resources.value.catalog.find(r=>r.id===payload.resourceId);
@@ -49,16 +50,18 @@ export function createDraftWorkflowFileGateway({file,sourceLockFile,sourceLockDi
    else if(endpoint==='projection/read'&&!keys(payload,['definitionId','definitionRevision','workspaceId']))fail('INVALID_REQUEST');
    else if(endpoint==='resource/read'&&!keys(payload,['definitionId','definitionRevision','workspaceId','resourceId','path','resourceRevision']))fail('INVALID_REQUEST');
    else if(endpoint==='resources/read'&&!keys(payload,['definitionId','definitionRevision','workspaceId']))fail('INVALID_REQUEST');
+   else if(endpoint==='resources/notify'&&!keys(payload,['definitionId','definitionRevision','workspaceId']))fail('INVALID_REQUEST');
    else if(endpoint==='resources/save'&&!keys(payload,['definitionId','definitionRevision','workspaceId','proposal']))fail('INVALID_REQUEST');
-   else if(!['catalog/read','projection/read','resource/read','resources/read','resources/save'].includes(endpoint))fail('INVALID_REQUEST');
+   else if(!['catalog/read','projection/read','resource/read','resources/read','resources/save','resources/notify'].includes(endpoint))fail('INVALID_REQUEST');
    const workflows=await load();
    if(endpoint==='catalog/read')return {ok:true,value:{authority:'draft',workflows:workflows.map(({context,projection})=>({context,entry:projection.entry,expiresAt:projection.expiresAt,snapshotRevision:projection.snapshotRevision}))}};
    const workflow=workflows.find(({context})=>['definitionId','definitionRevision','workspaceId'].every(key=>context[key]===payload[key]));
    if(!workflow)fail('DRAFT_BINDING_UNAVAILABLE');
    if(endpoint==='resource/read')return await resourceRead(workflow,payload);
    if(endpoint==='resources/read')return {ok:true,value:{authority:'draft',snapshotRevision:workflow.projection.snapshotRevision,expiresAt:workflow.projection.expiresAt,files:await authoring(workflow).list()}};
-   if(endpoint==='resources/save'){if(!allowResourceWrites)fail('WRITE_NOT_ALLOWED');return {ok:true,value:{...await authoring(workflow).save(payload.proposal),snapshotRevision:workflow.projection.snapshotRevision,expiresAt:workflow.projection.expiresAt}};}
-   return {ok:true,value:{...workflow.projection,resourceStoreAvailable:!!resourceDraftRoot,resourceWriteAllowed:!!resourceDraftRoot&&allowResourceWrites}};
+   if(endpoint==='resources/notify'){if(!allowResourceNotifications)fail('NOTIFICATIONS_NOT_ALLOWED');await authoring(workflow).notifyPending(deliverNotification);return {ok:true,value:{authority:'draft',snapshotRevision:workflow.projection.snapshotRevision,expiresAt:workflow.projection.expiresAt,files:await authoring(workflow).list()}};}
+   if(endpoint==='resources/save'){if(!allowResourceWrites)fail('WRITE_NOT_ALLOWED');const port=authoring(workflow),saved=await port.save(payload.proposal);if(allowResourceNotifications){try{await port.notifyPending(deliverNotification);}catch{/* Committed bytes remain saved; the durable event remains pending for explicit retry. */}}return {ok:true,value:{...await port.readRevision(saved.resourceId,saved.path,saved.revision),snapshotRevision:workflow.projection.snapshotRevision,expiresAt:workflow.projection.expiresAt}};}
+   return {ok:true,value:{...workflow.projection,resourceStoreAvailable:!!resourceDraftRoot,resourceWriteAllowed:!!resourceDraftRoot&&allowResourceWrites,resourceNotificationsAllowed:allowResourceNotifications}};
   }catch(error){return {ok:false,error:{code:'DRAFT_UNAVAILABLE',message:error.code==='ENOENT'?'DRAFT_FILE_MISSING':error.message}};}
  }};
 }

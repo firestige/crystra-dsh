@@ -21,6 +21,7 @@ export function createWorkflowResourceAdapter({gateway,selection,workspace,catal
     publish({phase:'ready',workspace:{...state.workspace,files:state.workspace.files.map(f=>f.path===value.path?{...f,content:value.content,revision:value.revision,notification:value.notification}:f)}});
    }finally{saving=false;}
   },
+  async retryNotifications(){current();if(!writeAllowed||state.phase!=='ready'||saving||state.notifying)throw Error('RESOURCE_UNAVAILABLE');publish({...state,notifying:true,notificationError:undefined});try{envelope(await gateway.call('resources/notify',selection));current();await this.load();if(state.phase!=='ready')throw Error('RESOURCE_UNAVAILABLE');}catch(error){if(!disposed)publish({...state,notificationError:error.message});throw error;}finally{if(!disposed)publish({...state,notifying:false});}},
   dispose(){disposed=true;generation++;listeners.clear();},
  };
 }

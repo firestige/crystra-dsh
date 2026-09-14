@@ -1,3 +1,4 @@
+import {createResourceNotificationDelivery} from './host/resource-notification-delivery.js';
 import {createWorkflowDraftReadTool} from './host/workflow-draft-read-tool.js';
 import {createDraftWorkflowFileGateway} from './host/draft-workflow-file.js';
 import {createDraftTaskFileGateway} from './host/draft-task-file.js';
@@ -10,12 +11,12 @@ import {createCommandRouter} from '../modules/initialization/src/command-router.
 
 export function createHostPlugin({executionModule=execution,studioModule=studio,initialize=initializeHost}={}) {
  return {
-  name:'crystra',inject:[...new Set(['commands',...executionModule.inject,...studioModule.inject])],
+  name:'crystra',inject:[...new Set(['commands','sessions',...executionModule.inject,...studioModule.inject])],
   async apply(ctx,input={}) {
    const configuration=normalizePluginConfiguration(input);
    let host,readGateway,unregister;
    const draft=configuration.exploration?.taskFile?createDraftTaskFileGateway({file:configuration.exploration.taskFile,...configuration.exploration}):undefined;
-   const workflowDraft=configuration.exploration?.workflowFile?createDraftWorkflowFileGateway({file:configuration.exploration.workflowFile,...configuration.exploration}):undefined;
+   const workflowDraft=configuration.exploration?.workflowFile?createDraftWorkflowFileGateway({file:configuration.exploration.workflowFile,...configuration.exploration,deliverNotification:createResourceNotificationDelivery({ctx,resolveWorkspace:agent=>execution.resolveConversationWorkspace(ctx,agent)})}):undefined;
    const unregisterDraftTool=workflowDraft?ctx.tools.register(createWorkflowDraftReadTool({gateway:workflowDraft,resolveWorkspace:agent=>execution.resolveConversationWorkspace(ctx,agent)})):undefined;
    const draftRead=(endpoint,payload)=>{const workflow=typeof endpoint==='string'&&endpoint.startsWith('workflow/');const port=workflow?workflowDraft:draft;return port?port.handle(workflow?endpoint.slice(9):endpoint,payload):({ok:false,error:{code:'DRAFT_DISABLED',message:'Conditional draft projection is not configured.'}});};
    const unregisterDraft=ctx.connection?.rpc?.handle('/crystra-exploration',draftRead,{authority:'loopback'});
