@@ -5,6 +5,9 @@ import {createProductNavigation} from './product-navigation.js';
 export function createProductSurface({React,Core,controller,renderAnalysis,storage,sharedStyles,taskInput,renderTaskPanels}) {
  if(typeof Core.CrystraShell!=='function')throw new Error('CRYSTRA_SHELL_COMPONENT_REQUIRED');
  const navigation=createProductNavigation(storage);
+ let sidebarCollapsed=false;
+ try{sidebarCollapsed=storage?.getItem("crystra.sidebar.collapsed")==="true";}catch{}
+ const saveSidebar=collapsed=>{sidebarCollapsed=collapsed===true;try{storage?.setItem("crystra.sidebar.collapsed",String(sidebarCollapsed));}catch{}};
  const inactive=Object.freeze({kind:"inactive"});
  const inputSource=taskInput??{getSnapshot:()=>inactive,subscribe:()=>()=>{}};
  function Page(){
@@ -43,6 +46,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
     return React.createElement(Core.BiSurface,{'data-crystra-product-overlay':true,'data-crystra-native-input':nativeMode,theme:'dark','data-crystra-theme':'dark',className:'crystra-product-overlay'},
      React.createElement('style',null,sharedStyles+nativeInputLayoutStyles+'\n.crystra-product-overlay{position:fixed;inset:0;pointer-events:auto;background:var(--color-background-shell);}'),
      React.createElement(Core.CrystraShell,{
+      initialSidebarCollapsed:sidebarCollapsed,onSidebarCollapsedChange:saveSidebar,
       route:nav.route.page,selectedId:nav.route.id,tasks:state.taskList.items.map(t=>({id:t.task_id,title:t.task_id})),workflows:[],
       onNavigate:navigation.navigate,onOpenHarness:navigation.openHarness,
       onNewTask:()=>{navigation.navigate('new-task');ctx.sessions.clear();},

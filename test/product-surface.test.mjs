@@ -46,3 +46,13 @@ test('new task keeps Crystra shell and exposes the dedicated native Input withou
  const next=entries.get('shell.overlay')({});
  assert.equal(next.props['data-crystra-native-input'],'hero');
 });
+test('sidebar preference survives a new surface without changing navigation or session state',()=>{
+ const values=new Map([['crystra.sidebar.collapsed','true']]);const storage={getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value)};
+ function mount(){const entries=new Map();const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const surface=createProductSurface({React,Core:{CrystraShell(){},Button(){},BiSurface(){}},controller:{getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}},renderAnalysis(){},storage});
+ surface.apply({slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});
+ return entries.get('shell.overlay')({}).children[1].props;}
+ const first=mount();assert.equal(first.initialSidebarCollapsed,true);first.onSidebarCollapsedChange(false);
+ assert.equal(mount().initialSidebarCollapsed,false);
+ assert.equal(values.get('crystra.sidebar.collapsed'),'false');
+});
