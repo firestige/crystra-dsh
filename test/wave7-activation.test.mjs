@@ -51,11 +51,10 @@ test("the real Harness qualifies the deterministic trace Tree canvas contract", 
   assert.doesNotMatch(source, /\[aria-label="Semantic camera map"\]/u);
 });
 
-test("the real Harness qualifies Statistics with the shared semantic typography scale", async () => {
+test("the real Harness requires Trace without duplicate overview summaries", async () => {
   const source = await readFile(join(root, "scripts/qualify-real-harness.mjs"), "utf8");
-  assert.match(source, /\["overline", "h2", "subtitle1", "body1", "body2", "caption"\]/u);
-  assert.doesNotMatch(source, /typography\.includes\("sectionTitle"\)/u);
-  assert.doesNotMatch(source, /typography\.includes\("value"\)/u);
+  assert.match(source, /waterfall.summaryLabels.length !== 0/u);
+  assert.doesNotMatch(source, /label: "Statistics"/u);
 });
 
 test("generated clients use one module identity and no private source or direct downstream transport", async () => {
