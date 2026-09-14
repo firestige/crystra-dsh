@@ -1,17 +1,27 @@
-# Release and installation lifecycle
+# Crystra release and installation lifecycle
 
-The repository uses one release-set version while each package keeps its own semantic version. A candidate tag such as `0.2.3-rc.1` is built from one clean commit, then qualified before stable publication. Promotion verifies the exact candidate bytes, skips an unchanged package only when its published bytes match, and publishes changed components before the suite through npm OIDC. The final GitHub release is created with the repository-scoped release App.
+The only public plugin is **dsh-crystra**, registered through **firestige/crystra-dsh**. Execution, Studio and initialization are internal modules; crystra-execution and crystra-ui-core are ordinary dependencies. There is no independently installed Intake, Studio, suite or standalone installer. Old WSR packages and deployed data are not migrated.
 
-`config/dsh-compatibility.json.executionOwner` is the single Execution owner-release record. It binds the stable version and release tag to the exact GitHub artifact coordinate, source revision, SHA-256 digest, qualification coordinate, and public projection. Candidate construction downloads those remote bytes and resolves the remote tag before packing anything; source checkouts, local tarballs, and same-version rebuilds cannot satisfy this gate. The generated compatibility matrix embeds the verified record, and Product qualification checks its install pin against that record. Stable promotion continues to move only the already-qualified frozen DSH candidate bytes.
+DSH owns installation and the Host. Use an exact qualified plugin release and the [initialization commands](initialization.md): `/crystra setup`, `/crystra doctor`, and `/crystra services start|stop|status`. Unloading or uninstalling preserves service state and volumes. Stop services explicitly if they should not continue. Internal modularity does not change Execution's per-Role Provider authorization boundary.
 
-`dsh-wsr-execution` and `dsh-wsr-studio` can each be added, upgraded, rolled back, and removed independently. The suite pins both packages exactly and owns the single composition layer; it has no UI identity. When moving from separately installed components to the suite, remove the component bundle layers and retain one `dsh-wsr` layer. Repeated suite adds are reconciled to one suite layer. To return to Execution alone, remove the suite and Studio roots, retain/add the exact Execution root, and reconcile the profile to one `dsh-wsr-execution` layer.
+## Frozen release inputs
 
-Release qualification exercises those transitions in temporary DSH homes, checks independent and suite composition, boots the real DSH web Host in Chrome, tests Studio downstream outage, and rejects duplicate activations. It also admits two Roles to distinct Copilot SDK and Codex CLI Provider descriptors through the exact published Execution owner without opening either Provider or reading credential material. Provider routing remains an Execution concern: installing the suite does not collapse the mapping to one Provider.
+config/development-inputs.json records ordinary dependency package names, versions, source revisions and artifact hashes. Development can prepare exact local artifacts, but candidate publication requires published GitHub dependency URLs and matching digests. The plugin package.json must select those exact remote inputs.
 
-### Crystra candidate evidence
+The release-bound modules/initialization/src/service-descriptor.json identifies the service archive URL, archive directory and SHA-256. The combination repository publishes and qualifies service resources before the plugin that binds them. Missing service assets block candidate construction; development-only local image fixtures do not satisfy published-input qualification.
 
-Candidate publication requires exact published Execution/UI dependencies and a digest-bound `service-descriptor.json`. Missing service assets are a blocking release input; development-only local service fixtures cannot satisfy this check.
+## Candidate evidence
 
-The builder creates the plugin archive first. `run-release-qualification.mjs` runs the fixed gates against that exact archive and retains per-gate logs and execution receipts under `qualification-evidence/`. Receipts bind the candidate tag, source commit, release metadata SHA-256 and log SHA-256. The qualification writer rejects absent, failed or mismatched receipts instead of synthesizing PASS values. A retry starts with a fresh candidate output directory.
+The only RC entry is a push to release/next with release/request.json. Tags use crystra-dsh-vX.Y.Z-rc.N. The builder creates the single plugin archive first. scripts/run-release-qualification.mjs executes the fixed gates against that exact archive and retains per-gate logs and receipts in qualification-evidence/.
 
-The remote-input gate downloads and verifies the component and service bytes. Clean-profile, lifecycle and real-Harness checks consume the candidate archive without repacking it. The real-Harness run also exercises loopback outage behavior. The release uploads `qualification-evidence.tar.gz` alongside the qualification record. A published candidate still requires the separate combination and actual-environment acceptance in the Crystra execution plan.
+Receipts bind the candidate tag, source commit, release metadata hash and log hash. Missing, failed or mismatched receipts cannot produce PASS. Clean-profile, lifecycle and real-Harness checks consume the candidate archive without repacking it. The Host run also covers loopback outage, and Provider routing remains an Execution concern. The remote-input gate verifies both component and service bytes. A retry starts with a fresh output directory.
+
+The release uploads qualification-evidence.tar.gz with release-qualification.json, release-metadata.json, the plugin archive and checksums. Component qualification does not replace the final combination's actual-environment acceptance.
+
+## Human promotion and first release
+
+Only a human dispatches release-promote.yml with the exact qualified candidate tag. The workflow verifies downloaded qualification and artifact bytes, then publishes the same candidate files under crystra-dsh-vX.Y.Z; it does not rebuild or publish separate subplugins to npm.
+
+Release workflows use the repository-scoped release App with CRYSTRA_RELEASE_CLIENT_ID and CRYSTRA_RELEASE_APP_PRIVATE_KEY. Their presence and the first actual new release must be verified separately. Code integration during the rename does not imply those permissions or a usable published release already exist.
+
+For combination-level GA, lower-layer coordinates must already be stable. Bind stable Execution/UI and service assets before building the plugin RC intended for such a combination. Do not change dependencies or the service descriptor during promotion. The combination rules are maintained in [crystra's release guide](https://github.com/firestige/crystra/blob/main/docs/guides/release-automation.md).
