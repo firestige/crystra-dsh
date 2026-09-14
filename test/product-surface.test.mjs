@@ -85,3 +85,12 @@ test('Workflow workbench retains the requested definition and revision with an u
  first.props.onPageChange('resources');assert.equal(Page().props.page,'resources');assert.equal(entries.get('shell.overlay')({}).props['data-crystra-native-input'],undefined);
  runtime.navigation.saveContext({workbench:'invalid'});assert.equal(Page().props.page,'studio');
 });
+test('Workflow directory saves its view before exact navigation and ignores late view updates',()=>{
+ const entries=new Map();const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const Core={CrystraShell(){},WorkflowExplorer(){},Button(){},BiSurface(){}};
+ const runtime=createProductSurface({React,Core,controller:{getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}},renderAnalysis(){}});
+ runtime.apply({slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});runtime.navigation.navigate('workflows');
+ const Page=entries.get('shell.overlay')({}).children[1].children[0].type;const directory=Page();
+ directory.props.onViewStateChange('saved');directory.props.onOpen('a','r1');directory.props.onViewStateChange('late');runtime.navigation.back();
+ assert.equal(Page().props.initialViewState,'saved');
+});

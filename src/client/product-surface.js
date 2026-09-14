@@ -9,6 +9,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  let clearSession=()=>{};
  const newTask=()=>{navigation.navigate("new-task");clearSession();};
  const saveBrowserView=view=>{const nav=navigation.getSnapshot();if(nav.route.page==='tasks')navigation.saveContext({...nav.context,view});};
+ const saveWorkflowView=view=>{const nav=navigation.getSnapshot();if(nav.route.page==='workflows')navigation.saveContext({...nav.context,view});};
  let sidebarCollapsed=false;
  try{sidebarCollapsed=storage?.getItem("crystra.sidebar.collapsed")==="true";}catch{}
  const saveSidebar=collapsed=>{sidebarCollapsed=collapsed===true;try{storage?.setItem("crystra.sidebar.collapsed",String(sidebarCollapsed));}catch{}};
@@ -23,7 +24,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
    input:input.taskId===nav.route.id&&input.kind==='active'?null:React.createElement('div',null,React.createElement('p',{role:'status'},input.kind==='ambiguous'?'此任务关联多个会话，请选择本实例中的会话。':input.kind==='unbound'?'此任务尚未关联当前实例的会话。':'当前无法确认此任务的会话关联。'),...(input.choices??[]).map(choice=>React.createElement(Core.Button,{key:choice.id,onClick:()=>taskInput?.selectSession(choice.id)},choice.label))),
    panels:{...Object.fromEntries(['grilling','plan','execution','gate','delivery'].map(page=>[page,React.createElement('p',{role:'status'},'该工作面的正式投影尚未接入。')])),...renderTaskPanels?.(nav.route.id)},
   });
-  if(nav.route.page==='workflows')return React.createElement(Core.WorkflowExplorer,{entries:[],phase:'unavailable',onOpen:(id,revision)=>navigation.navigate('workflow',id,revision)});
+  if(nav.route.page==='workflows')return React.createElement(Core.WorkflowExplorer,{entries:[],phase:'unavailable',initialViewState:typeof nav.context.view==='string'?nav.context.view:undefined,onViewStateChange:saveWorkflowView,onOpen:(id,revision)=>navigation.navigate('workflow',id,revision)});
   if(nav.route.page==='workflow')return React.createElement(Core.WorkflowWorkbench,{
    key:JSON.stringify([nav.route.id,nav.route.revision]),definitionId:nav.route.id,revision:nav.route.revision,title:nav.route.id,description:'工作流定义尚未解析',
    page:['studio','resources','crystallization'].includes(nav.context.workbench)?nav.context.workbench:'studio',onPageChange:workbench=>navigation.saveContext({...nav.context,workbench}),
