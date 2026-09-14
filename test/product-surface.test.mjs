@@ -94,3 +94,12 @@ test('Workflow directory saves its view before exact navigation and ignores late
  directory.props.onViewStateChange('saved');directory.props.onOpen('a','r1');directory.props.onViewStateChange('late');runtime.navigation.back();
  assert.equal(Page().props.initialViewState,'saved');
 });
+test('Workflow Input is exposed only for the exact active workflow revision',()=>{
+ const entries=new Map();const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const Core={CrystraShell(){},WorkflowWorkbench(){},Button(){},BiSurface(){}};
+ const workflowInput={subscribe(){},getSnapshot:()=>({kind:'active',definitionId:'a',revision:'r1',sessionId:'s'})};
+ const runtime=createProductSurface({React,Core,workflowInput,controller:{getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}},renderAnalysis(){}});
+ runtime.apply({slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});runtime.navigation.navigate('workflow','a','r1');
+ const overlay=entries.get('shell.overlay')({});assert.equal(overlay.props['data-crystra-native-input'],'workflow');const Page=overlay.children[1].children[0].type;assert.equal(Page().props.input,null);
+ runtime.navigation.navigate('workflow','a','r2');assert.equal(entries.get('shell.overlay')({}).props['data-crystra-native-input'],undefined);assert.notEqual(Page().props.input,null);
+});

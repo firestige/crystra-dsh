@@ -30,4 +30,16 @@ export const nativeInputLayoutStyles=`
 }
 .crystra-product-overlay[data-crystra-native-input="hero"] .crystra-product-shell > aside {pointer-events:auto;}
 
+
+.pI_x6G_frame:has([data-crystra-native-input="workflow"]) > .pI_x6G_centerCol {
+ position:fixed;left:var(--crystra-workflow-input-left);top:var(--crystra-workflow-input-top);
+ width:var(--crystra-workflow-input-width);height:var(--crystra-workflow-input-height);bottom:auto;right:auto;
+}
+.crystra-product-overlay[data-crystra-native-input="workflow"],
+.crystra-product-overlay[data-crystra-native-input="workflow"] .crystra-product-shell[data-product-surface],
+.crystra-product-overlay[data-crystra-native-input="workflow"] .crystra-workflow-workbench {background:transparent;pointer-events:none;}
+.crystra-product-overlay[data-crystra-native-input="workflow"] .crystra-product-shell > aside,
+.crystra-product-overlay[data-crystra-native-input="workflow"] [data-section-id="workspace-header"],
+.crystra-product-overlay[data-crystra-native-input="workflow"] [data-section-id="workflow-projections"],
+.crystra-product-overlay[data-crystra-native-input="workflow"] .crystra-workflow-layout > [role="separator"] {pointer-events:auto;background:var(--color-background-shell);}
 `;

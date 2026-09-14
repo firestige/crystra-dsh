@@ -1,9 +1,10 @@
+import {attachWorkflowInputGeometry} from "./workflow-input-geometry.js";
 import {projectEvidenceTasks} from './task-browser-projection.js';
 import {nativeInputLayoutStyles} from './native-input-layout.js';
 import {createProductNavigation} from './product-navigation.js';
 
 /** Host bridge: the framework retains its conversation tree under the product surface. */
-export function createProductSurface({React,Core,controller,renderAnalysis,storage,sharedStyles,taskInput,renderTaskPanels}) {
+export function createProductSurface({React,Core,controller,renderAnalysis,storage,sharedStyles,taskInput,renderTaskPanels,workflowInput}) {
  if(typeof Core.CrystraShell!=='function')throw new Error('CRYSTRA_SHELL_COMPONENT_REQUIRED');
  const navigation=createProductNavigation(storage);
  let clearSession=()=>{};
@@ -15,10 +16,13 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  const saveSidebar=collapsed=>{sidebarCollapsed=collapsed===true;try{storage?.setItem("crystra.sidebar.collapsed",String(sidebarCollapsed));}catch{}};
  const inactive=Object.freeze({kind:"inactive"});
  const inputSource=taskInput??{getSnapshot:()=>inactive,subscribe:()=>()=>{}};
+ const workflowSource=workflowInput??{getSnapshot:()=>inactive,subscribe:()=>()=>{}};
+ const activeWorkflow=(nav,input)=>nav.route.page==='workflow'&&input.kind==='active'&&input.definitionId===nav.route.id&&input.revision===nav.route.revision;
  function Page(){
   const nav=React.useSyncExternalStore(navigation.subscribe,navigation.getSnapshot,navigation.getSnapshot);
   const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
   const input=React.useSyncExternalStore(inputSource.subscribe,inputSource.getSnapshot,inputSource.getSnapshot);
+  const workflow=React.useSyncExternalStore(workflowSource.subscribe,workflowSource.getSnapshot,workflowSource.getSnapshot);
   if(nav.route.page==='task')return React.createElement(Core.TaskWorkbench,{
    title:nav.route.id,workspace:'Task',page:nav.context.workbench??'grilling',onPageChange:workbench=>navigation.saveContext({...nav.context,workbench}),
    input:input.taskId===nav.route.id&&input.kind==='active'?null:React.createElement('div',null,React.createElement('p',{role:'status'},input.kind==='ambiguous'?'此任务关联多个会话，请选择本实例中的会话。':input.kind==='unbound'?'此任务尚未关联当前实例的会话。':'当前无法确认此任务的会话关联。'),...(input.choices??[]).map(choice=>React.createElement(Core.Button,{key:choice.id,onClick:()=>taskInput?.selectSession(choice.id)},choice.label))),
@@ -28,7 +32,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
   if(nav.route.page==='workflow')return React.createElement(Core.WorkflowWorkbench,{
    key:JSON.stringify([nav.route.id,nav.route.revision]),definitionId:nav.route.id,revision:nav.route.revision,title:nav.route.id,description:'工作流定义尚未解析',
    page:['studio','resources','crystallization'].includes(nav.context.workbench)?nav.context.workbench:'studio',onPageChange:workbench=>navigation.saveContext({...nav.context,workbench}),
-   input:React.createElement('p',{role:'status'},'此工作流尚未关联当前实例中的包工作区与会话。'),
+   input:activeWorkflow(nav,workflow)?null:React.createElement('p',{role:'status'},'此工作流尚未关联当前实例中的包工作区与会话。'),
    panels:Object.fromEntries(['studio','resources','crystallization'].map(page=>[page,React.createElement('p',{role:'status'},'此工作面的精确版本投影尚未接入。')])),
   });
   if(nav.route.page==='new-task')return null;
@@ -54,7 +58,9 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
     const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
     React.useEffect(()=>{void controller.loadTasks();},[]);
     const input=React.useSyncExternalStore(inputSource.subscribe,inputSource.getSnapshot,inputSource.getSnapshot);
-    const nativeMode=nav.route.page==='new-task'?'hero':nav.route.page==='task'&&input.kind==='active'&&input.taskId===nav.route.id?'task':undefined;
+    const workflow=React.useSyncExternalStore(workflowSource.subscribe,workflowSource.getSnapshot,workflowSource.getSnapshot);
+    const nativeMode=activeWorkflow(nav,workflow)?'workflow':nav.route.page==='new-task'?'hero':nav.route.page==='task'&&input.kind==='active'&&input.taskId===nav.route.id?'task':undefined;
+    React.useEffect(()=>{if(nav.surface!=='crystra'||nativeMode!=='workflow')return;return attachWorkflowInputGeometry({document,window,ResizeObserver:window.ResizeObserver});},[nativeMode,nav.surface,nav.route.id,nav.route.revision]);
     if(nav.surface==='harness')return null;
     return React.createElement(Core.BiSurface,{'data-crystra-product-overlay':true,'data-crystra-native-input':nativeMode,theme:'dark','data-crystra-theme':'dark',className:'crystra-product-overlay'},
      React.createElement('style',null,sharedStyles+nativeInputLayoutStyles+'\n.crystra-product-overlay{position:fixed;inset:0;pointer-events:auto;background:var(--color-background-shell);}'),
