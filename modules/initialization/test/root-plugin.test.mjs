@@ -23,3 +23,11 @@ test('empty root plugin registers one command; setup attaches Execution through 
   assert.equal(commands.length,0);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+test('only explicitly configured Workflow files register the bounded draft read tool and dispose it',async()=>{
+ const registered=[],effects=[];let disposed=0;
+ const plugin=createHostPlugin({initialize:async()=>({dispose(){},operate(){}}),executionModule:{inject:[]},studioModule:{inject:[]}});
+ const ctx={tools:{register:tool=>{registered.push(tool);return()=>disposed++;}},commands:{register:()=>()=>{}},plugin(){},effect:fn=>effects.push(fn)};
+ await plugin.apply(ctx,{exploration:{workflowFile:'/tmp/explicit-workflow.json',sourceLockFile:'/tmp/explicit-lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:false}});
+ assert.deepEqual(registered.map(t=>t.name),['crystra_workflow_draft_read']);
+ for(const effect of effects){for await(const cleanup of effect())await cleanup();}assert.equal(disposed,1);
+});

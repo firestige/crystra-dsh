@@ -13,8 +13,13 @@ test('Workflow file gateway binds exact definitions and revokes stale source rea
  assert.equal((await port.handle('catalog/read',{})).value.workflows[0].entry.title,'Workflow');
  assert.equal((await port.handle('projection/read',selection)).value.snapshotRevision,'s1');
  assert.equal((await port.handle('projection/read',{...selection,definitionRevision:'latest'})).ok,false);
+ projection.inputBinding={workspaceId:'native-w',packageRoot:'/package',sessionId:'native-s'};await writeFile(file,JSON.stringify({format:'crystra-workflow-file@1',workflows:[{selection,projection}]}));
  const request={...selection,resourceId:'readme',path:'README.md',resourceRevision:'resource-r1'};
  assert.equal((await port.handle('resource/read',request)).value.content,'Exact content');
+ const {workspaceId,...agentRequest}=request;const authority={sessionKey:'native-s',workspaceId:'native-w',path:'/package'};
+ assert.equal((await port.readForSession(agentRequest,authority)).value.content,'Exact content');
+ assert.equal((await port.readForSession(agentRequest,{...authority,sessionKey:'foreign'})).ok,false);
+ assert.equal((await port.readForSession(agentRequest,{...authority,path:'/other'})).ok,false);
  assert.equal((await port.handle('resource/read',{...request,resourceRevision:'latest'})).ok,false);
  assert.equal((await port.handle('resource/read',{...request,path:'../README.md'})).ok,false);
  await writeFile(join(root,'design.md'),'changed');assert.equal((await port.handle('catalog/read',{})).ok,false);
