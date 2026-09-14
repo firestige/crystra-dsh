@@ -3,11 +3,11 @@
   "inputs": {
     "execution": {
       "repository": "firestige/crystra-execution",
-      "revision": "0a708b59250cccda43ff6054000cb3af380d6906",
+      "revision": "82a88ea4222e40810a387863d654a12e008a5b26",
       "package": "crystra-execution",
       "version": "0.1.0",
       "artifact": "crystra-execution-0.1.0.tgz",
-      "sha256": "bcaa1400dd601450abe3b494474cd9b6a9e590552c8421e0784a4f5d614a3b35"
+      "sha256": "72a30478e47183752b84c9294999ffc6a31469bb227c16300c910f119e4567c8"
     },
     "ui": {
       "repository": "firestige/crystra-ui",

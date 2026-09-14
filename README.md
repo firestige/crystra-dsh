@@ -38,7 +38,7 @@ Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, a
 
 The root plugin loads without pre-existing Execution configuration. `/crystra setup` prepares configuration and the bound service group; `/crystra doctor` reports readiness and missing repository role bindings. `/crystra services start|stop|status` manages the installation's own Compose namespace. These commands are deterministic and do not invoke an LLM. No independent public product installer is shipped. See [initialization](docs/initialization.md).
 
-The plugin binds `crystra-services-v0.1.0-rc.1`. Setup still requires repository role bindings before workflow execution is ready. If a development fixture has no service descriptor, it explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`.
+The plugin binds `crystra-services-v0.1.0-rc.3`. Setup still requires repository role bindings before workflow execution is ready. If a development fixture has no service descriptor, it explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`.
 
 New RC tags use `crystra-dsh-v<version>-rc.N`. Stable promotion reuses qualified bytes through GitHub Releases and retains its manual release gate. There is no npm publication stage. Historical release records describe their original artifacts, not this new distribution.
 
