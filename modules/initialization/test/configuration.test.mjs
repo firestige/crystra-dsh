@@ -49,3 +49,9 @@ test('first load creates private configuration without declaring services ready 
     assert.deepEqual(JSON.parse(await readFile(config.paths.configFile,'utf8')),edited);
   }finally{await rm(root,{recursive:true,force:true});}
 });
+test('task exploration is disabled by default and requires explicit absolute sources and a digest',()=>{
+ assert.equal(normalizePluginConfiguration({}).exploration,undefined);
+ const value={taskFile:'/tmp/tasks.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:true};
+ assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
+ for(const invalid of [{...value,taskFile:'relative'},{...value,sourceLockDigest:'latest'},{...value,allowFixtures:'true'},{...value,extra:true}])assert.throws(()=>normalizePluginConfiguration({exploration:invalid}),/CRYSTRA_CONFIG_INVALID/);
+});

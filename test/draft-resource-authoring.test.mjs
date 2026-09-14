@@ -21,3 +21,15 @@ test('rejects undeclared paths, wrong baselines, and changed or revoked authorit
  current={...context,sourceLockDigest:'b'.repeat(64)};await assert.rejects(port.read('r','notes.txt'),/STORE_BINDING_CHANGED/);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+test('exact revision reads never silently advance to a newer resource candidate',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-resource-test-'));let current=context;try{
+ const port=createDraftResourceAuthoring({root,resources,getContext:()=>current});
+ const first=await port.save(request);
+ const second=await port.save({...request,proposalId:'p2',baseRevision:first.revision,baseContent:first.content,content:'newer'});
+ assert.equal((await port.read('r','notes.txt')).revision,second.revision);
+ assert.deepEqual(await port.readRevision('r','notes.txt',first.revision),first);
+ assert.equal((await port.readRevision('r','notes.txt','source-r1')).content,'source');
+ await assert.rejects(port.readRevision('r','notes.txt','latest'),/REVISION_UNAVAILABLE/);
+ current={...context,accessAllowed:false};await assert.rejects(port.readRevision('r','notes.txt',first.revision),/ACCESS_REQUIRED/);
+ }finally{await rm(root,{recursive:true,force:true});}
+});

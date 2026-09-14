@@ -24,6 +24,13 @@ export function createDraftResourceAuthoring({root,resources,getContext}){
    const current=state.revisions.find(item=>item.revision===state.currentRevision);
    if(state.currentRevision&&!current)fail('INVALID_STORE');return projection(source,current?.revision??source.revision,current?.candidate.content??source.content);
   },
+  async readRevision(resourceId,path,revision){
+   const {source,store}=resolve(resourceId,path),state=await store.read();
+   if(revision===source.revision)return projection(source,source.revision,source.content);
+   const exact=state.revisions.find(item=>item.revision===revision);
+   if(!exact)fail('REVISION_UNAVAILABLE');
+   return projection(source,exact.revision,exact.candidate.content);
+  },
   async save(request){
    if(!request||Object.keys(request).some(key=>!['proposalId','resourceId','path','baseRevision','baseContent','content'].includes(key))||!['proposalId','resourceId','path','baseRevision','baseContent','content'].every(k=>typeof request[k]==='string'))fail('INVALID_RESOURCE_PROPOSAL');
    const {source,store,stream}=resolve(request.resourceId,request.path),state=await store.read();

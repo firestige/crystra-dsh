@@ -1,0 +1,78 @@
+{
+  "contract": {
+    "name": "evidence.query",
+    "revision": "0.1.0"
+  },
+  "observation_profile": "1.0.0",
+  "read_model_revision": "1.0.0",
+  "snapshot": "6K68coC5j8SgjyU-O9Mc3a45SvKqflQk",
+  "items": [
+    {
+      "id": "fact:span:[\"span\",\"81e8e896940738504f8e93bd5ec8c2e4\",\"22f5c3d33615add2\"]:DELIVERY_ROOT_BINDING:[\"81e8e896940738504f8e93bd5ec8c2e4\"]",
+      "kind": "DELIVERY_ROOT_BINDING",
+      "source": {
+        "kind": "SPAN",
+        "trace_id": "81e8e896940738504f8e93bd5ec8c2e4",
+        "span_id": "22f5c3d33615add2"
+      },
+      "recorded_at": "2026-09-14T06:51:54.993707Z",
+      "provenance": {
+        "accepted_digest": "ad4ca0e8e3e4dc323084e5316aa9c3bcb37d4c81a88c0202f8f65f6290417da1",
+        "profile_version": "1.0.0",
+        "family_schema": null,
+        "owner_key": [
+          "81e8e896940738504f8e93bd5ec8c2e4"
+        ]
+      },
+      "compatibility": {
+        "family_schema": null,
+        "event_name": null,
+        "completeness": null,
+        "dimensions": []
+      },
+      "truth": {
+        "completeness": null,
+        "availability": "AVAILABLE",
+        "expiry": "ACTIVE",
+        "expires_at": "2027-09-14T06:51:54.993707Z"
+      },
+      "fields": [
+        {
+          "field": "C01",
+          "value": "316040ec-1bc2-4046-8a8d-b93fd839bbcc"
+        },
+        {
+          "field": "C06",
+          "value": "runtime-profile.runner.langgraph-agent-providers"
+        },
+        {
+          "field": "C07",
+          "value": "0e809ddee2d59ddffb439ed4196db255c4f9afd797c171c0a9b4da450eb83f93"
+        },
+        {
+          "field": "C08",
+          "value": "hello-world-workflow"
+        }
+      ],
+      "relationships": [
+        {
+          "kind": "DELIVERY_ROOT",
+          "from": {
+            "kind": "SPAN",
+            "key": [
+              "81e8e896940738504f8e93bd5ec8c2e4",
+              "22f5c3d33615add2"
+            ]
+          },
+          "to": {
+            "kind": "DELIVERY",
+            "key": [
+              "316040ec-1bc2-4046-8a8d-b93fd839bbcc"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "next_cursor": null
+}

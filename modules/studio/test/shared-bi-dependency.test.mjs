@@ -10,7 +10,7 @@ test("the unified plugin locks the shared BI published RC archive by digest", as
   const input=JSON.parse(await readFile(resolve(root,"config/development-inputs.json"),"utf8")).inputs.ui;
   const lock=JSON.parse(await readFile(resolve(root,"package-lock.json"),"utf8"));
   assert.equal(lock.packages["node_modules/crystra-ui-core"].version,input.version);
-  assert.equal(manifest.dependencies["crystra-ui-core"],`https://github.com/${input.repository}/releases/download/crystra-ui-v${input.version}-rc.2/${input.artifact}`);
+  assert.equal(manifest.dependencies["crystra-ui-core"],`https://github.com/${input.repository}/releases/download/crystra-ui-v${input.version}-rc.3/${input.artifact}`);
   const bytes=await readFile(resolve(root,".crystra-inputs",input.artifact));
   assert.equal(createHash("sha256").update(bytes).digest("hex"),input.sha256);
   assert.equal(lock.packages["node_modules/crystra-ui-core"].resolved,manifest.dependencies["crystra-ui-core"]);

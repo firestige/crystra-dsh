@@ -21,3 +21,9 @@ test('formal decoder and shared paginated loader feed the renderer only after su
  const requests=[];const c=createProductTraceController({gateway:{async call(endpoint,filters){requests.push({endpoint,filters});return {ok:true,value:{items:[filters.cursor??'first']}};}},decode:(route,value)=>({ok:true,value}),load:async(port,id)=>{await port.getTracesPage({trace_id:id,limit:200});await port.getTracesPage({trace_id:id,limit:200,cursor:'next'});return {ok:true,state:'PARTIAL'};},compile:items=>({status:'READY',nodes:items})});
  await c.open(a);assert.deepEqual(c.getSnapshot().trace.nodes,['first','next']);assert.equal(c.getSnapshot().phase,'partial');assert.equal(requests[1].endpoint,'traces/read');
 });
+
+test('clearing a revoked directory binding prevents an older Trace from returning',async()=>{
+ const pending=deferred();const c=setup(()=>pending.promise);const opening=c.open(a);
+ c.clear();pending.resolve({ok:true,state:'AVAILABLE'});await opening;
+ assert.equal(c.getSnapshot().phase,'idle');assert.equal(c.getSnapshot().traceId,'');assert.equal(c.getSnapshot().trace,undefined);
+});

@@ -1,3 +1,4 @@
+import {createDraftTaskFileGateway} from './host/draft-task-file.js';
 import {randomUUID} from 'node:crypto';
 import * as execution from '../modules/execution/src/index.js';
 import * as studio from '../modules/studio/src/index.js';
@@ -11,9 +12,11 @@ export function createHostPlugin({executionModule=execution,studioModule=studio,
   async apply(ctx,input={}) {
    const configuration=normalizePluginConfiguration(input);
    let host,readGateway,unregister;
+   const draft=configuration.exploration?createDraftTaskFileGateway({file:configuration.exploration.taskFile,...configuration.exploration}):undefined;
+   const unregisterDraft=ctx.connection?.rpc?.handle('/crystra-exploration',(endpoint,payload)=>draft?draft.handle(endpoint,payload):({ok:false,error:{code:'DRAFT_DISABLED',message:'Conditional draft projection is not configured.'}}),{authority:'loopback'});
    const unregisterGateway=ctx.connection?.rpc?.handle('/crystra-execution',(endpoint,payload)=>readGateway?readGateway.handle(endpoint,payload):({ok:false,error:{code:'DELIVERY_PROJECTION_UNAVAILABLE',message:'Crystra needs configuration. Run /crystra setup.'}}),{authority:'loopback'});
    const unhook=ctx.on?.('agent/pre-step',(payload,next)=>execution.consumeCrystraCommandBeforeModel(payload)?{kind:'reject'}:next());
-   ctx.effect(async function*(){yield async()=>{await unregister?.();await unregisterGateway?.();await unhook?.();await host?.dispose();};},'Crystra initialization lifecycle');
+   ctx.effect(async function*(){yield async()=>{await unregister?.();await unregisterGateway?.();await unregisterDraft?.();await unhook?.();await host?.dispose();};},'Crystra initialization lifecycle');
    const router=createCommandRouter({operate:async(action,signal,invocation)=>{
      const workspace=invocation.agent?await execution.resolveConversationWorkspace(ctx,invocation.agent):undefined;
      return host.operate(action,signal,workspace?.path);

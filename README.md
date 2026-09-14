@@ -45,3 +45,22 @@ New RC tags use `crystra-dsh-v<version>-rc.N`. Stable promotion reuses qualified
 See [foundation boundaries](docs/foundation-boundaries.md), [source notice](NOTICE.md), and [security policy](SECURITY.md).
 
 The release archive bundles only the two digest-verified first-party component packages using npm bundled dependencies. Their registry dependencies remain ordinary root dependencies, resolved for the installation platform. Packaging never copies the development machine's native dependencies. This permits normal DSH installation with pnpm's default URL-subdependency protection enabled.
+
+The Crystra workbench consumes public v8 UI components. Its Trace directory joins the current instance's Execution Delivery inventory to admitted Evidence `DELIVERY_ROOT` relationships; it preserves exact Task/Workflow identities and execution start times. Missing, expired, ambiguous or unavailable bindings do not select a guessed Trace. Direct exact Trace ID reads remain available.
+
+Conditional authoring stores keep immutable resource candidates separate from the source package. Exact revision reads never silently select the latest candidate. Resource persistence does not imply publication, execution authorization or Agent notification; the explicit design exploration helpers are not shipped in the plugin archive.
+
+For explicitly configured, read-only Task exploration, the root plugin accepts
+`exploration: {taskFile, sourceLockFile, sourceLockDigest, allowFixtures}`.
+Both files must use absolute paths; the SHA-256 pins the source-lock bytes and each
+source in that lock is rechecked. `taskFile` uses `crystra-task-file@1` with
+`tasks: [{selection: {taskId, goalRevision, planRevision}, projection}]`.
+Each projection follows the conditional `crystra-ui-exploration/draft.1` envelope,
+uses adapter ID `crystra-task-file@1`, and carries its own expiry and provenance.
+This option defaults to disabled. Fixture content additionally requires
+`allowFixtures: true`. Read-only loopback RPCs expose `catalog/read` and
+`projection/read`; callers cannot choose filesystem paths. The client refreshes
+every five seconds and clears old content within a ten-second read lease or at
+snapshot expiry, whichever comes first. The adapter does not create sessions,
+authorize execution, or supply missing plan graphs/documents/evidence. An owner
+Task with the same ID takes precedence and never inherits the draft projection.

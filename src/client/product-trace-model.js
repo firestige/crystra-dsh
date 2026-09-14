@@ -6,6 +6,7 @@ export function createProductTraceController({gateway,decode,load,compile}) {
   return Object.freeze({
     getSnapshot:()=>snapshot,
     subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},
+    clear(){generation++;publish({phase:'idle',traceId:'',trace:undefined,error:undefined});},
     setView(view){if(!['waterfall','tree'].includes(view))throw new Error('TRACE_VIEW_INVALID');publish({view});},
     async open(traceId){
       const request=++generation;
