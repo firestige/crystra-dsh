@@ -22,3 +22,8 @@ test('a stalled refresh cannot keep an old projection visible past its bounded r
  const lease=scheduled.find(item=>item.delay===10000);assert.ok(lease);
  stalled=true;lease.fn();assert.equal(port.taskSource('draft-a').getSnapshot().state,'invalid');port.dispose();
 });
+test('unchanged polling retains task snapshot identity so the current diagram view can survive refresh',async()=>{
+ const port=create({call:async endpoint=>({ok:true,value:structuredClone(endpoint==='catalog/read'?{authority:'draft',tasks:[{context,expiresAt:projection.expiresAt,snapshotRevision:'s1'}]}:projection)})});
+ await port.refresh();const before=port.taskSource('draft-a').getSnapshot().projection;
+ await port.refresh();assert.equal(port.taskSource('draft-a').getSnapshot().projection,before);port.dispose();
+});

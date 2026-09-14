@@ -48,3 +48,8 @@ test('available draft surfaces require their full consumer shape before admissio
  response.surfaces.grilling.value={heading:'h',summary:'s',briefSummary:'b',topics:[],fields:[],changes:[]};
  assert.equal(admitDraftProjection(response,context,now).state,'valid');
 });
+test('native Task Input accepts only a bounded explicit workspace path and session binding',()=>{
+ const {context,response}=example();response.inputBinding={workspaceId:'w1',packageRoot:'/private/tmp/task1',sessionId:'s1'};
+ assert.equal(admitDraftProjection(response,context,now).state,'valid');
+ for(const bad of [{...response.inputBinding,sessionId:''},{...response.inputBinding,packageRoot:'relative'},{...response.inputBinding,packageRoot:'/private/tmp/../other'},{...response.inputBinding,permission:'write'}])assert.equal(admitDraftProjection({...response,inputBinding:bad},context,now).reason,'INVALID_INPUT_BINDING');
+});

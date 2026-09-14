@@ -1,3 +1,4 @@
+import {validateTaskAssets} from './draft-task-assets.js';
 import {validateDraftSurfaceValue} from "./draft-surface-values.js";
 /** Exploration-only envelope admission. This does not validate domain claims or authorize effects.
  * context must come from the trusted adapter selection, never from response.binding.
@@ -35,5 +36,10 @@ export function admitDraftProjection(response,context,now=Date.now()) {
    if(!validateDraftSurfaceValue(name,surface.value))return invalid('INVALID_SURFACE_VALUE');
   }else return invalid('INVALID_SURFACES');
  }
+ if(response.inputBinding!==undefined){
+  const b=response.inputBinding;
+  if(!object(b)||Object.keys(b).length!==3||!['workspaceId','packageRoot','sessionId'].every(k=>text(b[k])&&b[k].length<=4096)||!b.packageRoot.startsWith('/')||b.packageRoot.includes('\\')||b.packageRoot.split('/').some(v=>v==='.'||v==='..'))return invalid('INVALID_INPUT_BINDING');
+ }
+ if(!validateTaskAssets(response.assets,response.surfaces))return invalid('INVALID_TASK_ASSETS');
  return {state:'valid',authority:'draft',projection:response};
 }

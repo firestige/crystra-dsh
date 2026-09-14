@@ -86,3 +86,24 @@ requested resource revision and returns at most 10,000 characters per call,
 with a content digest and continuation offset. Source expiry or session binding
 changes reject the read. Draft references added to native Input neither submit
 a message nor grant permission to edit, adopt, execute or publish.
+
+Optional Task `assets` bind the plan document, summary/DAG and execution diagrams
+to the current plan and full Wave run identity. They use the public inert SVG
+vocabulary, explicit node-to-Wave selection and native Markdown rendering;
+malformed identities or active graphics reject the projection. Missing assets
+remain unavailable. Graph navigation does not start a run.
+
+To enable isolated Workflow resource candidates, additionally configure an
+absolute `exploration.resourceDraftRoot` and `allowResourceWrites: true`.
+Saving checks the exact base revision/content and writes an immutable candidate
+under a source-bound namespace, never the source package. Reload and the bound
+Agent read tool can consume the exact candidate revision. Persisted events stay
+pending until a separately admitted consumer acknowledges them; saving is not
+Agent delivery or adoption. Writes default to disabled.
+
+An optional Task `inputBinding` supplies an exact native `workspaceId`, absolute
+`packageRoot` and `sessionId`. The dedicated runtime must confirm workspace and
+session membership before showing Input; archived or revoked bindings hide it.
+An owner Task always uses its formal Delivery correlation and cannot inherit a
+draft session. Task and Workflow drafts may use separate native sessions, so
+navigation preserves each unsent draft without mixing conversation histories.

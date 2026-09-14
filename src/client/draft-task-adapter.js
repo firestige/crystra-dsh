@@ -24,7 +24,9 @@ export function createDraftTaskAdapter({gateway,now=Date.now,setTimer=setTimeout
     if(read?.ok!==true)throw new Error('PROJECTION_UNAVAILABLE');
     const admission=admitDraftProjection(read.value,context,now());
     if(admission.state!=='valid'||read.value.snapshotRevision!==row.snapshotRevision||read.value.expiresAt!==row.expiresAt)throw new Error('PROJECTION_INVALID');
-    ids.add(context.taskId);tasks.push({context:{...context},projection:structuredClone(read.value)});
+    const previous=states.get(context.taskId)?.projection;
+    const projection=previous&&JSON.stringify(previous)===JSON.stringify(read.value)?previous:structuredClone(read.value);
+    ids.add(context.taskId);tasks.push({context:{...context},projection});
    }
    if(tasks.some(item=>admitDraftProjection(item.projection,item.context,now()).state!=='valid'))throw new Error('PROJECTION_EXPIRED');
    clearTimer(expiryTimer);publish(tasks,'ready');

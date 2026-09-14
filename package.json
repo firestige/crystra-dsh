@@ -73,7 +73,7 @@
     "@opentelemetry/sdk-trace-base": "2.10.0",
     "ajv": "8.20.0",
     "crystra-execution": "https://github.com/firestige/crystra-execution/releases/download/crystra-execution-v0.1.0-rc.2/crystra-execution-0.1.0.tgz",
-    "crystra-ui-core": "https://github.com/firestige/crystra-ui/releases/download/crystra-ui-v0.1.0-rc.3/crystra-ui-core-0.1.0.tgz",
+    "crystra-ui-core": "https://github.com/firestige/crystra-ui/releases/download/crystra-ui-v0.1.0-rc.4/crystra-ui-core-0.1.0.tgz",
     "d3": "7.9.0",
     "react-grid-layout": "2.2.4",
     "tar": "7.5.21",
