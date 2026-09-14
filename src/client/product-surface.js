@@ -23,6 +23,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
    input:input.taskId===nav.route.id&&input.kind==='active'?null:React.createElement('div',null,React.createElement('p',{role:'status'},input.kind==='ambiguous'?'此任务关联多个会话，请选择本实例中的会话。':input.kind==='unbound'?'此任务尚未关联当前实例的会话。':'当前无法确认此任务的会话关联。'),...(input.choices??[]).map(choice=>React.createElement(Core.Button,{key:choice.id,onClick:()=>taskInput?.selectSession(choice.id)},choice.label))),
    panels:{...Object.fromEntries(['grilling','plan','execution','gate','delivery'].map(page=>[page,React.createElement('p',{role:'status'},'该工作面的正式投影尚未接入。')])),...renderTaskPanels?.(nav.route.id)},
   });
+  if(nav.route.page==='workflows')return React.createElement(Core.WorkflowExplorer,{entries:[],phase:'unavailable',onOpen:(id,revision)=>navigation.navigate('workflow',id,revision)});
   if(nav.route.page==='new-task')return null;
   if(nav.route.page.startsWith('analysis-'))return renderAnalysis(nav.route.page,navigation.navigate);
   if(nav.route.page==='tasks')return React.createElement(Core.TaskBrowser,{
