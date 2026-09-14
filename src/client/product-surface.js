@@ -1,3 +1,4 @@
+import {projectEvidenceTasks} from './task-browser-projection.js';
 import {nativeInputLayoutStyles} from './native-input-layout.js';
 import {createProductNavigation} from './product-navigation.js';
 
@@ -5,6 +6,8 @@ import {createProductNavigation} from './product-navigation.js';
 export function createProductSurface({React,Core,controller,renderAnalysis,storage,sharedStyles,taskInput,renderTaskPanels}) {
  if(typeof Core.CrystraShell!=='function')throw new Error('CRYSTRA_SHELL_COMPONENT_REQUIRED');
  const navigation=createProductNavigation(storage);
+ let clearSession=()=>{};
+ const newTask=()=>{navigation.navigate("new-task");clearSession();};
  let sidebarCollapsed=false;
  try{sidebarCollapsed=storage?.getItem("crystra.sidebar.collapsed")==="true";}catch{}
  const saveSidebar=collapsed=>{sidebarCollapsed=collapsed===true;try{storage?.setItem("crystra.sidebar.collapsed",String(sidebarCollapsed));}catch{}};
@@ -21,13 +24,12 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
   });
   if(nav.route.page==='new-task')return null;
   if(nav.route.page.startsWith('analysis-'))return renderAnalysis(nav.route.page,navigation.navigate);
-  if(nav.route.page==='tasks')return React.createElement(Core.Surface,{as:'section','data-section-id':'task-browser-content'},
-   React.createElement(Core.Typography,{as:'h1',variant:'page-title'},'全部任务'),
-   state.taskList.phase==='error'?React.createElement('p',{role:'alert'},state.taskList.error?.message):null,
-   React.createElement(Core.Button,{onClick:()=>{void controller.loadTasks();}},'刷新'),
-   React.createElement(Core.List,{size:'compact'},...state.taskList.items.map(task=>React.createElement(Core.ListItem,{
-    key:task.task_id,primary:task.task_id,'data-object-id':task.task_id,onActivate:()=>navigation.navigate('task',task.task_id),
-   }))),state.taskList.phase==='ready'&&state.taskList.items.length===0?React.createElement('p',{role:'status'},'暂无任务'):null);
+  if(nav.route.page==='tasks')return React.createElement(Core.TaskBrowser,{
+   tasks:projectEvidenceTasks(state.taskList.items),phase:state.taskList.phase==='idle'?'loading':state.taskList.phase,error:state.taskList.error?.message,
+   onOpen:id=>navigation.navigate('task',id),onNewTask:newTask,onRefresh:()=>{void controller.loadTasks();},
+   hasMore:typeof state.taskList.page?.next_cursor==='string'&&state.taskList.page.next_cursor.length>0,
+   onLoadMore:()=>{const cursor=controller.getSnapshot().taskList.page?.next_cursor;if(cursor)void controller.loadTasks(cursor);},
+  });
   return React.createElement(Core.Surface,{as:'section'},
    React.createElement(Core.Typography,{as:'h1',variant:'page-title'},nav.route.page==='task'?'Task':'Workflow'),
    nav.route.id?React.createElement('p',null,nav.route.id):null,
@@ -36,6 +38,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  }
  return {navigation,
   apply(ctx){
+   clearSession=()=>ctx.sessions.clear();
    function Overlay(){
     const nav=React.useSyncExternalStore(navigation.subscribe,navigation.getSnapshot,navigation.getSnapshot);
     const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
@@ -47,9 +50,9 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
      React.createElement('style',null,sharedStyles+nativeInputLayoutStyles+'\n.crystra-product-overlay{position:fixed;inset:0;pointer-events:auto;background:var(--color-background-shell);}'),
      React.createElement(Core.CrystraShell,{
       initialSidebarCollapsed:sidebarCollapsed,onSidebarCollapsedChange:saveSidebar,
-      route:nav.route.page,selectedId:nav.route.id,tasks:state.taskList.items.map(t=>({id:t.task_id,title:t.task_id})),workflows:[],
+      route:nav.route.page,selectedId:nav.route.id,tasks:projectEvidenceTasks(state.taskList.items),workflows:[],
       onNavigate:navigation.navigate,onOpenHarness:navigation.openHarness,
-      onNewTask:()=>{navigation.navigate('new-task');ctx.sessions.clear();},
+      onNewTask:newTask,
       onOpenSettings:navigation.openHarness,
      },React.createElement(Page)));
    }
