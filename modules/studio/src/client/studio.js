@@ -318,7 +318,7 @@ export function reduceSingleTaskSelection(_current, taskId, checked) {
   return checked ? Object.freeze({ mode: "single", taskIds: Object.freeze([taskId]) }) : undefined;
 }
 
-function StudioView(React, Primitives, Bi, sharedStyles, controller, explicitThemeMode, layoutStorage) {
+export function StudioView(React, Primitives, Bi, sharedStyles, controller, explicitThemeMode, layoutStorage) {
   const Button = Bi.Button;
   const ButtonGroup = Bi.ButtonGroup;
   const StatusBadge = Bi.StatusBadge;

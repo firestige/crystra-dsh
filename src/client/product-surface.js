@@ -1,7 +1,7 @@
 import {createProductNavigation} from './product-navigation.js';
 
 /** Host bridge: the framework retains its conversation tree under the product surface. */
-export function createProductSurface({React,Core,controller,renderAnalysis,storage}) {
+export function createProductSurface({React,Core,controller,renderAnalysis,storage,sharedStyles}) {
  if(typeof Core.CrystraShell!=='function')throw new Error('CRYSTRA_SHELL_COMPONENT_REQUIRED');
  const navigation=createProductNavigation(storage);
  function Page(){
@@ -23,18 +23,18 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
  }
  return {navigation,
   apply(ctx){
-   function Overlay(props){
+   function Overlay(){
     const nav=React.useSyncExternalStore(navigation.subscribe,navigation.getSnapshot,navigation.getSnapshot);
     const state=React.useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot);
     React.useEffect(()=>{void controller.loadTasks();},[]);
     if(nav.surface==='harness')return null;
-    return React.createElement('div',{'data-crystra-product-overlay':true,style:{position:'fixed',inset:0,pointerEvents:'auto'}},
+    return React.createElement(Core.BiSurface,{'data-crystra-product-overlay':true,theme:'dark','data-crystra-theme':'dark',className:'crystra-product-overlay'},
+     React.createElement('style',null,sharedStyles+'\n.crystra-product-overlay{position:fixed;inset:0;pointer-events:auto;background:var(--color-background-shell);}'),
      React.createElement(Core.CrystraShell,{
       route:nav.route.page,selectedId:nav.route.id,tasks:state.taskList.items.map(t=>({id:t.task_id,title:t.task_id})),workflows:[],
       onNavigate:navigation.navigate,onOpenHarness:navigation.openHarness,
       onNewTask:()=>{navigation.openHarness();ctx.workspaces.startSession();},
       onOpenSettings:navigation.openHarness,
-      settings:React.createElement('div',{onClick:navigation.openHarness},props.renderSlot('sidebar.settings',{wide:true})),
      },React.createElement(Page)));
    }
    ctx.slots.inject('shell.overlay',()=>ctx.slots.register({name:'shell.overlay',id:'crystra-product'},Overlay));

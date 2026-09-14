@@ -16,3 +16,18 @@ test('registers only additive overlay and return entry, retaining the Harness tr
 test('rejects an older UI dependency without the accepted Shell export',()=>{
  assert.throws(()=>createProductSurface({Core:{}}),/SHELL_COMPONENT_REQUIRED/);
 });
+test('mounts with the overlay props supplied by the host, without a child-slot renderer',()=>{
+ const entries=new Map();
+ const React={createElement:(type,props,...children)=>({type,props,children}),useSyncExternalStore:(_,snapshot)=>snapshot(),useEffect(){}};
+ const Core={CrystraShell(){},Button(){},BiSurface(){}};
+ const controller={getSnapshot:()=>({taskList:{items:[]}}),subscribe(){}};
+ const runtime=createProductSurface({React,Core,controller,renderAnalysis(){}});
+ runtime.apply({slots:{inject(_,fn){fn();},register(def,render){entries.set(def.name,render);}}});
+ const tree=entries.get('shell.overlay')({});
+ assert.equal(tree.type,Core.BiSurface);
+ assert.equal(tree.props['data-crystra-theme'],'dark');
+ assert.equal(tree.props.className,'crystra-product-overlay');
+ const shell=tree.children[1];
+ shell.props.onOpenSettings();
+ assert.equal(runtime.navigation.getSnapshot().surface,'harness');
+});
