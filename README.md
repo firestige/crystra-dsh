@@ -112,3 +112,9 @@ Task `assets.gateContexts` optionally supplies read-only evidence context for an
 exact Gate and declared evidence item. The public context component renders
 quoted text only; it cannot approve, execute or follow embedded locators. Missing
 Plan/Trace associations remain explicit unavailable views with a return control.
+
+Workflow resource relations reuse the public UI graph with exact source file,
+content and revision checks. A saved candidate invalidates the old graph and
+retained navigation callbacks until a matching projection is supplied. Graph
+identity remains stable across unchanged owner polls. These relations describe
+the conditional source snapshot, not observed runtime calls or Agent adoption.

@@ -24,3 +24,10 @@ test('resource discussion quotes its exact revision and refuses a stale projecti
  discuss({resourceId:'r',path:'README.md'});assert.equal(quoted[0].resourceRevision,'file-r1');assert.equal(quoted[0].revision,'r1');
  rows=[];discuss({resourceId:'r',path:'README.md'});assert.equal(quoted.length,1);
 });
+test('unchanged relation projection keeps component identity across owner refreshes',()=>{
+ const p={snapshotRevision:'s1',entry:{title:'W'},studio:{state:'unavailable',reason:'missing'},crystallization:{state:'unavailable',reason:'missing'},resources:{state:'available',value:{workspace:{files:[]},catalog:[]}}};
+ const rows=[{context:{definitionId:'wf',definitionRevision:'r1'},projection:p}],adapter={getSnapshot:()=>({phase:'ready',workflows:rows}),subscribe(){},refresh(){},dispose(){}};
+ const React={createElement:(type,props,...children)=>({type,props,children})};const port=createDraftWorkflowIntegration({React,Core:{},adapter});
+ const component=()=>port.select('wf','r1').panels.resources.children[1].children[0].props.renderRelations;
+ assert.equal(component(),component());
+});
