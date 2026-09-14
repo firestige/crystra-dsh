@@ -89,7 +89,7 @@ export function validateDependencyGraph(manifests, domainOwnerRoles = [
 
 export function validatePackInventory({ name, files }) {
   const required = ["package/LICENSE", "package/NOTICE.md", "package/README.md", "package/package.json", "package/cordis.patch.yml", "package/src/index.js", "package/lib/client.js", "package/modules/execution/src/index.js", "package/modules/studio/src/index.js"];
-  const allowed = /^package\/(?:LICENSE|NOTICE\.md|README\.md|package\.json|cordis\.patch\.yml|lib\/client\.js|src\/.+|modules\/(?:execution|studio|initialization)\/(?:src\/.+|README\.md|NOTICE\.md)|skills\/.+)$/u;
+  const allowed = /^package\/(?:node_modules\/crystra-(?:execution|ui-core)\/(?!.*node_modules\/).+|LICENSE|NOTICE\.md|README\.md|package\.json|cordis\.patch\.yml|lib\/client\.js|src\/.+|modules\/(?:execution|studio|initialization)\/(?:src\/.+|README\.md|NOTICE\.md)|skills\/.+)$/u;
   if (name !== "dsh-crystra" || required.some(file => !files.includes(file))
       || files.some(file => !allowed.test(file) || /(?:^|\/)test(?:s)?\/|\.test\.[cm]?[jt]sx?$/u.test(file))) {
     throw new BoundaryViolation("PACK_INVENTORY", name);

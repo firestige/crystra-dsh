@@ -8,11 +8,11 @@ Execution and Studio are internal modules of this plugin. `crystra-execution` an
 
 The new distribution starts at `0.1.0`; no Crystra release is claimed by this source checkout. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. The eight repositories now use their Crystra coordinates. Production candidates reject local file dependencies and require exact published GitHub Release assets.
 
-Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. Check out the configured Execution and UI commits under `.crystra-inputs/sources/execution` and `.crystra-inputs/sources/ui`, then run:
+Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. The current checkout consumes qualified component RCs by exact URL and digest:
 
 ```sh
-node scripts/prepare-development-artifacts.mjs
 npm ci --ignore-scripts --no-audit --no-fund
+node scripts/verify-candidate-inputs.mjs --cache
 npm rebuild better-sqlite3
 npm run build
 npm test
@@ -38,8 +38,10 @@ Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, a
 
 The root plugin loads without pre-existing Execution configuration. `/crystra setup` prepares configuration and the bound service group; `/crystra doctor` reports readiness and missing repository role bindings. `/crystra services start|stop|status` manages the installation's own Compose namespace. These commands are deterministic and do not invoke an LLM. No independent public product installer is shipped. See [initialization](docs/initialization.md).
 
-Before new service assets are published and bound, setup activates Execution and explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`. This development state is not a fully installed release.
+The plugin binds `crystra-services-v0.1.0-rc.1`. Setup still requires repository role bindings before workflow execution is ready. If a development fixture has no service descriptor, it explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`.
 
 New RC tags use `crystra-dsh-v<version>-rc.N`. Stable promotion reuses qualified bytes through GitHub Releases and retains its manual release gate. There is no npm publication stage. Historical release records describe their original artifacts, not this new distribution.
 
 See [foundation boundaries](docs/foundation-boundaries.md), [source notice](NOTICE.md), and [security policy](SECURITY.md).
+
+The release archive bundles only the two digest-verified first-party component packages using npm bundled dependencies. Their registry dependencies remain ordinary root dependencies, resolved for the installation platform. Packaging never copies the development machine's native dependencies. This permits normal DSH installation with pnpm's default URL-subdependency protection enabled.
