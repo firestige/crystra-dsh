@@ -49,3 +49,26 @@ test('first load creates private configuration without declaring services ready 
     assert.deepEqual(JSON.parse(await readFile(config.paths.configFile,'utf8')),edited);
   }finally{await rm(root,{recursive:true,force:true});}
 });
+test('task exploration is disabled by default and requires explicit absolute sources and a digest',()=>{
+ assert.equal(normalizePluginConfiguration({}).exploration,undefined);
+ const value={taskFile:'/tmp/tasks.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:true};
+ assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
+ for(const invalid of [{...value,taskFile:'relative'},{...value,sourceLockDigest:'latest'},{...value,allowFixtures:'true'},{...value,extra:true}])assert.throws(()=>normalizePluginConfiguration({exploration:invalid}),/CRYSTRA_CONFIG_INVALID/);
+});
+
+test('Workflow-only exploration requires pinned sources and at least one configured projection',()=>{
+ const value={workflowFile:'/tmp/workflows.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:false};
+ assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
+ const {workflowFile,...empty}=value;assert.throws(()=>normalizePluginConfiguration({exploration:empty}),/CRYSTRA_CONFIG_INVALID/);
+ assert.throws(()=>normalizePluginConfiguration({exploration:{...value,workflowFile:'relative'}}),/CRYSTRA_CONFIG_INVALID/);
+});
+test('resource authoring needs an explicit isolated root and boolean write opt-in',()=>{
+ const value={workflowFile:'/tmp/w.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:true,resourceDraftRoot:'/tmp/candidates',allowResourceWrites:true};
+ assert.deepEqual(normalizePluginConfiguration({exploration:value}).exploration,value);
+ for(const changed of [{...value,resourceDraftRoot:'relative'},{...value,resourceDraftRoot:undefined},{...value,allowResourceWrites:'true'}])assert.throws(()=>normalizePluginConfiguration({exploration:changed}),/CRYSTRA_CONFIG_INVALID/);
+});
+test('native resource notifications require explicit authoring and notification opt-in',()=>{
+ const value={workflowFile:'/tmp/w.json',sourceLockFile:'/tmp/lock.json',sourceLockDigest:'a'.repeat(64),allowFixtures:true,resourceDraftRoot:'/tmp/candidates',allowResourceWrites:true,allowResourceNotifications:true};
+ assert.equal(normalizePluginConfiguration({exploration:value}).exploration.allowResourceNotifications,true);
+ for(const changed of [{...value,allowResourceWrites:false},{...value,allowResourceNotifications:'true'}])assert.throws(()=>normalizePluginConfiguration({exploration:changed}),/CRYSTRA_CONFIG_INVALID/);
+});

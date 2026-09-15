@@ -1,3 +1,7 @@
+import {createResourceNotificationDelivery} from './host/resource-notification-delivery.js';
+import {createWorkflowDraftReadTool} from './host/workflow-draft-read-tool.js';
+import {createDraftWorkflowFileGateway} from './host/draft-workflow-file.js';
+import {createDraftTaskFileGateway} from './host/draft-task-file.js';
 import {randomUUID} from 'node:crypto';
 import * as execution from '../modules/execution/src/index.js';
 import * as studio from '../modules/studio/src/index.js';
@@ -7,13 +11,18 @@ import {createCommandRouter} from '../modules/initialization/src/command-router.
 
 export function createHostPlugin({executionModule=execution,studioModule=studio,initialize=initializeHost}={}) {
  return {
-  name:'crystra',inject:[...new Set(['commands',...executionModule.inject,...studioModule.inject])],
+  name:'crystra',inject:[...new Set(['commands','sessions',...executionModule.inject,...studioModule.inject])],
   async apply(ctx,input={}) {
    const configuration=normalizePluginConfiguration(input);
    let host,readGateway,unregister;
+   const draft=configuration.exploration?.taskFile?createDraftTaskFileGateway({file:configuration.exploration.taskFile,...configuration.exploration}):undefined;
+   const workflowDraft=configuration.exploration?.workflowFile?createDraftWorkflowFileGateway({file:configuration.exploration.workflowFile,...configuration.exploration,deliverNotification:createResourceNotificationDelivery({ctx,resolveWorkspace:agent=>execution.resolveConversationWorkspace(ctx,agent)})}):undefined;
+   const unregisterDraftTool=workflowDraft?ctx.tools.register(createWorkflowDraftReadTool({gateway:workflowDraft,resolveWorkspace:agent=>execution.resolveConversationWorkspace(ctx,agent)})):undefined;
+   const draftRead=(endpoint,payload)=>{const workflow=typeof endpoint==='string'&&endpoint.startsWith('workflow/');const port=workflow?workflowDraft:draft;return port?port.handle(workflow?endpoint.slice(9):endpoint,payload):({ok:false,error:{code:'DRAFT_DISABLED',message:'Conditional draft projection is not configured.'}});};
+   const unregisterDraft=ctx.connection?.rpc?.handle('/crystra-exploration',draftRead,{authority:'loopback'});
    const unregisterGateway=ctx.connection?.rpc?.handle('/crystra-execution',(endpoint,payload)=>readGateway?readGateway.handle(endpoint,payload):({ok:false,error:{code:'DELIVERY_PROJECTION_UNAVAILABLE',message:'Crystra needs configuration. Run /crystra setup.'}}),{authority:'loopback'});
    const unhook=ctx.on?.('agent/pre-step',(payload,next)=>execution.consumeCrystraCommandBeforeModel(payload)?{kind:'reject'}:next());
-   ctx.effect(async function*(){yield async()=>{await unregister?.();await unregisterGateway?.();await unhook?.();await host?.dispose();};},'Crystra initialization lifecycle');
+   ctx.effect(async function*(){yield async()=>{await unregister?.();await unregisterGateway?.();await unregisterDraft?.();await unregisterDraftTool?.();await unhook?.();await host?.dispose();};},'Crystra initialization lifecycle');
    const router=createCommandRouter({operate:async(action,signal,invocation)=>{
      const workspace=invocation.agent?await execution.resolveConversationWorkspace(ctx,invocation.agent):undefined;
      return host.operate(action,signal,workspace?.path);

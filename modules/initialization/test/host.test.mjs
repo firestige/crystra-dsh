@@ -9,7 +9,7 @@ test('first Host initialization is light; setup creates execution configuration 
  const root=await mkdtemp(path.join(os.tmpdir(),'crystra-host-init-'));
  try {
   let activations=0;
-  const host=await initializeHost(normalizePluginConfiguration({stateRoot:root}),{activateExecution:async()=>{activations++;}});
+  const host=await initializeHost(normalizePluginConfiguration({stateRoot:root}),{activateExecution:async()=>{activations++;},loadDescriptor:async()=>{throw Object.assign(new Error("fixture descriptor absent"),{code:"ENOENT"});}});
   assert.equal(activations,0);
   assert.equal((await host.operate('doctor')).status,'NEEDS_CONFIGURATION');
   const result=await host.operate('setup');

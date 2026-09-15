@@ -24,7 +24,7 @@ function object(value,allowed,field) {
 }
 function absolute(value,field) {if(typeof value!=='string'||!path.isAbsolute(value))invalid(field);return path.resolve(value);}
 export function normalizePluginConfiguration(input={}) {
-  object(input,['stateRoot','execution','services','studio'],'root');
+  object(input,['stateRoot','execution','services','studio','exploration'],'root');
   const paths=input.stateRoot===undefined?resolveCrystraPaths():{
     stateRoot:absolute(input.stateRoot,'stateRoot'),configFile:path.join(absolute(input.stateRoot,'stateRoot'),'config.json'),
   };
@@ -34,6 +34,17 @@ export function normalizePluginConfiguration(input={}) {
   const ports={evidence:4318,evolution:8000,...services.ports};
   for(const [id,port] of Object.entries(ports))if(!Number.isInteger(port)||port<1024||port>65535)invalid(`services.ports.${id}`);
   if(ports.evidence===ports.evolution)invalid('services.ports.duplicate');
+  let exploration;
+  if(input.exploration!==undefined){
+    const value=input.exploration;object(value,['taskFile','workflowFile','resourceDraftRoot','allowResourceWrites','allowResourceNotifications','sourceLockFile','sourceLockDigest','allowFixtures'],'exploration');
+    if(!/^[a-f0-9]{64}$/.test(value.sourceLockDigest??'')||typeof value.allowFixtures!=='boolean')invalid('exploration');
+    if(value.taskFile===undefined&&value.workflowFile===undefined)invalid('exploration');
+    if(value.allowResourceNotifications!==undefined&&(typeof value.allowResourceNotifications!=='boolean'||(value.allowResourceNotifications===true&&value.allowResourceWrites!==true)))invalid('exploration.allowResourceNotifications');
+    if(value.allowResourceWrites!==undefined&&typeof value.allowResourceWrites!=='boolean')invalid('exploration.allowResourceWrites');
+    if((value.resourceDraftRoot!==undefined||value.allowResourceWrites===true)&&value.workflowFile===undefined)invalid('exploration.workflowFile');
+    if(value.allowResourceWrites===true&&value.resourceDraftRoot===undefined)invalid('exploration.resourceDraftRoot');
+    exploration=Object.freeze({...value.allowResourceNotifications!==undefined?{allowResourceNotifications:value.allowResourceNotifications}:{},...value.resourceDraftRoot!==undefined?{resourceDraftRoot:absolute(value.resourceDraftRoot,'exploration.resourceDraftRoot')}:{},...value.allowResourceWrites!==undefined?{allowResourceWrites:value.allowResourceWrites}:{},...value.taskFile!==undefined?{taskFile:absolute(value.taskFile,'exploration.taskFile')}:{},...value.workflowFile!==undefined?{workflowFile:absolute(value.workflowFile,'exploration.workflowFile')}:{},sourceLockFile:absolute(value.sourceLockFile,'exploration.sourceLockFile'),sourceLockDigest:value.sourceLockDigest,allowFixtures:value.allowFixtures});
+  }
   let execution;
   if(input.execution!==undefined) {
     object(input.execution,['configFile','bindingFile'],'execution');
@@ -42,7 +53,7 @@ export function normalizePluginConfiguration(input={}) {
   // Retained adapter configuration for explicit development/qualification profiles.
   // Normal setup derives Studio endpoints from the unified service description.
   if(input.studio!==undefined)object(input.studio,['hostConfigFile','hostConfig','evidenceBaseUrl','evolutionBaseUrl'],'studio');
-  return Object.freeze({paths:Object.freeze(paths),services:Object.freeze({ports:Object.freeze(ports)}),execution,studio:input.studio});
+  return Object.freeze({paths:Object.freeze(paths),services:Object.freeze({ports:Object.freeze(ports)}),execution,studio:input.studio,exploration});
 }
 
 export async function initializeConfiguration(configuration) {

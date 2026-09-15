@@ -141,12 +141,13 @@ test("real Chrome follows Dashboard to exact Evidence and Trace while preserving
         const frame = document.querySelector('[data-studio-trace-hierarchy]');
         const renderer = frame?.querySelector('[data-trace-renderer]');
         const navigation = frame?.querySelector('[aria-label="Trace renderer navigation"]');
-        const header = renderer?.querySelector('.trace-view-header');
+        const header = renderer;
+        if (renderer?.querySelector('.trace-summary-strip')) throw new Error('Duplicate Trace summary');
         if (!renderer || renderer.dataset.traceRenderer !== ${JSON.stringify(view.toLowerCase())}) return undefined;
         return { navigationBeforeHeader: Boolean(navigation && header && (navigation.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING)) };
       })()`), `STUDIO_${view.toUpperCase()}_HIERARCHY_UNAVAILABLE`);
     };
-    for (const view of ["Waterfall", "Tree", "Statistics"]) {
+    for (const view of ["Waterfall", "Tree"]) {
       assert.deepEqual(await hierarchyFor(view), { navigationBeforeHeader: true });
     }
 

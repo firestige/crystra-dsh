@@ -271,7 +271,6 @@ test("the Studio shell advertises one Evaluate route and complete keyboard/scree
   assert.deepEqual(STUDIO_TRACE_VIEWS, [
     { id: "waterfall", label: "Waterfall", renderer: "TraceWaterfall", note: "Exact span timing" },
     { id: "tree", label: "Tree", renderer: "TraceTree", note: "Deterministic geometry · depth → recorded start/end → Span ID" },
-    { id: "statistics", label: "Statistics", renderer: "TraceStatistics", note: "Exact inventory · recorded-time aggregates · no inferred causality" },
   ]);
 });
 
@@ -588,7 +587,8 @@ test("compare, receipt, Fact and recorded Trace routes use shared BI foundations
   const hierarchy = elementsOf(rendered).find((element) => element.props?.["data-studio-trace-hierarchy"] === "navigation-header-content");
   assert.match(textOf(hierarchy.children[1]), /Waterfall/);
   assert.match(textOf(hierarchy.children[1]), /Tree/);
-  assert.match(textOf(hierarchy.children[1]), /Statistics/);
+  assert.doesNotMatch(textOf(hierarchy.children[1]), /Statistics/);
+  assert.equal(traceRenderer.props.showSummary, false);
   assert.equal(hierarchy.children[2], traceRenderer);
   assert.equal(traceRenderer.props.viewNavigation, undefined);
 });

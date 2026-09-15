@@ -470,6 +470,14 @@ try {
   await Promise.all([cdp.command("Runtime.enable"), cdp.command("Page.enable"), cdp.command("Log.enable")]);
 
   await cdp.command("Page.bringToFront");
+  // Qualify the new default product surface and its public return path before
+  // retaining the complete native Harness/session/Studio checks below.
+  await waitFor(async () => cdp.evaluate(`(() => {
+    const shell=document.querySelector('[data-crystra-theme]');
+    const back=document.querySelector('button[aria-label="切换到 DeepSeek Harness"]');
+    if(!shell || !back || back.getBoundingClientRect().width===0)return false;
+    back.click();return true;
+  })()`), "CRYSTRA_PRODUCT_RETURN_TO_HARNESS_UNAVAILABLE");
   await waitFor(async () => cdp.evaluate(`document.querySelector('textarea:not(:disabled)') !== null`), "HARNESS_WORKSPACE_PICKER_UNAVAILABLE");
   const workspaceSelected = await cdp.evaluate(`(() => {
     const input = document.querySelector('textarea:not(:disabled)');
@@ -1047,7 +1055,7 @@ try {
     const studio = document.querySelector('[data-crystra-studio-view="evaluate"]');
     const hierarchy = view?.closest('[data-studio-trace-hierarchy]');
     const navigation = hierarchy?.querySelector('[aria-label="Trace renderer views"]');
-    const rendererHeader = view?.querySelector('.trace-view-header');
+    const rendererHeader = view;
     const headerButtons = [...studio.querySelectorAll('[data-crystra-studio-region="header"] button')];
     const actions = Object.fromEntries(['Back to Dashboard', 'Open Evidence', 'Copy trace identity'].map((label) => {
       const button = headerButtons.find((node) => node.textContent.trim() === label);
@@ -1087,11 +1095,9 @@ try {
   const expectedTraceViews = [
     { label: "Waterfall", appearance: "segment", selected: "true" },
     { label: "Tree", appearance: "segment", selected: "false" },
-    { label: "Statistics", appearance: "segment", selected: "false" },
   ];
   if (waterfall.schemaVersion !== "crystra.studio-render@1" || waterfall.spans !== 7 || !waterfall.passport ||
-      JSON.stringify(waterfall.summaryLabels) !== JSON.stringify(["Duration", "Start", "Spans", "Errors"]) ||
-      waterfall.summaryTones.Errors !== "error" ||
+      waterfall.summaryLabels.length !== 0 ||
       waterfall.rulerTicks.some((tick) => tick.includes("%")) || waterfall.rulerTicks.length !== 5 ||
       waterfall.oldToolbar || Object.values(waterfall.controls).some((value) => !value) ||
       waterfall.iconActions.count !== 3 || !waterfall.iconActions.grouped || waterfall.iconActions.segmented !== null ||
@@ -1110,7 +1116,7 @@ try {
     const view = document.querySelector('[data-trace-renderer="tree"]');
     const hierarchy = view?.closest('[data-studio-trace-hierarchy]');
     const navigation = hierarchy?.querySelector('[aria-label="Trace renderer views"]');
-    const rendererHeader = view?.querySelector('.trace-view-header');
+    const rendererHeader = view;
     const graph = view?.querySelector('canvas[aria-label="Recorded span call tree graph"]');
     return view && view.textContent.includes('Qualification evaluate') && view.querySelector('[aria-label="Span passport"]')
       && graph && view.querySelector('[aria-label="Tree minimap navigation"]')
@@ -1127,29 +1133,7 @@ try {
   if (tree.schemaVersion !== "crystra.trace-graph@1" || tree.spans !== 7 || tree.parentEdgeCount !== 6 || tree.linkCount !== 1 || !tree.graph || !tree.cameraMap || !tree.passport ||
       tree.navigationNote !== "Deterministic geometry · depth → recorded start/end → Span ID" || !tree.navigationBeforeHeader) throw new Error(`HARNESS_STUDIO_TRACE_TREE_DENSITY_INVALID: ${JSON.stringify(tree)}`);
   const studioTreeScreenshot = await captureScreenshot(cdp, "studio-trace-tree-dark-desktop");
-  await cdp.evaluate(`(() => { [...document.querySelectorAll('button')].find((node) => node.textContent.trim() === 'Statistics').click(); })()`);
-  const statistics = await waitFor(async () => cdp.evaluate(`(() => {
-    const view = document.querySelector('[data-trace-renderer="statistics"]');
-    const hierarchy = view?.closest('[data-studio-trace-hierarchy]');
-    const navigation = hierarchy?.querySelector('[aria-label="Trace renderer views"]');
-    const rendererHeader = view?.querySelector('.trace-view-header');
-    return view && view.textContent.includes('Recorded spans') && view.textContent.includes('Recorded links')
-      && !view.textContent.toLowerCase().includes('critical path') && !view.textContent.toLowerCase().includes('service map')
-      ? { exactInventory: true, inferredAnalysis: false,
-          navigationNote: hierarchy?.querySelector('.studio-trace-view-note')?.textContent.trim(),
-          navigationBeforeHeader: Boolean(navigation && rendererHeader && (navigation.compareDocumentPosition(rendererHeader) & Node.DOCUMENT_POSITION_FOLLOWING)),
-          typography: [...view.querySelectorAll('[data-variant]')].map((node) => node.dataset.variant) }
-      : undefined;
-  })()`), "HARNESS_STUDIO_TRACE_STATISTICS_FAILED");
-  const expectedStatisticsTypography = ["overline", "h2", "subtitle1", "body1", "body2", "caption"];
-  if (statistics.navigationNote !== "Exact inventory · recorded-time aggregates · no inferred causality" || !statistics.navigationBeforeHeader ||
-      expectedStatisticsTypography.some((variant) => !statistics.typography.includes(variant))) {
-    throw new Error(`HARNESS_STUDIO_TRACE_STATISTICS_SEMANTICS_INVALID: ${JSON.stringify(statistics)}`);
-  }
-  const studioStatisticsScreenshot = await captureScreenshot(cdp, "studio-trace-statistics-dark-desktop");
-  await cdp.evaluate(`(() => { [...document.querySelectorAll('button')].find((node) => node.textContent.trim() === 'Tree').click(); })()`);
-  await waitFor(async () => cdp.evaluate(`document.querySelector('[data-trace-renderer="tree"]') !== null`), "HARNESS_STUDIO_TRACE_TREE_RESTORE_FAILED");
-  const trace = { waterfall, tree, statistics };
+  const trace = { waterfall, tree };
   const storedLocation = await cdp.evaluate(`sessionStorage.getItem('crystra.studio.location@1')`);
   const urlLocation = await cdp.evaluate(`new URL(location.href).searchParams.get('crystra-studio')`);
   if (!storedLocation?.startsWith('/evaluate/trace/') || urlLocation !== null) {
@@ -1227,7 +1211,6 @@ try {
         dashboardDarkDesktop: studioDashboardScreenshot,
         waterfallDarkDesktop: studioWaterfallScreenshot,
         treeDarkDesktop: studioTreeScreenshot,
-        statisticsDarkDesktop: studioStatisticsScreenshot,
         treeDarkNarrow: studioNarrowScreenshot,
         waterfallLightNarrow: studioLightScreenshot,
       },

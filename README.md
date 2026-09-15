@@ -6,13 +6,13 @@ Execution and Studio are internal modules of this plugin. `crystra-execution` an
 
 ## Current development state
 
-The new distribution starts at `0.1.0`; no Crystra release is claimed by this source checkout. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. The eight repositories now use their Crystra coordinates. Production candidates reject local file dependencies and require exact published GitHub Release assets.
+Install the exact qualified archive selected by the [Crystra quickstart](https://github.com/firestige/crystra/blob/main/docs/guides/quickstart.md) using DSH 0.1.1-rc.2. The combination manifest records its component revisions, release URLs, digests and qualification evidence. The distribution starts at `0.1.0`. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. The eight repositories now use their Crystra coordinates. Production candidates reject local file dependencies and require exact published GitHub Release assets.
 
-Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. Check out the configured Execution and UI commits under `.crystra-inputs/sources/execution` and `.crystra-inputs/sources/ui`, then run:
+Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. The current checkout consumes qualified component RCs by exact URL and digest:
 
 ```sh
-node scripts/prepare-development-artifacts.mjs
 npm ci --ignore-scripts --no-audit --no-fund
+node scripts/verify-candidate-inputs.mjs --cache
 npm rebuild better-sqlite3
 npm run build
 npm test
@@ -38,8 +38,99 @@ Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, a
 
 The root plugin loads without pre-existing Execution configuration. `/crystra setup` prepares configuration and the bound service group; `/crystra doctor` reports readiness and missing repository role bindings. `/crystra services start|stop|status` manages the installation's own Compose namespace. These commands are deterministic and do not invoke an LLM. No independent public product installer is shipped. See [initialization](docs/initialization.md).
 
-Before new service assets are published and bound, setup activates Execution and explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`. This development state is not a fully installed release.
+The plugin binds `crystra-services-v0.1.0-rc.3`. Setup still requires repository role bindings before workflow execution is ready. If a development fixture has no service descriptor, it explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`.
 
 New RC tags use `crystra-dsh-v<version>-rc.N`. Stable promotion reuses qualified bytes through GitHub Releases and retains its manual release gate. There is no npm publication stage. Historical release records describe their original artifacts, not this new distribution.
 
 See [foundation boundaries](docs/foundation-boundaries.md), [source notice](NOTICE.md), and [security policy](SECURITY.md).
+
+The release archive bundles only the two digest-verified first-party component packages using npm bundled dependencies. Their registry dependencies remain ordinary root dependencies, resolved for the installation platform. Packaging never copies the development machine's native dependencies. This permits normal DSH installation with pnpm's default URL-subdependency protection enabled.
+
+The Crystra workbench consumes public v8 UI components. Its Trace directory joins the current instance's Execution Delivery inventory to admitted Evidence `DELIVERY_ROOT` relationships; it preserves exact Task/Workflow identities and execution start times. Missing, expired, ambiguous or unavailable bindings do not select a guessed Trace. Direct exact Trace ID reads remain available.
+
+Conditional authoring stores keep immutable resource candidates separate from the source package. Exact revision reads never silently select the latest candidate. Resource persistence does not imply publication, execution authorization or Agent notification; the explicit design exploration helpers are not shipped in the plugin archive.
+
+For explicitly configured, read-only Task exploration, the root plugin accepts
+`exploration: {taskFile, sourceLockFile, sourceLockDigest, allowFixtures}`.
+Both files must use absolute paths; the SHA-256 pins the source-lock bytes and each
+source in that lock is rechecked. `taskFile` uses `crystra-task-file@1` with
+`tasks: [{selection: {taskId, goalRevision, planRevision}, projection}]`.
+Each projection follows the conditional `crystra-ui-exploration/draft.1` envelope,
+uses adapter ID `crystra-task-file@1`, and carries its own expiry and provenance.
+This option defaults to disabled. Fixture content additionally requires
+`allowFixtures: true`. Read-only loopback RPCs expose `catalog/read` and
+`projection/read`; callers cannot choose filesystem paths. The client refreshes
+every five seconds and clears old content within a ten-second read lease or at
+snapshot expiry, whichever comes first. The adapter does not create sessions,
+authorize execution, or supply missing plan graphs/documents/evidence. An owner
+Task with the same ID takes precedence and never inherits the draft projection.
+
+Optional `exploration.workflowFile` uses `crystra-workflow-file@1` with
+`workflows: [{selection, projection}]`. Selection pins `definitionId`,
+`definitionRevision` and `workspaceId`; the binding uses adapter
+`crystra-workflow-file@1` and the same conditional envelope/source lock as Task.
+Configure at least one of `taskFile` or `workflowFile`. Each definition has one
+explicitly selected revision; ambiguous duplicate identities are rejected.
+Workflow projections supply an exact draft directory entry and independent
+`studio`, `resources`, `crystallization` available/unavailable surfaces.
+The public v8 components consume validated maps/layouts, read-only resource
+snapshots and crystallization projections. Missing edits, relations, sessions,
+Agent events or measured results remain unavailable. No design fixture is
+bundled. Workflow reads use `workflow/catalog/read` and
+`workflow/projection/read` on the loopback `/crystra-exploration` channel.
+
+When Workflow exploration is explicitly configured, the read-only
+`crystra_workflow_draft_read` tool resolves the live Agent's registered workspace
+and requires the projection's exact native session binding. It reads only the
+requested resource revision and returns at most 10,000 characters per call,
+with a content digest and continuation offset. Source expiry or session binding
+changes reject the read. Draft references added to native Input neither submit
+a message nor grant permission to edit, adopt, execute or publish.
+
+Optional Task `assets` bind the plan document, summary/DAG and execution diagrams
+to the current plan and full Wave run identity. They use the public inert SVG
+vocabulary, explicit node-to-Wave selection and native Markdown rendering;
+malformed identities or active graphics reject the projection. Missing assets
+remain unavailable. Graph navigation does not start a run.
+
+To enable isolated Workflow resource candidates, additionally configure an
+absolute `exploration.resourceDraftRoot` and `allowResourceWrites: true`.
+Saving checks the exact base revision/content and writes an immutable candidate
+under a source-bound namespace, never the source package. Reload and the bound
+Agent read tool can consume the exact candidate revision. Persisted events stay
+pending until a separately admitted consumer acknowledges them; saving is not
+Agent delivery or adoption. Writes default to disabled.
+
+An optional Task `inputBinding` supplies an exact native `workspaceId`, absolute
+`packageRoot` and `sessionId`. The dedicated runtime must confirm workspace and
+session membership before showing Input; archived or revoked bindings hide it.
+An owner Task always uses its formal Delivery correlation and cannot inherit a
+draft session. Task and Workflow drafts may use separate native sessions, so
+navigation preserves each unsent draft without mixing conversation histories.
+
+Task `assets.gateContexts` optionally supplies read-only evidence context for an
+exact Gate and declared evidence item. The public context component renders
+quoted text only; it cannot approve, execute or follow embedded locators. Missing
+Plan/Trace associations remain explicit unavailable views with a return control.
+
+Workflow resource relations reuse the public UI graph with exact source file,
+content and revision checks. A saved candidate invalidates the old graph and
+retained navigation callbacks until a matching projection is supplied. Graph
+identity remains stable across unchanged owner polls. These relations describe
+the conditional source snapshot, not observed runtime calls or Agent adoption.
+
+Resource reads expose the persisted pending notification for the exact candidate
+revision. Reloading preserves it; the UI distinguishes saved draft bytes from
+Agent delivery. Missing or mismatched delivery evidence never becomes a success.
+
+Optional `exploration.allowResourceNotifications: true` requires resource write
+opt-in. Committed resource changes can be sent to the exact bound native Session
+with non-waking `agent.inject`, followed by the public Session durability flush.
+An explicit retry preserves ordered event identity after failure. The UI labels
+the durable Session receipt separately from model consumption; no model is
+started and no edit, execution or publication permission is granted by a notice.
+
+Native shutdown can cancel unconsumed inbox notices. The current queue state is
+read from public inbox splice history; cancellation is shown explicitly and may
+be retried without duplicating live work. Durable acceptance remains distinct
+from model consumption, including after restart.
