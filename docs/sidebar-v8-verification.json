@@ -41,8 +41,6 @@
   },
   "installation": {
     "type": "local-fix-candidate",
-    "url": "http://127.0.0.1:3085/",
-    "pid": 14400,
     "sha256": "0270598e7d7a881a9bd46a3be27fcefbaa4262f906a7ad814032e1d9a6162887",
     "filesCompared": 557,
     "mismatches": [],
