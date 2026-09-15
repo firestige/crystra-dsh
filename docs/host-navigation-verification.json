@@ -1,0 +1,40 @@
+{
+  "scope": "DSH native sidebar and Crystra banner navigation",
+  "browser": {
+    "result": "PASS",
+    "checks": [
+      "native workspace restored",
+      "legacy delivery and footer entry absent",
+      "mouse/Enter/Space banner round trips preserve unsent draft",
+      "native collapsed banner only expands",
+      "Crystra collapsed banner only expands",
+      "separate new-session action retained",
+      "no browser page errors"
+    ],
+    "modelRequests": 0
+  },
+  "installedCandidate": {
+    "type": "local-fix-candidate",
+    "pid": 9627,
+    "url": "http://127.0.0.1:3085",
+    "filesCompared": 556,
+    "sha256": "d369ca517f7f7bd37e551be0f8b68c1a8425ab1fad3ba36d6d4251e674389f1c",
+    "originalRelease": "crystra-dsh-v0.1.0-rc.6",
+    "publishedReleaseOverwritten": false
+  },
+  "unitTests": {
+    "passed": 331,
+    "failed": 0
+  },
+  "build": "PASS",
+  "boundaries": "PASS",
+  "pack": "PASS",
+  "qualification": {
+    "realHarness": "PASS",
+    "terminalHarness": "PASS"
+  },
+  "limitations": [
+    "Pinned DSH SidebarRoot 0.1.1-rc.2 DOM adapter",
+    "No claim of new domain data or model execution acceptance"
+  ]
+}

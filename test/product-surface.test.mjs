@@ -1,16 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createProductSurface} from '../src/client/product-surface.js';
-test('registers only additive overlay and return entry, retaining the Harness tree',()=>{
+test('registers overlay and host brand, without a footer entry or replacing the Harness tree',()=>{
  const calls=[];
  const React={createElement:(type,props,...children)=>({type,props,children})};
  const Core={CrystraShell(){},Button(){}};
  const runtime=createProductSurface({React,Core,controller:{},renderAnalysis(){}});
  runtime.apply({slots:{inject(name,fn){calls.push(['inject',name]);fn();},register(def,render){calls.push(['register',def.name,render]);return()=>{};}}});
- assert.deepEqual(calls.filter(c=>c[0]==='register').map(c=>c[1]),['shell.overlay','sidebar.footer.action']);
- const open=calls.find(c=>c[1]==='sidebar.footer.action'&&c[0]==='register')[2]();
- runtime.navigation.openHarness();open.props.onClick();
- assert.equal(runtime.navigation.getSnapshot().surface,'crystra');
+ assert.deepEqual(calls.filter(c=>c[0]==='register').map(c=>c[1]),['shell.overlay','sidebar.brand.mark']);
  assert.equal(calls.some(c=>c[1]==='root'||c[1]==='conversation'),false);
 });
 test('rejects an older UI dependency without the accepted Shell export',()=>{
@@ -113,4 +110,16 @@ test('configured Workflow directory and exact panels revoke without retaining st
  const shell=entries.get('shell.overlay')({}).children[1];assert.equal(shell.props.workflows[0].id,'wf');
  const Page=shell.children[0].type;assert.equal(Page().props.entries.length,1);
  runtime.navigation.navigate('workflow','wf','r1');assert.equal(Page().props.panels.studio,'actual');enabled=false;assert.notEqual(Page().props.panels.studio,'actual');
+});
+
+test('brand registration coexists with the native priority-zero brand and can restore it',()=>{
+ const occupied=new Map([['sidebar.brand.mark',new Map([[0,'native']])]]);
+ const runtime=createProductSurface({React:{},Core:{CrystraShell(){}},controller:{},renderAnalysis(){}});
+ runtime.apply({slots:{inject(_,fn){fn();},register(def,render){
+  const entries=occupied.get(def.name)??new Map(),priority=def.priority??0;
+  assert.equal(entries.has(priority),false,'must not collide with the native brand registration');
+  entries.set(priority,render);occupied.set(def.name,entries);return()=>entries.delete(priority);
+ }}});
+ const brand=occupied.get('sidebar.brand.mark');assert.equal(brand.get(0),'native');
+ assert.ok(Math.min(...brand.keys())<0,'the product entry must shadow, not remove, the native brand');
 });

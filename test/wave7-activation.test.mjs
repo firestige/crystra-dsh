@@ -62,7 +62,7 @@ test("generated clients use one module identity and no private source or direct 
   const studio = await readFile(join(root, "lib/client.js"), "utf8");
   assert.match(execution, /id: "dsh-crystra"/u);
   assert.match(studio, /id: "dsh-crystra"/u);
-  assert.doesNotMatch(execution, /execution-system\/src|\/crystra list/u);
+  assert.doesNotMatch(execution, /execution-system\/src|\/crystra list|fixedWorkspaceUi|crystra-sidebar-resources|crystra-open-product/u);
   assert.doesNotMatch(studio, /EVIDENCE_UPSTREAM|EVOLUTION_UPSTREAM|fetch\(["']https?:/u);
   assert.doesNotMatch(`${execution}\n${studio}`, /\beval\s*\(|new Function|document\.write/u);
 
@@ -89,9 +89,9 @@ test("generated clients use one module identity and no private source or direct 
   }
 });
 
-test("one Cordis patch registers only Crystra and its workspace override", async () => {
+test("one Cordis patch adds Crystra without disabling the native Workspace UI", async () => {
   const patch=await readFile(join(root,"cordis.patch.yml"),"utf8");
   assert.match(patch,/id: crystra\n\s+name: 'dsh-crystra'/);
-  assert.match(patch,/id: ui-workspace[\s\S]*disabled: true/);
+  assert.doesNotMatch(patch,/ui-workspace|disabled: true/);
   assert.doesNotMatch(patch,/dsh-crystra-(?:execution|studio)|__REQUIRED__/);
 });

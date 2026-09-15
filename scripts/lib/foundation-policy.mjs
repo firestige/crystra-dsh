@@ -120,7 +120,7 @@ export async function validateRepository(root) {
   if (manifest.dsh?.bundle?.patch !== "./cordis.patch.yml") throw new BoundaryViolation("BUNDLE_PATCH_MISSING", manifest.name);
   const patch = await readFile(resolve(repositoryRoot, "cordis.patch.yml"), "utf8");
   const names = [...patch.matchAll(/^\s+name:\s*['"]([^'"]+)['"]/gmu)].map(match => match[1]);
-  if (names.join(",") !== "@deepseek-ai/dsh-client-ui-workspace,dsh-crystra") throw new BoundaryViolation("ACTIVATION_GRAPH", names.join(","));
+  if (names.join(",") !== "dsh-crystra") throw new BoundaryViolation("ACTIVATION_GRAPH", names.join(","));
   const inputs = await json(resolve(repositoryRoot, "config/development-inputs.json"));
   for (const input of Object.values(inputs.inputs)) {
     if (manifest.dependencies?.[input.package] === undefined || !/^[0-9a-f]{40}$/u.test(input.revision)) throw new BoundaryViolation("COMPONENT_DEPENDENCY", input.package);

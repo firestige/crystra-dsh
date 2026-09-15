@@ -3,8 +3,6 @@ const LIFECYCLES = new Set([
   "BOUND", "START_UNCERTAIN", "RUNNING_CORRELATED", "START_FAILED",
   "RESULT_UNRESOLVED", "TERMINAL_HANDLING", "TERMINAL",
 ]);
-const WORKSPACE_KEY = "crystra.sidebar.workspace.expanded.v1";
-const DELIVERY_KEY = "crystra.sidebar.delivery.expanded.v1";
 const ERROR_CODES = new Set([
   "DELIVERY_PROJECTION_CORRUPT",
   "DELIVERY_PROJECTION_STALE_BINDING",
@@ -75,56 +73,4 @@ export function projectDeliveryInventory(state, { selectedSessionId } = {}) {
   });
   if (rows.length === 0) return Object.freeze({ kind: "empty", role: "status", label: "No Deliveries", rows });
   return Object.freeze({ kind: "ready", role: "list", label: "Deliveries", rows });
-}
-
-export function createDeliveryInventoryController(inventory) {
-  if (inventory === null || typeof inventory !== "object"
-    || typeof inventory.getSnapshot !== "function" || typeof inventory.subscribe !== "function") {
-    throw new TypeError("Execution inventory projection must be read-only and subscribable");
-  }
-  const controller = {
-    getSnapshot() {
-      try { return projectDeliveryInventory(inventory.getSnapshot()); }
-      catch { return errorView(); }
-    },
-    subscribe(listener) {
-      if (typeof listener !== "function") throw new TypeError("inventory listener must be a function");
-      const unsubscribe = inventory.subscribe(() => listener(controller.getSnapshot()));
-      if (typeof unsubscribe !== "function") throw new TypeError("inventory subscription must return an unsubscribe function");
-      return unsubscribe;
-    },
-  };
-  return Object.freeze(controller);
-}
-
-function persistedBoolean(value) {
-  return value === "false" ? false : true;
-}
-
-export function createMemoryCollapseStore(storage = {}) {
-  const listeners = new Set();
-  const read = typeof storage.read === "function" ? storage.read : () => undefined;
-  const write = typeof storage.write === "function" ? storage.write : () => undefined;
-  let snapshot;
-  try {
-    snapshot = Object.freeze({
-      workspaceExpanded: persistedBoolean(read(WORKSPACE_KEY)),
-      deliveryExpanded: persistedBoolean(read(DELIVERY_KEY)),
-    });
-  } catch {
-    snapshot = Object.freeze({ workspaceExpanded: true, deliveryExpanded: true });
-  }
-  const update = (name, key, value) => {
-    const next = Boolean(value);
-    if (snapshot[name] === next) return;
-    snapshot = Object.freeze({ ...snapshot, [name]: next });
-    try { write(key, String(next)); } catch { /* persistence denial is non-fatal */ }
-    for (const listener of listeners) listener();
-  };
-  return Object.freeze({
-    getSnapshot: () => snapshot,
-    subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    setWorkspaceExpanded(value) { update("workspaceExpanded", WORKSPACE_KEY, value); },
-    setDeliveryExpanded(value) { update("deliveryExpanded", DELIVERY_KEY, value); },
-  });
 }

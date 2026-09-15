@@ -1,11 +1,9 @@
 import React from "react";
 import { Button, DisclosureRow, IconCheckOutline16, IconCopyOutline16, JsonTree, MessageText, Pill, StateDot, Tooltip, writeClipboard } from "@deepseek-ai/dsh-client-ui-primitives";
-import * as workspaceUi from "@deepseek-ai/dsh-client-ui-workspace";
 
 import { createCrystraCommandView, registerActionPresentation } from "../action-presentation/view.js";
 import { getSharedDeliveryControlPlaneClient } from "./delivery/control-plane-port.js";
 import { registerSessionDeliveryView } from "./delivery/session-delivery-view.js";
-import { applyDeliverySidebar } from "./delivery-inventory/sidebar.js";
 
 export const name = "crystra-execution-client";
 export const inject = Object.freeze([
@@ -19,7 +17,6 @@ export function apply(ctx) {
   const timer = setInterval(refresh, 2_000);
   ctx.effect(() => () => clearInterval(timer), "crystra-execution: control-plane refresh");
 
-  applyDeliverySidebar(ctx, { React, workspaceUi, inventory: controlPlane.inventory });
   registerSessionDeliveryView(ctx, {
     React,
     Button,
