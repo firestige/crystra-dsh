@@ -1,26 +1,7 @@
-# CRYSTRA
+# Crystra Execution host module
 
-`dsh-crystra-execution` is the DeepSeek Harness bundle displayed as **CRYSTRA**. It
-owns only DSH-specific Intake, Host gateway, Delivery resource, Session view,
-Action disclosure, and final-message presentation.
+This internal module belongs to the single `dsh-crystra` plugin. It adapts Intake, Host RPC, Delivery projections, action disclosure and final-message presentation. It is not installed or registered separately.
 
-Delivery state comes from the read-only `DeliveryControlPlaneReadModel` exported
-by `crystra-execution`; the browser reaches it only through the loopback Host RPC
-channel. Sidebar reads never execute `/crystra list`. Execution domain behavior,
-recovery, mutation, and Provider authority remain in `crystra-execution`.
+Delivery state comes from the read-only control-plane exported by `crystra-execution`; domain behavior, recovery and Provider authority remain there. Native DSH Workspace navigation is owned by DSH. This module does not add a Delivery accordion or replace the Workspace UI.
 
-The required Cordis configuration is:
-
-```yaml
-configFile: /absolute/path/to/execution-config.yaml
-bindingFile: /absolute/path/to/dsh-intake-bindings.json
-```
-
-The package is locked to DSH `0.1.1-rc.2`. Its Workspace UI composition fork
-and exact MIT provenance are documented under
-`src/client/delivery-inventory/UPSTREAM.md`.
-
-The compatible `crystra-execution@^0.2.0` peer comes from the immutable GitHub
-`0.2.7` release asset recorded in `package.json`, not ambient npm resolution. Install that
-asset as an explicit DSH profile root alongside this adapter; its required
-SHA-256 is `bb3718360946d114251def2f1a975ee783974c2c0d959dbb4289e8955f4b5acc`.
+Configuration is supplied through the root plugin. Exact Execution dependencies and DSH compatibility are recorded in the root package and release manifest; there is no separate module installation step.

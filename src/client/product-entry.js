@@ -1,7 +1,7 @@
 import {createWorkflowDraftReference} from './workflow-draft-reference.js';
 import {createWorkflowInputController} from './workflow-input-controller.js';
 import {createDraftWorkflowIntegration} from './draft-workflow-integration.js';
-import {MarkdownText} from '@deepseek-ai/dsh-client-ui-primitives';
+import {MarkdownText,FishLogo} from '@deepseek-ai/dsh-client-ui-primitives';
 import {createDraftTaskIntegration} from './draft-task-integration.js';
 import React from 'react';
 import {getSharedDeliveryControlPlaneClient} from '../../modules/execution/src/client/delivery/control-plane-port.js';
@@ -28,7 +28,7 @@ export function apply(ctx){
  const controlPlane=getSharedDeliveryControlPlaneClient(ctx.connection.rpc);
  const {Analysis,dispose:disposeAnalysis}=createProductAnalysis({React,Core,gateway,controller,inventory:controlPlane.inventory});
  const taskInput=createTaskInputController({inventory:controlPlane.inventory,sessions:ctx.sessions,drafts:drafts.bindings,workspaces:ctx.workspaces});
- const surface=createProductSurface({React,Core,controller,storage,sharedStyles,taskInput,workflowInput,workflowDrafts,renderTaskPanels:drafts.renderTaskPanels,renderAnalysis:(page,onNavigate)=>React.createElement(Analysis,{page,onNavigate})});
+ const surface=createProductSurface({renderHostBrand:size=>React.createElement(FishLogo,{size}),React,Core,controller,storage,sharedStyles,taskInput,workflowInput,workflowDrafts,renderTaskPanels:drafts.renderTaskPanels,renderAnalysis:(page,onNavigate)=>React.createElement(Analysis,{page,onNavigate})});
  const syncTask=()=>{const nav=surface.navigation.getSnapshot();taskInput.setTask(nav.surface==='crystra'&&nav.route.page==='task'?nav.route.id:undefined);workflowInput.setWorkflow(nav.surface==='crystra'&&nav.route.page==='workflow'?{definitionId:nav.route.id,revision:nav.route.revision}:undefined);};
  const stop=surface.navigation.subscribe(syncTask);syncTask();
  ctx.effect(()=>()=>{stop();taskInput.dispose();workflowInput.dispose();disposeAnalysis();drafts.dispose();workflowDrafts.dispose();},'crystra-product: task input binding');

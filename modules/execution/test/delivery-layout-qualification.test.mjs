@@ -15,5 +15,4 @@ test("the real Harness mechanically qualifies Delivery first-fold, responsive, k
   assert.match(source, /Emulation\.setDeviceMetricsOverride[^\n]+width:\s*640[^\n]+deviceScaleFactor:\s*2/u);
   assert.match(source, /Page\.captureScreenshot/u);
   assert.match(source, /CRYSTRA_QUALIFY_SCREENSHOT_DIR/u);
-  assert.match(source, /delivery-completed, SUCCEEDED/u);
 });

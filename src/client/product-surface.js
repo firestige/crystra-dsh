@@ -1,3 +1,5 @@
+import {createHostBanner} from './host-banner.js';
+import {openHostSettings} from './host-settings.js';
 import {installNativeSessionHeader} from './native-session-header.js';
 import {attachWorkflowInputGeometry} from "./workflow-input-geometry.js";
 import {projectEvidenceTasks} from './task-browser-projection.js';
@@ -5,7 +7,7 @@ import {nativeInputLayoutStyles} from './native-input-layout.js';
 import {createProductNavigation} from './product-navigation.js';
 
 /** Host bridge: the framework retains its conversation tree under the product surface. */
-export function createProductSurface({React,Core,controller,renderAnalysis,storage,sharedStyles,taskInput,renderTaskPanels,workflowInput,workflowDrafts}) {
+export function createProductSurface({React,Core,controller,renderAnalysis,storage,sharedStyles,taskInput,renderTaskPanels,workflowInput,workflowDrafts,renderHostBrand}) {
  if(typeof Core.CrystraShell!=='function')throw new Error('CRYSTRA_SHELL_COMPONENT_REQUIRED');
  const navigation=createProductNavigation(storage);
  let clearSession=()=>{};
@@ -85,12 +87,12 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
       route:nav.route.page,selectedId:nav.route.id,tasks:projectEvidenceTasks(state.taskList.items),workflows:draftWorkflows.directory().entries.map(entry=>({id:entry.definitionId,title:entry.title,revision:entry.revision})),
       onNavigate:navigation.navigate,onOpenHarness:navigation.openHarness,
       onNewTask:newTask,
-      onOpenSettings:navigation.openHarness,
+      onOpenSettings:()=>openHostSettings(document),
      },React.createElement(Page)));
    }
    ctx.slots.inject('shell.overlay',()=>ctx.slots.register({name:'shell.overlay',id:'crystra-product'},Overlay));
-   ctx.slots.inject('sidebar.footer.action',()=>ctx.slots.register({name:'sidebar.footer.action',id:'crystra-open-product'},
-    ()=>React.createElement(Core.Button,{onClick:navigation.openCrystra},'Crystra')));
+   ctx.slots.inject('sidebar.brand.mark',()=>ctx.slots.register({name:'sidebar.brand.mark',id:'crystra-host-brand',priority:-10},
+    createHostBanner({React,renderHostBrand,openCrystra:navigation.openCrystra})));
   },
  };
 }

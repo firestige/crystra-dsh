@@ -1,0 +1,53 @@
+{
+  "id": "C094",
+  "date": "2026-09-15",
+  "status": "IN_PROGRESS",
+  "scope": [
+    "whole-row header hover",
+    "animated disclosure",
+    "full-row search",
+    "filled All triangle",
+    "Task and Workflow view menus",
+    "settings without leaving Crystra"
+  ],
+  "ui": {
+    "revision": "556da96715839f89ff394fdb1ea6a6a268ae7d85",
+    "pr": "https://github.com/firestige/crystra-ui/pull/9",
+    "tests": 433,
+    "scripts": 34,
+    "browser": 48,
+    "format": "PASS",
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "deps": "PASS",
+    "react18": "PASS",
+    "candidateRun": "https://github.com/firestige/crystra-ui/actions/runs/34931617994",
+    "candidateTag": "crystra-ui-v0.1.0-rc.6",
+    "publishedSha256": "d7c5175dabfda8123b0d9b191aabd36801a0230c3d754ea351916190db3b3227",
+    "localPublishedBytesEqual": true,
+    "prHead": "1fa8044",
+    "hoverRepeat": 3
+  },
+  "host": {
+    "tests": 333,
+    "browserSettings": "PASS",
+    "browserNavigation": "PASS",
+    "modelRequests": 0,
+    "realHarness": "PASS",
+    "terminalHarness": "PASS",
+    "boundaries": "PASS",
+    "pack": "PASS"
+  },
+  "installation": {
+    "type": "local-fix-candidate",
+    "sha256": "0270598e7d7a881a9bd46a3be27fcefbaa4262f906a7ad814032e1d9a6162887",
+    "filesCompared": 557,
+    "mismatches": [],
+    "publishedReleaseOverwritten": false
+  },
+  "limitations": [
+    "Task ordering and active filtering require authoritative metadata; missing timestamps keep stable input order and unknown activity stays visible.",
+    "Existing published combination RC5 and DSH RC6 remain immutable; manual Sidebar acceptance and new candidate dependency qualification remain pending."
+  ]
+}

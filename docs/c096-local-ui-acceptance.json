@@ -1,0 +1,81 @@
+{
+  "result": "PASS",
+  "date": "2026-09-15",
+  "results": [
+    {
+      "kind": "task",
+      "view": {
+        "background": "rgba(255, 255, 255, 0.08)",
+        "color": "rgb(249, 250, 251)",
+        "radius": "6px",
+        "x": 0,
+        "y": 0
+      },
+      "all": {
+        "background": "rgba(255, 255, 255, 0.08)",
+        "color": "rgb(249, 250, 251)",
+        "radius": "6px",
+        "x": 0,
+        "y": 0
+      },
+      "search": {
+        "background": "rgba(255, 255, 255, 0.08)",
+        "color": "rgb(249, 250, 251)",
+        "radius": "6px",
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "kind": "workflow",
+      "view": {
+        "background": "rgba(255, 255, 255, 0.08)",
+        "color": "rgb(249, 250, 251)",
+        "radius": "6px",
+        "x": 0,
+        "y": 0
+      },
+      "all": {
+        "background": "rgba(255, 255, 255, 0.08)",
+        "color": "rgb(249, 250, 251)",
+        "radius": "6px",
+        "x": 0,
+        "y": 0
+      },
+      "search": {
+        "background": "rgba(255, 255, 255, 0.08)",
+        "color": "rgb(249, 250, 251)",
+        "radius": "6px",
+        "x": 0,
+        "y": 0
+      }
+    }
+  ],
+  "errors": [],
+  "clientSha256": "27028dda2c904140214b959992d69dcf858692f1754d0ec95530da79dffa1a2b",
+  "artifactSha256": "2c5c8d4fef0f17c33141b1045e031ccc822d8d65dc054040c2cb6c13fbd38924",
+  "stage": "local-development-not-published-RC",
+  "uiRevision": "9baf454",
+  "inputs": {
+    "schemaVersion": "crystra.dsh.development-inputs@1.0.0",
+    "inputs": {
+      "execution": {
+        "repository": "firestige/crystra-execution",
+        "revision": "82a88ea4222e40810a387863d654a12e008a5b26",
+        "package": "crystra-execution",
+        "version": "0.1.0",
+        "artifact": "crystra-execution-0.1.0.tgz",
+        "sha256": "72a30478e47183752b84c9294999ffc6a31469bb227c16300c910f119e4567c8"
+      },
+      "ui": {
+        "repository": "firestige/crystra-ui",
+        "revision": "9baf454cca7cd981bd80634aa5defbe6d9c2726c",
+        "package": "crystra-ui-core",
+        "version": "0.1.0",
+        "artifact": "crystra-ui-core-0.1.0.tgz",
+        "sha256": "19089ab14f9baa3440892047f6289641be6e6f653fd7e841b1c4d3dbeb382c04"
+      }
+    }
+  },
+  "recovery": "Install the preserved dsh-crystra-c096-development.tgz from the acceptance root artifacts directory; PR dependencies still select published UI RC6."
+}
