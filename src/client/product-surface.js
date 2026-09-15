@@ -1,4 +1,5 @@
 import {createHostBanner} from './host-banner.js';
+import {openHostSettings} from './host-settings.js';
 import {installNativeSessionHeader} from './native-session-header.js';
 import {attachWorkflowInputGeometry} from "./workflow-input-geometry.js";
 import {projectEvidenceTasks} from './task-browser-projection.js';
@@ -86,7 +87,7 @@ export function createProductSurface({React,Core,controller,renderAnalysis,stora
       route:nav.route.page,selectedId:nav.route.id,tasks:projectEvidenceTasks(state.taskList.items),workflows:draftWorkflows.directory().entries.map(entry=>({id:entry.definitionId,title:entry.title,revision:entry.revision})),
       onNavigate:navigation.navigate,onOpenHarness:navigation.openHarness,
       onNewTask:newTask,
-      onOpenSettings:navigation.openHarness,
+      onOpenSettings:()=>openHostSettings(document),
      },React.createElement(Page)));
    }
    ctx.slots.inject('shell.overlay',()=>ctx.slots.register({name:'shell.overlay',id:'crystra-product'},Overlay));

@@ -18,7 +18,9 @@ export const nativeInputLayoutStyles=`
 .crystra-product-overlay[data-crystra-native-input="task"] [data-section-id="control-workspace"] {pointer-events:auto;background:var(--color-background-shell);}
 
 .pI_x6G_frame:has([data-crystra-product-overlay]):not(:has([data-crystra-native-input])) > .pI_x6G_centerCol {display:none;}
-.pI_x6G_frame:has([data-crystra-product-overlay]) > .pI_x6G_sidebarCol,
+.pI_x6G_frame:has([data-crystra-product-overlay]) > .pI_x6G_sidebarCol {visibility:hidden;pointer-events:none;}
+/* SettingsRoot remains the single owner; its fixed modal must escape hidden sidebar chrome. */
+.pI_x6G_frame:has([data-crystra-product-overlay]) .hHd-Xa_settingsArea .VOzbGW_overlay {visibility:visible;pointer-events:auto;}
 .pI_x6G_frame:has([data-crystra-product-overlay]) > .pI_x6G_detailsCol,
 .pI_x6G_frame:has([data-crystra-product-overlay]) > .pI_x6G_handle {display:none;}
 .pI_x6G_frame:has([data-crystra-native-input="hero"]) > .pI_x6G_centerCol {

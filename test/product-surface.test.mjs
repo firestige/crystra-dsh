@@ -25,8 +25,12 @@ test('mounts with the overlay props supplied by the host, without a child-slot r
  assert.equal(tree.props['data-crystra-theme'],'dark');
  assert.equal(tree.props.className,'crystra-product-overlay');
  const shell=tree.children[1];
- shell.props.onOpenSettings();
- assert.equal(runtime.navigation.getSnapshot().surface,'harness');
+ let opened=0;
+ const oldDocument=globalThis.document;
+ globalThis.document={querySelector:()=>({click(){opened++;}})};
+ try{shell.props.onOpenSettings();}finally{if(oldDocument===undefined)delete globalThis.document;else globalThis.document=oldDocument;}
+ assert.equal(opened,1);
+ assert.equal(runtime.navigation.getSnapshot().surface,'crystra');
 });
 test('new task keeps Crystra shell and exposes the dedicated native Input without creating a session',()=>{
  const entries=new Map();let cleared=0,created=0;
