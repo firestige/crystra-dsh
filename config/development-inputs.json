@@ -13,13 +13,13 @@
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "5f45b18c28a41504f3573160fcbb119aa0c86019",
+      "revision": "d5783e12d0c536b1959785683539584f7c3382e3",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
-      "sha256": "c5c6900f81aa9d2ce330e406accc01368e98c37261c0cda060afed696e577e9d",
+      "sha256": "6723230c6d0e0855937115b3999f9b09c3d4ecaf2b97921a133629a3f483d597",
       "sourceState": "committed",
-      "integrationNote": "Task Workbench accepted local integration baseline, 2026-09-25. Artifact dist bytes verified against this component commit. Not a published release."
+      "integrationNote": "Task Browser UI accepted and committed 2026-09-26; local 3085 action-review baseline. No published release."
     }
   }
 }

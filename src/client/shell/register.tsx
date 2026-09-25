@@ -83,6 +83,7 @@ export function registerProductShell(ctx: any, controlPlane: any) {
   document.head.append(style);
   ctx.effect(() => () => style.remove(), "Crystra product styles");
   const go = (href: string) => {
+    if(href === "/tasks/new") ctx.sessions.clear();
     navigate(href,true);
     ctx.layout.selectPanel("conversation");
   };
@@ -124,10 +125,7 @@ export function registerProductShell(ctx: any, controlPlane: any) {
           taskFeedback={<TasksFeedback state={taskState} />}
           workflowFeedback={<WorkflowsFeedback state={workflowState} />}
           onNavigate={go}
-          onNewTask={() => {
-            ctx.sessions.clear();
-            go("/tasks/new");
-          }}
+          onNewTask={() => go("/tasks/new")}
           onOpenHarness={() => show("harness")}
           onOpenSettings={() => setSettings(true)}
         />
@@ -190,7 +188,7 @@ export function registerProductShell(ctx: any, controlPlane: any) {
       ? <p role="status" className="crystra-product-empty">当前任务没有可核验的 DSH 会话绑定。</p>
       : nativeChat();
     const chat=<>{admissionError&&<p role="alert" className="crystra-product-empty">任务创建暂未完成：{admissionError}</p>}{content}</>;
-    const page=<ProductPages route={route} chat={chat} bench={<section data-section-id="control-workspace" aria-label="Bench" className="crystra-product-empty">Bench</section>}/>;
+    const page=<ProductPages route={route} chat={chat} onNavigate={go} hostRoot bench={<section data-section-id="control-workspace" aria-label="Bench" className="crystra-product-empty">Bench</section>}/>;
     return (
       <div
         className="crystra-bi crystra-product-main"
