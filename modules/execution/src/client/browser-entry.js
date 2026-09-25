@@ -5,21 +5,24 @@ import * as workspaceUi from "@deepseek-ai/dsh-client-ui-workspace";
 import { createCrystraCommandView, registerActionPresentation } from "../action-presentation/view.js";
 import { createDeliveryControlPlaneClient } from "./delivery/control-plane-port.js";
 import { registerSessionDeliveryView } from "./delivery/session-delivery-view.js";
-import { applyDeliverySidebar } from "./delivery-inventory/sidebar.js";
 
 export const name = "crystra-execution-client";
 export const inject = Object.freeze([
-  "connection", "sessions", "slots", "workspaces", "locale",
+  "connection", ...workspaceUi.inject,
 ]);
 
-export function apply(ctx) {
+export function apply(ctx, options = {}) {
   const controlPlane = createDeliveryControlPlaneClient(ctx.connection.rpc);
   const refresh = () => { void controlPlane.refresh(); };
   refresh();
   const timer = setInterval(refresh, 2_000);
   ctx.effect(() => () => clearInterval(timer), "crystra-execution: control-plane refresh");
 
-  applyDeliverySidebar(ctx, { React, workspaceUi, inventory: controlPlane.inventory });
+  options.registerTaskWorkbench?.(ctx, controlPlane);
+  if (options.registerProductShell) {
+    workspaceUi.apply(ctx);
+    options.registerProductShell(ctx, controlPlane);
+  }
   registerSessionDeliveryView(ctx, {
     React,
     Button,

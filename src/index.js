@@ -1,3 +1,13 @@
+import {createTaskControl} from './host/task-control.js';
+import {LlmAdapter} from '@deepseek-ai/dsh-llm';
+import {createExternalChatAdapter} from './host/external-chat.js';
+import {createCodexChatProvider} from './host/external-chat-codex.js';
+import {createCopilotChatProvider} from './host/external-chat-copilot.js';
+import {createTaskAdmission} from './host/task-admission.js';
+import * as conversationSettings from "@deepseek-ai/dsh-client-ui-conversation";
+import { registerCrystraRpc } from "./host/rpc-routes.js";
+import path from "node:path";
+import {registerWorkflowQueryGateway} from "../modules/studio/src/workflows/gateway.js";
 import {randomUUID} from 'node:crypto';
 import * as execution from '../modules/execution/src/index.js';
 import * as studio from '../modules/studio/src/index.js';
@@ -9,9 +19,21 @@ export function createHostPlugin({executionModule=execution,studioModule=studio,
  return {
   name:'crystra',inject:[...new Set(['commands',...executionModule.inject,...studioModule.inject])],
   async apply(ctx,input={}) {
+   conversationSettings.apply(ctx);
    const configuration=normalizePluginConfiguration(input);
-   let host,readGateway,unregister;
-   const unregisterGateway=ctx.connection?.rpc?.handle('/crystra-execution',(endpoint,payload)=>readGateway?readGateway.handle(endpoint,payload):({ok:false,error:{code:'DELIVERY_PROJECTION_UNAVAILABLE',message:'Crystra needs configuration. Run /crystra setup.'}}),{authority:'loopback'});
+   registerWorkflowQueryGateway(ctx,path.join(configuration.paths.stateRoot,"workflow-directories.json"));
+   let host,readGateway,unregister,executionRuntime;
+   ctx.inject(['sessions','workspaceRegistry','sessionPersistence'], async inner=>{
+    const admission=await createTaskAdmission({ctx:inner,stateRoot:configuration.paths.stateRoot,owner:()=>executionRuntime?.control});
+    const control=createTaskControl({ctx:inner,stateRoot:path.join(configuration.paths.stateRoot,"conversations"),admission,runtime:()=>executionRuntime});
+    inner.provide('crystraTaskControl',control);
+    registerCrystraRpc(inner,'/crystra-control',control.handle);
+    inner.inject(['llm','agents','userQuestions','tools','crystraTaskControl'],providerCtx=>{
+     const providers=[createCodexChatProvider(),createCopilotChatProvider()];
+     providerCtx.llm.registerAdapter(providers.map(p=>p.id),createExternalChatAdapter({Base:LlmAdapter,ctx:providerCtx,providers}));
+    });
+   });
+   const unregisterGateway=registerCrystraRpc(ctx, '/crystra-execution',(endpoint,payload)=>readGateway?readGateway.handle(endpoint,payload):({ok:false,error:{code:'DELIVERY_PROJECTION_UNAVAILABLE',message:'Crystra needs configuration. Run /crystra setup.'}}),{authority:'loopback'});
    const unhook=ctx.on?.('agent/pre-step',(payload,next)=>execution.consumeCrystraCommandBeforeModel(payload)?{kind:'reject'}:next());
    ctx.effect(async function*(){yield async()=>{await unregister?.();await unregisterGateway?.();await unhook?.();await host?.dispose();};},'Crystra initialization lifecycle');
    const router=createCommandRouter({operate:async(action,signal,invocation)=>{
@@ -28,7 +50,7 @@ export function createHostPlugin({executionModule=execution,studioModule=studio,
    });
    const activateExecution=(profile)=>new Promise((resolve,reject)=>{
     ctx.plugin({name:executionModule.name,inject:executionModule.inject,async apply(inner,config){
-     try{await executionModule.apply(inner,config,{registerCommand:router.bindExecution,registerGateway:async(readModel)=>{
+     try{await executionModule.apply(inner,config,{registerCommand:router.bindExecution,registerRuntime:runtime=>{executionRuntime=runtime;},registerGateway:async(readModel)=>{
       const gateway=await execution.createDeliveryControlPlaneGateway(readModel);readGateway=gateway;
       inner.effect(async function*(){yield async()=>{if(readGateway===gateway)readGateway=undefined;await gateway.close();};},'Crystra Execution read model');
      }});resolve();}

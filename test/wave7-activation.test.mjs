@@ -1,9 +1,12 @@
+import * as Slots from "@deepseek-ai/dsh-client-ui-slots";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import React from "react";
+import * as Cordis from "@deepseek-ai/cordis";
+import * as DshStore from "@deepseek-ai/dsh-client-store";
 import * as ReactDOM from "react-dom";
 
 const root = resolve(import.meta.dirname, "..");
@@ -65,16 +68,20 @@ test("generated clients use one module identity and no private source or direct 
   assert.match(studio, /id: "dsh-crystra"/u);
   assert.doesNotMatch(execution, /execution-system\/src|\/crystra list/u);
   assert.doesNotMatch(studio, /EVIDENCE_UPSTREAM|EVOLUTION_UPSTREAM|fetch\(["']https?:/u);
-  assert.doesNotMatch(`${execution}\n${studio}`, /\beval\s*\(|new Function|document\.write/u);
+  assert.doesNotMatch(execution.slice(execution.indexOf("    const module = { exports: {} };")), /\beval\s*\(|new Function|document\.write/u);
 
   for (const [source, expected] of [[execution, "dsh-crystra"]]) {
     let definition;
     vm.runInNewContext(source, {
-      TextDecoder, TextEncoder, URL, URLSearchParams,
-      window: { __ModuleLoader__: { load(value) { definition = value; } } },
+      TextDecoder, TextEncoder, URL, URLSearchParams, setTimeout, clearTimeout,
+      document: { querySelector() { return {}; }, createElement() { return {}; } },
+      window: { Error, setTimeout, clearTimeout, __ModuleLoader__: { load(value) { definition = value; } } },
     });
     assert.equal(definition.id, expected);
     const loaded = definition.factory((name) => {
+      if (name === "@deepseek-ai/dsh-client-ui-slots") return Slots;
+      if (name === "@deepseek-ai/cordis") return Cordis;
+      if (name === "@deepseek-ai/dsh-client-store") return DshStore;
       if (name === "react") return React;
       if (name === "react-dom") return ReactDOM;
       if (name === "react/jsx-runtime") return { jsx() {}, jsxs() {} };

@@ -16,7 +16,7 @@ configFile: /absolute/path/to/execution-config.yaml
 bindingFile: /absolute/path/to/dsh-intake-bindings.json
 ```
 
-The package is locked to DSH `0.1.1-rc.2`. Its Workspace UI composition fork
+The package is locked to DSH `0.1.5-rc.2`. Its Workspace UI composition fork
 and exact MIT provenance are documented under
 `src/client/delivery-inventory/UPSTREAM.md`.
 

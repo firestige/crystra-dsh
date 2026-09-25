@@ -23,7 +23,7 @@ The build emits one CSP-compatible browser bundle with module identity `dsh-crys
 
 ## Isolated integration checks
 
-Use DSH `0.1.1-rc.2`. Set `CRYSTRA_DSH_BINARY` to that version's executable when the global DSH differs. Checks use temporary DSH homes and profiles:
+Use DSH `0.1.5-rc.2`. Set `CRYSTRA_DSH_BINARY` to that version's executable when the global DSH differs. Checks use temporary DSH homes and profiles:
 
 ```sh
 npm run qualify:clean-profile
@@ -34,7 +34,7 @@ CRYSTRA_QUALIFY_TERMINAL=1 npm run qualify:real-harness
 CRYSTRA_QUALIFY_INITIALIZATION=1 npm run qualify:real-harness
 ```
 
-Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, and downstream unavailability. The terminal fixture mode supplies deterministic owner facts without invoking an LLM. DSH 0.1.1-rc.2 supplies no CSP header; the bundle check separately rejects dynamic code and inline-script injection.
+Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, and downstream unavailability. The terminal fixture mode supplies deterministic owner facts without invoking an LLM. DSH 0.1.5-rc.2 supplies no CSP header; the bundle check separately rejects dynamic code and inline-script injection.
 
 The root plugin loads without pre-existing Execution configuration. `/crystra setup` prepares configuration and the bound service group; `/crystra doctor` reports readiness and missing repository role bindings. `/crystra services start|stop|status` manages the installation's own Compose namespace. These commands are deterministic and do not invoke an LLM. No independent public product installer is shipped. See [initialization](docs/initialization.md).
 

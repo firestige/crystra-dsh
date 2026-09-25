@@ -26,7 +26,7 @@ export function studioAccessibilityModel() {
 export function createStudioGatewayPort(ctx) {
   return Object.freeze({
     call(endpoint, payload, signal) {
-      return ctx.connection.rpc.call("/crystra-studio", endpoint, payload, signal);
+      return ctx.connection.rpc.call("/api", `crystra-studio/${endpoint}`, payload, signal);
     },
   });
 }

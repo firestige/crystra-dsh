@@ -1216,7 +1216,7 @@ try {
     owner: { version: owner.version, resolved: owner.resolved, integrity: owner.integrity, qualificationAsset: executionAsset },
     host: {
       origin,
-      csp: csp === "" ? "absent-in-dsh-0.1.1-rc.2" : createHash("sha256").update(csp).digest("hex"),
+      csp: csp === "" ? "absent-in-dsh-0.1.5-rc.2" : createHash("sha256").update(csp).digest("hex"),
       activation: ["crystra-execution", "crystra-studio"],
     },
     browser: { deliveryInventory: terminalFixture ? shell.terminalRows : "empty-ready", terminalView: terminalView ?? null, commandDiagnostic, sessionQualification, keyboardDisclosure: `${before.expanded}->${after}`, sidebarQualification, tabOrder: shell.tabOrder, studio,

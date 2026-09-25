@@ -162,7 +162,15 @@ test("sidebar resources negotiate bounded height and keep overflow inside each e
 test("fixed upstream Workspace UI coordinate and MIT attribution are exact", async () => {
   const attribution = await readFile(new URL("./UPSTREAM.md", import.meta.url), "utf8");
   const license = await readFile(new URL("./LICENSE.upstream", import.meta.url), "utf8");
-  assert.match(attribution, /@deepseek-ai\/dsh-client-ui-workspace@0\.1\.1-rc\.2/u);
-  assert.match(attribution, /sha512-k\/jB5ke2e\+oNyNKzu4\/PBlriwCHKVg5bY3kn7Co3MtWZdqbJ42hfwZkRNMnn\+nmziQXCVXWRzuiHZt0xNTAveA==/u);
+  assert.match(attribution, /@deepseek-ai\/dsh-client-ui-workspace@0\.1\.5-rc\.2/u);
+  const lock = JSON.parse(await readFile(new URL("../../../../../package-lock.json", import.meta.url), "utf8"));
+  assert.ok(attribution.includes(lock.packages["node_modules/@deepseek-ai/dsh-client-ui-workspace"].integrity));
   assert.match(license, /Copyright \(c\) 2026 DeepSeek/u);
+});
+
+test('0.1.5 workspace root hooks are provided on the real slot service', () => {
+  const slots={register(){},inject(){},provideRoot(value){this.rootHooks=value;}};
+  const hooks={hooks:{workspaces:{getSnapshot(){return {};},subscribe(){return ()=>{};}}}};
+  applyDeliverySidebar({slots},{React:{},inventory:{},workspaceUi:{apply(ctx){ctx.slots.provideRoot(hooks);}}});
+  assert.equal(slots.rootHooks,hooks);
 });

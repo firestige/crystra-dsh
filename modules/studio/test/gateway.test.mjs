@@ -177,48 +177,24 @@ test("the Host deadline aborts a stalled downstream without leaking its failure"
   });
 });
 
-test("registration uses a loopback-only DSH connection channel and disposes with its fiber", async () => {
-  const observed = [];
-  const disposer = async () => observed.push("disposed");
-  const ctx = {
-    connection: {
-      rpc: {
-        handle(channel, handler, options) {
-          observed.push({ channel, handler, options });
-          return disposer;
-        },
-      },
-    },
-  };
-  const registered = registerStudioGateway(ctx, {
-    ...bases,
-    fetcher: async () => jsonResponse({}),
-  });
-  assert.equal(registered, disposer);
-  assert.equal(observed[0].channel, "/crystra-studio");
-  assert.deepEqual(observed[0].options, { authority: "loopback" });
-  await registered();
-  assert.equal(observed[1], "disposed");
+test("registration uses exact DSH authenticated Fetch routes and disposes them", async () => {
+ const routes=[];let disposed=0;
+ const ctx={connection:{fetch:{register(route){routes.push(route);return async()=>{disposed++;};}}},effect(){}};
+ const stop=registerStudioGateway(ctx,{...bases,fetcher:async()=>jsonResponse({})});
+ assert.equal(routes.length,5);assert.ok(routes.every(route=>route.path.startsWith("/api/crystra-studio/")&&route.methods[0]==="POST"));
+ await stop();assert.equal(disposed,5);
 });
 
 test("registration maps Studio domain failures onto the DSH transport error contract", async () => {
-  let registeredHandler;
-  const ctx = {
-    connection: {
-      rpc: {
-        handle(_channel, handler) {
-          registeredHandler = handler;
-          return () => undefined;
-        },
-      },
-    },
-  };
+  const routes=new Map();
+  const ctx={connection:{fetch:{register(route){routes.set(route.path,route);return ()=>{};}}},effect(){}};
   registerStudioGateway(ctx, {
     ...bases,
     fetcher: async () => { throw new Error("offline"); },
   });
 
-  const result = await registeredHandler("tasks/list", { limit: 1 });
+  const response = await routes.get("/api/crystra-studio/tasks/list").fetch(new Request("http://localhost/api/crystra-studio/tasks/list",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({type:"client-request",rpcId:"test",method:"crystra-studio/tasks/list",payload:{limit:1}})}));
+  const {result} = await response.json();
   assert.deepEqual(result, {
     ok: false,
     error: {

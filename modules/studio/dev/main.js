@@ -61,10 +61,10 @@ const trace = Object.freeze([{
 
 const ctx = {
   connection: { rpc: { async call(_channel, endpoint) {
-    if (endpoint === "tasks/list") return { ok: true, value: taskPage };
-    if (endpoint === "evaluations/compute") return { ok: true, value: result };
-    if (endpoint === "facts/read") return { ok: true, value: { items: [fact] } };
-    if (endpoint === "traces/read") return { ok: true, value: { items: trace } };
+    if (endpoint === "crystra-studio/tasks/list") return { ok: true, value: taskPage };
+    if (endpoint === "crystra-studio/evaluations/compute") return { ok: true, value: result };
+    if (endpoint === "crystra-studio/facts/read") return { ok: true, value: { items: [fact] } };
+    if (endpoint === "crystra-studio/traces/read") return { ok: true, value: { items: trace } };
     return { ok: true, value: { items: [] } };
   } } },
   slots: {

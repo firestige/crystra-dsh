@@ -1,0 +1,44 @@
+.crystra-workbench-attention {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(65%, -55%);
+  pointer-events: none;
+  animation: crystra-attention-arrival 700ms ease-out;
+}
+@keyframes crystra-attention-arrival {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-interaction-primary, #679efe);
+  }
+  100% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crystra-workbench-attention {
+    animation: none;
+  }
+}
+
+/* System activity uses the same navigation highlight, with success replacing primary.
+   Selection on a different tab retains the normal primary treatment. */
+[role="tab"]:has(.crystra-workbench-tab-label[data-system-active="true"]) {
+  color: var(--color-status-success-text, #22c55e) !important;
+}
+.wb-page-header
+  [role="tab"]:has(
+    .crystra-workbench-tab-label[data-system-active="true"]
+  )::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-status-success-solid, #22c55e);
+}
+.crystra-tabs[data-appearance="soft"]
+  [role="tab"]:has(.crystra-workbench-tab-label[data-system-active="true"]) {
+  background: var(--color-status-success-surface, #22c55e1f);
+  border-color: var(--color-status-success-border, #22c55e94);
+}

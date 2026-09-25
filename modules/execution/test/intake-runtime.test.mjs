@@ -56,7 +56,7 @@ test("runtime archives only an exact terminal Core row, releases routing, and pe
       return { schemaVersion: "execution.delivery-control-plane@1.0.0", generation: 1, deliveries: projected };
     } });
     const runtime = await createPluginRuntime({ configFile: join(root, "execution.json"), bindingFile: join(root, "bindings.json") }, {
-      moduleLoader: async () => executionApi,
+      taskQuery: {snapshot:async()=>({schemaVersion:"execution.tasks@1.0.0",revision:"fixture",items:[]})}, moduleLoader: async () => executionApi,
       factory: Object.freeze({ async create() { return application; } }),
       control,
       ownerProjection,
@@ -108,7 +108,7 @@ test("pre-registration ERROR creates no historical association", async () => {
       async inspect() {}, async cancel() {}, status() { return { state: "READY" }; }, async close() {},
     });
     const runtime = await createPluginRuntime({ configFile: join(root, "execution.json"), bindingFile: join(root, "bindings.json") }, {
-      moduleLoader: async () => executionApi,
+      taskQuery: {snapshot:async()=>({schemaVersion:"execution.tasks@1.0.0",revision:"fixture",items:[]})}, moduleLoader: async () => executionApi,
       factory: Object.freeze({ async create() { return application; } }),
       control: Object.freeze({ async bindingInventory() { return []; }, attach() {}, async waitForDelivery() { return undefined; } }),
       ownerProjection: Object.freeze({ async snapshot() { return { schemaVersion: "execution.delivery-control-plane@1.0.0", generation: 1, deliveries: [] }; } }),
@@ -138,7 +138,7 @@ test("no-ID abandon infers only the Delivery bound to the current Session", asyn
       status() { return { state: "READY" }; }, async close() {},
     });
     const runtime = await createPluginRuntime({ configFile: join(root, "execution.json"), bindingFile: join(root, "bindings.json") }, {
-      moduleLoader: async () => executionApi,
+      taskQuery: {snapshot:async()=>({schemaVersion:"execution.tasks@1.0.0",revision:"fixture",items:[]})}, moduleLoader: async () => executionApi,
       factory: Object.freeze({ async create() { return application; } }),
       control: Object.freeze({ async bindingInventory() { return []; } }),
       ownerProjection: Object.freeze({ async snapshot() { return { schemaVersion: "execution.delivery-control-plane@1.0.0", generation: 1, deliveries: [] }; } }),
@@ -194,7 +194,7 @@ test("no-ID abandon archives its authoritative terminal result without a project
       };
     } });
     const runtime = await createPluginRuntime({ configFile: join(root, "execution.json"), bindingFile: join(root, "bindings.json") }, {
-      moduleLoader: async () => executionApi,
+      taskQuery: {snapshot:async()=>({schemaVersion:"execution.tasks@1.0.0",revision:"fixture",items:[]})}, moduleLoader: async () => executionApi,
       factory: Object.freeze({ async create() { return application; } }),
       control: Object.freeze({ async bindingInventory() { return []; } }),
       ownerProjection,
@@ -239,7 +239,7 @@ test("terminal abandon archives from its authoritative result without consulting
       return { schemaVersion: "execution.delivery-control-plane@1.0.0", generation: 1, deliveries: [] };
     } });
     const runtime = await createPluginRuntime({ configFile: join(root, "execution.json"), bindingFile: join(root, "bindings.json") }, {
-      moduleLoader: async () => executionApi,
+      taskQuery: {snapshot:async()=>({schemaVersion:"execution.tasks@1.0.0",revision:"fixture",items:[]})}, moduleLoader: async () => executionApi,
       factory: Object.freeze({ async create() { return application; } }),
       control: Object.freeze({ async bindingInventory() { return []; } }),
       ownerProjection,
@@ -282,7 +282,7 @@ test("registration polling survives a cold-start timeout and commits the Session
       },
     });
     const runtime = await createPluginRuntime({ configFile: join(root, "execution.json"), bindingFile: join(root, "bindings.json") }, {
-      moduleLoader: async () => executionApi,
+      taskQuery: {snapshot:async()=>({schemaVersion:"execution.tasks@1.0.0",revision:"fixture",items:[]})}, moduleLoader: async () => executionApi,
       factory: Object.freeze({ async create() { return application; } }),
       control,
       ownerProjection: Object.freeze({ async snapshot() { return { schemaVersion: "execution.delivery-control-plane@1.0.0", generation: 1, deliveries: projected }; } }),
@@ -314,4 +314,23 @@ test("registration polling survives a cold-start timeout and commits the Session
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test('a control Task start preserves its Task and accepted context without requiring a slash command',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-control-start-'));let runtime;
+ try{
+  const worktree=await realpath(root),requests=[];
+  const application={async start(){},async close(){},async execute(){throw Error('unscoped execution');}};
+  runtime=await createPluginRuntime({configFile:join(root,'execution.json'),bindingFile:join(root,'bindings.json')},{
+   taskQuery: {snapshot:async()=>({schemaVersion:"execution.tasks@1.0.0",revision:"fixture",items:[]})}, moduleLoader:async()=>executionApi,factory:{async create(){return application;}},
+   control:{async bindingInventory(){return [];},attach(){},async waitForDelivery(){return undefined;},async executeFromConversationWorkspace(request,authority){requests.push({request,authority});return {kind:'ERROR',code:'WORKFLOW_NOT_FOUND',message:'fixture'};}},
+   ownerProjection:{async snapshot(){return {schemaVersion:'execution.delivery-control-plane@1.0.0',generation:1,deliveries:[]};}},ensureGitWorktree:async()=>{},
+   resolveConversationWorkspace:async()=>({sessionKey:'agent-a',workspaceId:'workspace-a',path:worktree})
+  });
+  const input={sessionKey:'agent-a',agent:{id:'agent-a',session:{id:'session-a'}},operation:{operation:'create',selector:'fixture@1.0.0'},turnText:'可以，开始吧',images:[],controlTask:{taskId:'task-current',sessionId:'session-a',workspacePath:worktree,prompt:'已接受 Brief B2 / Plan P1 / Wave W1：编写并验证启动说明。'}};
+  await runtime.invokeForSession(input);
+  assert.equal(requests.length,1);assert.deepEqual(requests[0].request.taskSelection,{schemaVersion:'execution.task-selection@0.1.0',mode:'REUSE_TASK',taskId:'task-current'});
+  assert.match(requests[0].request.prompt.text,/Brief B2.*Plan P1.*Wave W1/);
+  await runtime.invokeForSession({...input,controlTask:{...input.controlTask,sessionId:'another-session'}});assert.equal(requests.length,1);
+ }finally{await runtime?.close();await rm(root,{recursive:true,force:true});}
 });

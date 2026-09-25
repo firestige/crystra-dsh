@@ -1,3 +1,4 @@
+import { registerCrystraRpc } from "../../../../src/host/rpc-routes.js";
 const DEFAULT_TIMEOUT_MS = 125_000;
 const DEFAULT_MAXIMUM_RESPONSE_BYTES = 8 * 1024 * 1024;
 const TASK_ID = /^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$/u;
@@ -230,7 +231,7 @@ export function createStudioGatewayHandler(options) {
 
 export function registerStudioGateway(ctx, options) {
   const handle = createStudioGatewayHandler(options);
-  return ctx.connection.rpc.handle(
+  return registerCrystraRpc(ctx,
     "/crystra-studio",
     async (...args) => {
       const result = await handle(...args);

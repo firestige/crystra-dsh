@@ -53,8 +53,8 @@ function statefulReact() {
 
 test("locks the renderer to the DSH release that formally exports DisclosureRow", () => {
   assert.deepEqual(DSH_ACTION_PRESENTATION_COMPATIBILITY, {
-    dsh: "0.1.1-rc.2",
-    uiPrimitives: "@deepseek-ai/dsh-client-ui-primitives@0.1.1-rc.2",
+    dsh: "0.1.5-rc.2",
+    uiPrimitives: "@deepseek-ai/dsh-client-ui-primitives@0.1.5-rc.2",
     presentation: "crystra.presentation@1.0.0",
   });
 });

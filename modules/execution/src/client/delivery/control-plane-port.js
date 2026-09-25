@@ -1,4 +1,4 @@
-const CHANNEL = "/crystra-execution";
+const CHANNEL = "/api";
 const ERROR_CODES = new Set([
   "DELIVERY_PROJECTION_CORRUPT",
   "DELIVERY_PROJECTION_STALE_BINDING",
@@ -28,7 +28,7 @@ export function createDeliveryControlPlaneClient(rpc) {
   const inventory = createStore(Object.freeze({ kind: "loading" }));
   const sessions = new Map();
   const read = async (endpoint, payload) => {
-    const result = await rpc.call(CHANNEL, endpoint, payload);
+    const result = await rpc.call(CHANNEL, `crystra-execution/${endpoint}`, payload);
     if (result?.ok !== true) throw Object.assign(new Error(message(result?.error)), {
       code: ERROR_CODES.has(result?.error?.code) ? result.error.code : "DELIVERY_PROJECTION_UNAVAILABLE",
     });

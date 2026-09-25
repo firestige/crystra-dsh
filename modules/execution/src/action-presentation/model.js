@@ -1,6 +1,6 @@
 export const DSH_ACTION_PRESENTATION_COMPATIBILITY = Object.freeze({
-  dsh: "0.1.1-rc.2",
-  uiPrimitives: "@deepseek-ai/dsh-client-ui-primitives@0.1.1-rc.2",
+  dsh: "0.1.5-rc.2",
+  uiPrimitives: "@deepseek-ai/dsh-client-ui-primitives@0.1.5-rc.2",
   presentation: "crystra.presentation@1.0.0",
 });
 

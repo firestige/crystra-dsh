@@ -1,3 +1,4 @@
+import { registerTaskQueryGateway } from "../host/task-query.js";
 import { createHash, randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { lstat, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
@@ -134,9 +135,9 @@ function textOf(content) {
 }
 
 function turnFromAgent(agent) {
-  const events = Array.isArray(agent?.session?.events) ? agent.session.events : [];
-  const event = [...events].reverse().find((candidate) => candidate?.type === "user/message" && candidate?.data?.message?.source?.kind === "user");
-  const message = event?.data?.message;
+  const events = agent?.session?.ownEvents?.() ?? [];
+  const event = [...events].reverse().find((candidate) => candidate?.type === "user/message" && candidate?.data?.source?.kind === "user");
+  const message = event?.data;
   return Object.freeze({ text: textOf(message?.content), images: Object.freeze((message?.content ?? []).filter((block) => block?.type === "image")) });
 }
 
@@ -279,6 +280,7 @@ export async function createPluginRuntime(config, options = {}) {
   const application = await factory.create(admitted.configFile, dependencies);
   const control = options.control ?? api.getExecutionApplicationControl(application);
   const ownerProjection = options.ownerProjection ?? api.getExecutionControlPlaneProjection(application);
+  const taskQuery = options.taskQuery ?? (typeof api.getExecutionTaskQuery === "function" ? api.getExecutionTaskQuery(application) : undefined);
   const bindingInventory = () => typeof control.bindingInventory === "function" ? control.bindingInventory() : control.list();
   const archiveTerminal = async (sessionKey, correlation, deliveryId) => {
     let snapshot;
@@ -407,10 +409,21 @@ export async function createPluginRuntime(config, options = {}) {
       if (candidateBinding !== undefined) return error("SESSION_INTAKE_BOUND");
       const authorization = await conversationAuthorization();
       if (authorization === undefined) return error("DSH_INTAKE_WORKSPACE_UNAUTHORIZED");
+      // Programmatic Task starts carry accepted context separately from the triggering chat turn.
+      // The slash-command path remains unchanged for direct Workflow intake.
+      const task = input.controlTask;
+      if (task !== undefined && (task === null || !/^task-[a-zA-Z0-9-]+$/.test(task.taskId)
+        || task.sessionId !== input.agent?.session?.id || task.workspacePath !== authorization.path
+        || typeof task.prompt !== "string" || !task.prompt.trim() || task.prompt.length > 262144
+        || typeof control.executeFromConversationWorkspace !== "function")) return error("CRYSTRA_TASK_BINDING_INVALID");
       try { await (options.ensureGitWorktree ?? ensureGitWorktree)(authorization.path); }
       catch { return error("GIT_INIT_FAILED"); }
       sessionByCorrelation.set(correlation, input.sessionKey);
-      const execution = track(service.invoke(Object.freeze({ operation: "create", selector: operation.selector, worktree: authorization.path, directive: operation.directive, turn, correlation }), authorization));
+      const execution = track(task === undefined
+        ? service.invoke(Object.freeze({ operation: "create", selector: operation.selector, worktree: authorization.path, directive: operation.directive, turn, correlation }), authorization)
+        : control.executeFromConversationWorkspace(Object.freeze({worktree:authorization.path,selector:operation.selector,
+          taskSelection:Object.freeze({schemaVersion:"execution.task-selection@0.1.0",mode:"REUSE_TASK",taskId:task.taskId}),
+          prompt:Object.freeze({text:task.prompt,attachments}),intakeCorrelation:correlation}),authorization));
       const first = await awaitRegistrationOrResult(execution, correlation);
       if (first.kind === "result") {
         if (first.result.kind === "TERMINAL") await archiveTerminal(input.sessionKey, correlation, first.result.deliveryId);
@@ -430,6 +443,7 @@ export async function createPluginRuntime(config, options = {}) {
           if (result.kind === "TERMINAL") await archiveTerminal(input.sessionKey, correlation, delivery.deliveryId);
           else await bindings.detach(delivery.deliveryId);
           sessionByCorrelation.delete(correlation);
+          await input.onTerminal?.(result);
         }
       })).catch(() => undefined);
       return Object.freeze({ kind: "START_UNCERTAIN", worktree: delivery.worktree, deliveryId: delivery.deliveryId });
@@ -503,7 +517,7 @@ export async function createPluginRuntime(config, options = {}) {
     return closePromise;
   }
 
-  return Object.freeze({ application, service, control, ownerProjection, bindings, invokeForSession, answerForSession, close });
+  return Object.freeze({ application, service, control, ownerProjection, taskQuery, bindings, invokeForSession, answerForSession, close, saveRepositoryBindings: api.saveRepositoryModelBindings, readRepositoryBindings: api.loadRepositoryModelBindings });
 }
 
 function commandTurn(rawInput) {
@@ -552,6 +566,10 @@ export async function apply(ctx, config, hooks = {}) {
   await (hooks.registerGateway ?? ((readModel) => registerDeliveryControlPlaneGateway(ctx, readModel)))(
     createDshSessionControlPlaneReadModel(runtime.ownerProjection, runtime.bindings),
   );
+  await (hooks.registerTaskGateway ?? ((query) => registerTaskQueryGateway(ctx, query)))(
+    runtime.taskQuery ?? { snapshot: async () => { throw new Error("EXECUTION_TASK_QUERY_UNAVAILABLE"); } },
+  );
+  await hooks.registerRuntime?.(runtime);
   const active = new Set();
   const attachmentStore = ctx.attachments;
   const run = (task) => { active.add(task); void task.finally(() => active.delete(task)).catch(() => undefined); return task; };

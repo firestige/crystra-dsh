@@ -112,8 +112,8 @@ test("browser store maps unary Host reads into replayable React snapshots withou
   const calls = [];
   const rpc = Object.freeze({ async call(channel, endpoint, payload) {
     calls.push({ channel, endpoint, payload });
-    if (endpoint === "inventory/read") return { ok: true, value: remote };
-    if (endpoint === "session/read") return { ok: true, value: remote.deliveries.length === 0
+    if (endpoint === "crystra-execution/inventory/read") return { ok: true, value: remote };
+    if (endpoint === "crystra-execution/session/read") return { ok: true, value: remote.deliveries.length === 0
       ? { kind: "UNBOUND", sessionCorrelation: payload.sessionCorrelation }
       : { kind: "BOUND", sessionCorrelation: payload.sessionCorrelation, delivery: remote.deliveries[0] } };
     throw new Error("unexpected endpoint");
@@ -202,7 +202,7 @@ test("exact Core terminal facts survive Host mapping, gateway and browser reads 
       async subscribe(listener) { listener(await this.snapshot()); return () => undefined; },
     });
     const gateway = await createDeliveryControlPlaneGateway(createDshSessionControlPlaneReadModel(owner, bindings));
-    const rpc = Object.freeze({ call: (_channel, endpoint, payload) => gateway.handle(endpoint, payload) });
+    const rpc = Object.freeze({ call: (_channel, endpoint, payload) => gateway.handle(endpoint.replace(/^crystra-execution\//u, ""), payload) });
     const browser = createDeliveryControlPlaneClient(rpc);
     await browser.refresh();
     assert.deepEqual(browser.inventory.getSnapshot().snapshot.deliveries.map(({ deliveryId, terminal }) => [deliveryId, terminal.outcome]), [
@@ -255,7 +255,7 @@ test("browser preserves bounded gateway projection codes and distinguishes recon
   let mode = "empty";
   const rpc = Object.freeze({ async call(_channel, endpoint, payload) {
     if (mode === "stale") return { ok: false, error: { code: "DELIVERY_PROJECTION_STALE_BINDING", message: "Delivery control plane unavailable" } };
-    if (endpoint === "inventory/read") return { ok: true, value: snapshot(9, []) };
+    if (endpoint === "crystra-execution/inventory/read") return { ok: true, value: snapshot(9, []) };
     return { ok: true, value: { kind: "UNBOUND", sessionCorrelation: payload.sessionCorrelation } };
   } });
   const browser = createDeliveryControlPlaneClient(rpc);

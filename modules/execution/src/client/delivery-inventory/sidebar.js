@@ -76,11 +76,15 @@ export function createSidebarResources(React, WorkspaceBrowser, inventory) {
 export function applyDeliverySidebar(ctx, { React, workspaceUi, inventory }) {
   installStyle();
   const originalSlots = ctx.slots;
-  const slots = Object.create(originalSlots);
-  slots.register = (definition, component) => definition?.name === "sidebar.workspaces"
-    ? originalSlots.register(definition, createSidebarResources(React, component, inventory))
-    : originalSlots.register(definition, component);
-  slots.inject = (name, factory) => originalSlots.inject(name, factory);
+  const slots = new Proxy(originalSlots, {
+    get(target, property) {
+      if (property === "register") return (definition, component) => definition?.name === "sidebar.workspaces"
+        ? target.register(definition, createSidebarResources(React, component, inventory))
+        : target.register(definition, component);
+      const value = Reflect.get(target, property, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
   const forked = new Proxy(ctx, { get(target, property) { return property === "slots" ? slots : Reflect.get(target, property); } });
   return workspaceUi.apply(forked);
 }
