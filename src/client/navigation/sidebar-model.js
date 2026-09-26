@@ -1,7 +1,7 @@
 /** Presentation projection only: exact identities in, host-owned navigation targets out. */
 export function projectSidebar(data, route) {
   return {
-    tasks: data.tasks.map(task => ({
+    tasks: data.tasks.filter(task=>!task.archivedAt).map(task => ({
       ...task, href: `/tasks/${encodeURIComponent(task.id)}`,
       selected: route.page === 'task' && route.taskId === task.id,
     })),

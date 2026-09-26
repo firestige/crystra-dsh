@@ -36,6 +36,17 @@ function parse(answer: unknown): { revision: string; items: Task[] } {
       throw new Error("Execution Task 数据格式不兼容");
     ids.add(task.id);
     return {
+      ...(Number.isSafeInteger(task.presentationRevision)
+        ? { presentationRevision: task.presentationRevision }
+        : {}),
+      ...(typeof task.pinnedAt === "number" ? { pinnedAt: task.pinnedAt } : {}),
+      ...(typeof task.archivedAt === "number"
+        ? { archivedAt: task.archivedAt }
+        : {}),
+      ...(typeof task.thumbnail === "string" &&
+      task.thumbnail.startsWith("data:image/png;base64,")
+        ? { thumbnail: task.thumbnail }
+        : {}),
       id: task.id,
       title: task.title,
       lastActivityAt: task.lastActivityAt,
@@ -46,5 +57,14 @@ function parse(answer: unknown): { revision: string; items: Task[] } {
   return { revision: value.revision, items };
 }
 export function createExecutionTasksApi(rpc: ExecutionRpc): TasksApi {
-  return createRevisionApi(rpc, "/crystra-tasks", parse);
+  return {
+    ...createRevisionApi(rpc, "/crystra-tasks", parse),
+    async update(input) {
+      const answer = (await rpc.call("/crystra-tasks", "update", {
+        ...input,
+      })) as { ok?: boolean; error?: { message?: string } };
+      if (answer?.ok !== true)
+        throw new Error(answer?.error?.message ?? "任务更新失败");
+    },
+  };
 }

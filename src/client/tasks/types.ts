@@ -1,5 +1,9 @@
 /** Task facts projected exclusively from the Execution owner. */
 export interface Task {
+  presentationRevision?: number;
+  pinnedAt?: number | null;
+  archivedAt?: number | null;
+  thumbnail?: string;
   id: string;
   title: string;
   createdAt?: number;
@@ -9,7 +13,16 @@ export interface Task {
   /** Only an explicit Task-owner fact may set this; Delivery terminal status cannot. */
   active?: boolean;
 }
+export interface TaskUpdate {
+  taskId: string;
+  expectedRevision: number;
+  displayTitle?: string;
+  pinned?: boolean;
+  archived?: boolean;
+  thumbnailPng?: string | null;
+}
 export interface TasksApi {
+  update?(input: TaskUpdate): Promise<void>;
   read(signal: AbortSignal): Promise<Task[]>;
   subscribe?(
     invalidate: () => void,

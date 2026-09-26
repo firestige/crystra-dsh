@@ -3,23 +3,23 @@
   "inputs": {
     "execution": {
       "repository": "firestige/crystra-execution",
-      "revision": "8b3fe21cfd78c869fc3bfaa202bc8d109859597e",
+      "revision": "f648298355c9c64a46876051a9ff82dfe0a74828",
       "package": "crystra-execution",
       "version": "0.1.0",
       "artifact": "crystra-execution-0.1.0.tgz",
-      "sha256": "693d7c3104c9348cb0b491a8f59b755561bca3f4d60002b38ae0e07e0f46be35",
+      "sha256": "842d2e87f7031079d0e86d4ab3f2add399afa2945a0c7fea044275d6d092e06c",
       "sourceState": "committed",
-      "integrationNote": "Task Workbench accepted local integration baseline, 2026-09-25. Artifact dist bytes verified against this component commit. Not a published release."
+      "integrationNote": "Task resource management and shared-component consolidation, 2026-09-26. Artifact dist verified against this component commit. Local integration; not a published release."
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "d5783e12d0c536b1959785683539584f7c3382e3",
+      "revision": "20088eac1ea5439742a2b6f337a1cf0931785843",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
-      "sha256": "6723230c6d0e0855937115b3999f9b09c3d4ecaf2b97921a133629a3f483d597",
+      "sha256": "338b86eed8ed0f83acd495cbf55f67207bce25f2d733fb070ca51d98ff37e4fb",
       "sourceState": "committed",
-      "integrationNote": "Task Browser UI accepted and committed 2026-09-26; local 3085 action-review baseline. No published release."
+      "integrationNote": "Task resource management and shared-component consolidation, 2026-09-26. Artifact dist verified against this component commit. Local integration; not a published release."
     }
   }
 }

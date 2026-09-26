@@ -5,7 +5,7 @@ test('0.1.5 channels use exact authenticated Fetch routes and validate envelopes
  const routes=new Map();let calls=0,signal;
  const ctx={connection:{fetch:{register(route){routes.set(route.path,route);return async()=>routes.delete(route.path);}}},effect(){}};
  const stop=registerCrystraRpc(ctx,'/crystra-tasks',async(endpoint,payload,received)=>{calls++;signal=received;return {ok:true,value:{endpoint,payload}};});
- assert.deepEqual([...routes.keys()],['/api/crystra-tasks/list','/api/crystra-tasks/changes']);
+ assert.deepEqual([...routes.keys()],['/api/crystra-tasks/list','/api/crystra-tasks/changes','/api/crystra-tasks/update']);
  const route=routes.get('/api/crystra-tasks/list');
  const send=body=>route.fetch(new Request('http://localhost/api/crystra-tasks/list',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}));
  assert.equal((await send({type:'client-request',rpcId:'one',method:'crystra-tasks/changes',payload:{}})).status,400);
