@@ -19,3 +19,5 @@ test('workflow views preserve exact identity and normalize unknown views',()=>{
  assert.equal(resolveRoute('/#'+path.replace('resources','crystallization')).view,'crystallization');
  assert.equal(resolveRoute(path.replace('resources','unknown')).view,'studio');
 });
+
+test('all workflows action resolves to the browser and marks the sidebar selected',()=>{const sidebar=projectSidebar({tasks:[],workflows:[],analysis:[]},{page:'workflows'});assert.equal(sidebar.allWorkflowsHref,'/workflows');assert.equal(resolveRoute(sidebar.allWorkflowsHref).page,'workflows');assert.equal(sidebar.workflowsSelected,true);});

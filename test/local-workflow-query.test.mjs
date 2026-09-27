@@ -24,7 +24,7 @@ async function pack(root, id = "workflow-one") {
     JSON.stringify({
       kind: "agentops.workflow-definition",
       schemaVersion: "agentops.workflow-dsl@2.0.0",
-      workflow: { id, name: "One", version: "1.0.0" },
+      workflow: { id, name: "One", version: "1.0.0", graph:{nodes:[{id:"action-one",kind:"action"}]} },
     }),
   );
 }
@@ -50,6 +50,9 @@ test("lists only explicitly bound local packages with stable identity and conten
   assert.equal(first.items.length, 1);
   assert.equal(first.items[0].definitionId, "workflow-one");
   assert.equal(first.items[0].version, "1.0.0");
+  assert.equal(first.items[0].nodeCount,1);
+  assert.equal(Number.isFinite(first.items[0].updatedAt),true);
+  assert.equal(first.items[0].createdAt,undefined);
   assert.equal((await query.snapshot()).revision, first.revision);
   await writeFile(
     join(root, "packages/a/resource.md"),

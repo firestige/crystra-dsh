@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { WorkflowExplorerPage, WorkflowStudioPage } from "crystra-ui-core";
+import { Button, WorkflowStudioPage } from "crystra-ui-core";
 import { useWorkflows } from "./use-workflows";
 export function WorkflowsFeedback({
   state,
@@ -12,37 +12,10 @@ export function WorkflowsFeedback({
     return (
       <div role="alert">
         <p>{state.error}</p>
-        <button type="button" onClick={() => void state.actions.refresh()}>
-          重试工作流
-        </button>
+        <Button onClick={() => void state.actions.refresh()}>重试工作流</Button>
       </div>
     );
   return null;
-}
-export function WorkflowExplorer({ bench }: { bench: ReactNode }) {
-  const workflows = useWorkflows();
-  return (
-    <WorkflowExplorerPage
-      title="全部工作流"
-      description="Workflow Explorer"
-      context={
-        <>
-          <WorkflowsFeedback state={workflows} />
-          {workflows.phase === "ready" && (
-            <span>{workflows.items.length} 个本地工作流</span>
-          )}
-          <button
-            type="button"
-            disabled={workflows.phase === "loading"}
-            onClick={() => void workflows.actions.refresh()}
-          >
-            刷新工作流
-          </button>
-        </>
-      }
-      bench={bench}
-    />
-  );
 }
 export function WorkflowStudio({
   definitionId,

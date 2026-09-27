@@ -87,6 +87,8 @@ export async function readPackage(root, includeSource = false) {
     throw Error("WORKFLOW_DEFINITION_METADATA_INVALID");
   return Object.freeze({
     ...(includeSource ? { content, packageDocument: pkg, workflowDocument: document } : {}),
+    nodeCount: Array.isArray(workflow.graph?.nodes) ? workflow.graph.nodes.length : undefined,
+    updatedAt: before.length ? Math.max(...before.map(entry=>entry.mtime)) : undefined,
     definitionId: workflow.id,
     title: workflow.name,
     version: workflow.version,
