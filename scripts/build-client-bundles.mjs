@@ -15,7 +15,7 @@ const bundles = Object.freeze([{
     module: "@deepseek-ai/dsh-client-ui-workspace",
     source: "node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js",
   },
-  external: ["react", "react-dom", "react/jsx-runtime", "@deepseek-ai/dsh-client-ui-primitives", "@deepseek-ai/dsh-client-ui-workspace", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-sidebar"],
+  external: ["@deepseek-ai/dsh-api-session-controller/client", "react", "react-dom", "react/jsx-runtime", "@deepseek-ai/dsh-client-ui-primitives", "@deepseek-ai/dsh-client-ui-workspace", "@deepseek-ai/dsh-client-ui-conversation", "@deepseek-ai/dsh-client-ui-sidebar"],
 }]);
 
 for (const bundle of bundles) {
@@ -46,7 +46,7 @@ for (const bundle of bundles) {
     const sidebarSource = await readFile(resolve(root, "node_modules/@deepseek-ai/dsh-client-ui-sidebar/lib/client.js"), "utf8");
     const sidebar = sidebarSource.match(/\tfactory: \(require\) => \{\n([\s\S]*?)\n\t\}\n\}\);/u);
     if (!sidebar) throw new Error("FIXED_SIDEBAR_SOURCE_INVALID");
-    fork = `const fixedWorkspaceUi = ((require) => {\n${match[1]}\n})(platformRequire);\nconst fixedConversationUi = ((require) => {\n${composeConversationSurface(conversation[1])}\n})(platformRequire);\n    const fixedSidebarUi = ((require) => {\n${composeSidebarBanner(sidebar[1])}\n})(platformRequire);\n    const require = (name) => name === "@deepseek-ai/dsh-client-ui-sidebar" ? fixedSidebarUi : name === "@deepseek-ai/dsh-client-ui-conversation" ? fixedConversationUi : name === ${JSON.stringify(bundle.fixedFork.module)} ? fixedWorkspaceUi : platformRequire(name);`;
+    fork = `const fixedWorkspaceUi = ((require) => {\n${match[1]}\n})(platformRequire);\nconst fixedConversationUi = ((require) => {\n${composeConversationSurface(conversation[1])}\n})(platformRequire);\n    const fixedSidebarUi = ((require) => {\n${composeSidebarBanner(sidebar[1])}\n})(platformRequire);\n    const require = (name) => name === "@deepseek-ai/dsh-api-session-controller/client" ? platformRequire("@deepseek-ai/dsh-api-session-controller") : name === "@deepseek-ai/dsh-client-ui-sidebar" ? fixedSidebarUi : name === "@deepseek-ai/dsh-client-ui-conversation" ? fixedConversationUi : name === ${JSON.stringify(bundle.fixedFork.module)} ? fixedWorkspaceUi : platformRequire(name);`;
 
   }
   const output = resolve(root, bundle.output);

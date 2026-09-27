@@ -19,6 +19,7 @@ function resolveRoute(location) {
         page: "workflow",
         definitionId: decodeURIComponent(workflow[1]),
         revision: url.searchParams.get("revision"),
+        ...(url.searchParams.has("view") ? {view: ["resources","crystallization"].includes(url.searchParams.get("view")) ? url.searchParams.get("view") : "studio"} : {}),
         fromTaskId: url.searchParams.get("from_task_id")
       };
   } catch {

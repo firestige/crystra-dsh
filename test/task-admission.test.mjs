@@ -14,6 +14,7 @@ test('admission requires persisted nonblank input, retries one owner identity, a
   const admitTask=async h=>{calls.push(h);return h};
   const open=()=>createTaskAdmission({ctx,stateRoot:root,owner:()=>({admitTask})});
   const api=await open();
+  await assert.rejects(api.admit('crystra-workflow-test'),/WORKFLOW_SESSION_CANNOT_ADMIT_TASK/);
   assert.equal(await api.admit('s'),null);
   events.push({type:'user/message',timestamp:42,data:{id:'m',source:{kind:'user'},content:[{type:'text',text:'  '}]}});
   assert.equal(await api.admit('s'),null);

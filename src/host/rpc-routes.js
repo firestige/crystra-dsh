@@ -1,10 +1,11 @@
 import { clientRequestSchema } from '@deepseek-ai/dsh-client-connection';
 
 const endpoints = {
-  '/crystra-control': ['tasks/admit','tasks/bindings','tasks/projection','tasks/select-gate','tasks/artifact'],
+  '/crystra-workflow-sessions': ['ensure','topics/read','topics/create','topics/select','topics/rename'],
+  '/crystra-control': ['topics/read','topics/create','topics/select','topics/rename','tasks/admit','tasks/bindings','tasks/projection','tasks/select-gate','tasks/artifact'],
   '/crystra-execution': ['inventory/read', 'session/read'],
   '/crystra-tasks': ['list', 'changes', 'update'],
-  '/crystra-workflows': ['list', 'changes', 'settings/read', 'settings/save'],
+  '/crystra-workflows': ['list', 'changes', 'settings/read', 'settings/save', 'studio/read', 'studio/save', 'studio/mutate'],
   '/crystra-studio': ['services/status', 'tasks/list', 'facts/read', 'traces/read', 'evaluations/compute'],
 };
 

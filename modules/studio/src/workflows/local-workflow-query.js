@@ -39,7 +39,7 @@ async function files(root) {
   await visit(root);
   return result;
 }
-async function readPackage(root) {
+export async function readPackage(root, includeSource = false) {
   const before = await files(root);
   let size = 0;
   const content = new Map();
@@ -86,6 +86,7 @@ async function readPackage(root) {
   )
     throw Error("WORKFLOW_DEFINITION_METADATA_INVALID");
   return Object.freeze({
+    ...(includeSource ? { content, packageDocument: pkg, workflowDocument: document } : {}),
     definitionId: workflow.id,
     title: workflow.name,
     version: workflow.version,

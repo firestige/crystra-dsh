@@ -1,0 +1,1 @@
+{"kind":"agentops.workflow-definition","schemaVersion":"agentops.workflow-dsl@2.0.0","workflow":{"id":"test","name":"Test","version":"1"},"graph":{"start":"a","nodes":[{"id":"a","kind":"action"}],"edges":[],"terminals":[]}}

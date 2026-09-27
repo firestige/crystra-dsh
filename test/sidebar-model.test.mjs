@@ -13,3 +13,9 @@ test('sidebar maps supplied objects without fixtures and preserves exact workflo
  assert.deepEqual(projectSidebar({tasks:[],workflows:[],analysis:[]},{page:'tasks'}).tasks,[]);
  assert.equal(data.workflows[0].selected,undefined);
 });
+test('workflow views preserve exact identity and normalize unknown views',()=>{
+ const path='/workflows/user-workflow?revision=local%3Aabc&from_task_id=origin&view=resources';
+ assert.deepEqual(resolveRoute(path),{page:'workflow',definitionId:'user-workflow',revision:'local:abc',fromTaskId:'origin',view:'resources'});
+ assert.equal(resolveRoute('/#'+path.replace('resources','crystallization')).view,'crystallization');
+ assert.equal(resolveRoute(path.replace('resources','unknown')).view,'studio');
+});

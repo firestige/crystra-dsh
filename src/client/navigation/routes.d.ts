@@ -6,6 +6,7 @@ export type Route = {
 } | {
     page: "workflow";
     definitionId: string;
+    view?: "studio" | "resources" | "crystallization";
     revision: string | null;
     fromTaskId: string | null;
 } | {

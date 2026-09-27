@@ -33,7 +33,7 @@ export function createExternalChatAdapter({Base,ctx,providers}) {
    const control=rootControl?.forSession?await rootControl.forSession(session.id):rootControl;
    const task=control?await control.tasks.admit(session.id):undefined;
    const sourceMessages=session.ownEvents().filter(e=>e.type==='user/message'&&e.data?.source?.kind==='user').map(e=>({id:e.data.id,text:e.data.content?.filter(p=>p.type==='text').map(p=>p.text).join('\n')}))??[];
-   const contextFor=async()=>task?{...await control.flow.prepare(task),sourceMessages,executionReady:!!control.execution?.(),run:await control.runs?.read(task),planningCapabilities:await control.execution?.()?.control?.planningCapabilities?.(),roleBindings:await control.execution?.()?.readRepositoryBindings?.(task.workspacePath),controlReceipts:(await control.requests?.receipts(task))?.slice(-5)}:undefined;
+   const contextFor=async()=>task?{...await control.flow.prepare(task),discussion:task.discussion,sourceMessages,executionReady:!!control.execution?.(),run:await control.runs?.read(task),planningCapabilities:await control.execution?.()?.control?.planningCapabilities?.(),roleBindings:await control.execution?.()?.readRepositoryBindings?.(task.workspacePath),controlReceipts:(await control.requests?.receipts(task))?.slice(-5)}:undefined;
    let taskContext=await contextFor();
    let questionPending=false, releaseUpdate;
    const askProvider=async request=>{

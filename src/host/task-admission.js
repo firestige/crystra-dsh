@@ -16,6 +16,8 @@ export async function createTaskAdmission({ctx,stateRoot,owner}) {
   return row;
  }
  async function admit(sessionId){
+  if(typeof sessionId==='string'&&sessionId.startsWith('crystra-task-topic-'))throw Error('TOPIC_CANNOT_CREATE_TASK');
+  if(typeof sessionId==='string'&&sessionId.startsWith('crystra-workflow-'))throw Error('WORKFLOW_SESSION_CANNOT_ADMIT_TASK');
   if(typeof sessionId!=='string'||!sessionId||sessionId.length>512)throw Error('TASK_SESSION_INVALID');
   const s=ctx.sessions.get(sessionId),owners=ctx.workspaceRegistry.list().filter(w=>w.sessionIds.includes(sessionId));
   if(!s)return null; // A DSH draft is not yet a persisted Session.

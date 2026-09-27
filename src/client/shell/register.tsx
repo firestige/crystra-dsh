@@ -1,3 +1,8 @@
+import {DiscussionTopicBar,Button} from "crystra-ui-core";
+import {useTaskTopics} from "../topics/use-task-topics";
+import {useWorkflowSession} from "../workflows/use-workflow-session";
+import {workflowSessionReady} from "../workflows/workflow-session-policy.js";
+import {createScope} from "@deepseek-ai/dsh-api-session-controller/client";
 import {TaskControlContext} from '../task-workbench/task-control-context';
 import {ProductPages} from "./product-pages";
 import * as sidebarUi from "@deepseek-ai/dsh-client-ui-sidebar";
@@ -155,8 +160,13 @@ export function registerProductShell(ctx: any, controlPlane: any) {
     const [bindings,setBindings]=useState<any[]>([]);
     const [admissionError,setAdmissionError]=useState<string>();
     const [preparedSession,setPreparedSession]=useState<string>();
-    const sessionId = resolveTaskSession(task?.id, inventory, sessions, bindings);
+    const taskTopics=useTaskTopics(task?.id,rpc,ctx.sessions);
+    const sessionId = route.page==='task'?taskTopics.snapshot?.selected.sessionId:resolveTaskSession(task?.id, inventory, sessions, bindings);
     const selectedSessionId = props.useSessions((state: any) => state.current);
+    const workflowSession=useWorkflowSession(route.page==='workflow'?route.definitionId:undefined,rpc,ctx.sessions);
+    const isolatedWorkflowReady=route.page==='workflow'&&workflowSessionReady(route.definitionId,workflowSession.binding,selectedSessionId);
+    useEffect(()=>{if(route.page==='workflow'&&workflowSession.binding?.sessionId&&selectedSessionId!==workflowSession.binding.sessionId)ctx.sessions.open(workflowSession.binding.sessionId);},[route.page,workflowSession.binding?.sessionId,selectedSessionId]);
+
     useEffect(()=>{
       let cancelled=false;let timer:ReturnType<typeof setTimeout>;
       async function poll(){
@@ -184,11 +194,16 @@ export function registerProductShell(ctx: any, controlPlane: any) {
       if (sessionId) ctx.sessions.open(sessionId);
     }, [sessionId]);
     const nativeChat = () => props.renderSlot("main.conversation", {});
-    const content=route.page==='task' && (!sessionId || selectedSessionId!==sessionId)
-      ? <p role="status" className="crystra-product-empty">当前任务没有可核验的 DSH 会话绑定。</p>
+    const content=route.page==='workflow'&&!isolatedWorkflowReady
+      ? <div role="status" className="crystra-product-empty">{workflowSession.error||'正在打开独立工作流会话…'}{workflowSession.error&&<button onClick={workflowSession.retry}>重试</button>}</div>
+      : route.page==='task'  && (!sessionId || selectedSessionId!==sessionId)
+      ? <p role="status" className="crystra-product-empty">{taskTopics.error||"正在恢复当前主题…"}<Button onClick={taskTopics.retry}>重试</Button></p>
       : nativeChat();
-    const chat=<>{admissionError&&<p role="alert" className="crystra-product-empty">任务创建暂未完成：{admissionError}</p>}{content}</>;
-    const page=<ProductPages route={route} chat={chat} onNavigate={go} hostRoot bench={<section data-section-id="control-workspace" aria-label="Bench" className="crystra-product-empty">Bench</section>}/>;
+    const discussion=route.page==='workflow'?workflowSession:taskTopics;
+    const topicSnapshot=discussion.snapshot;
+    const topicBar=(route.page==='task'||route.page==='workflow')&&topicSnapshot?<DiscussionTopicBar group={topicSnapshot.group} groups={topicSnapshot.groups} topics={topicSnapshot.topics} selectedId={topicSnapshot.selected.id} busy={discussion.pending||topicSnapshot.busy} historical={topicSnapshot.group.id!==topicSnapshot.currentGroup.id} onSelect={id=>{void discussion.select(id).catch(()=>{});}} onSelectGroup={id=>{void discussion.selectGroup(id).catch(()=>{});}} onNew={()=>{void discussion.create().catch(()=>{});}} onRename={discussion.rename}/>:null;
+    const chat=<>{topicBar}{discussion.error&&topicSnapshot&&<p role="alert" className="crystra-product-empty">{discussion.error}<Button onClick={discussion.retry}>重试</Button></p>}{admissionError&&<p role="alert" className="crystra-product-empty">任务创建暂未完成：{admissionError}</p>}{content}</>;
+    const page=<ProductPages route={route} chat={chat} onWorkflowQuote={(text)=>{if(!isolatedWorkflowReady||!workflowSession.binding)throw Error("工作流独立会话尚未就绪");const scope=createScope(ctx,workflowSession.binding!.sessionId);try{ctx.conversation.input.for(scope.ctx).setDraft(text);}finally{scope.fiber.dispose();}}} onNavigate={go} hostRoot bench={<section data-section-id="control-workspace" aria-label="Bench" className="crystra-product-empty">Bench</section>}/>;
     return (
       <div
         className="crystra-bi crystra-product-main"

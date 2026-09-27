@@ -1,3 +1,4 @@
+import {createWorkflowStudioSource} from "./studio-source.js";
 import { registerCrystraRpc } from "../../../../src/host/rpc-routes.js";
 import { createWorkflowSettings } from "./settings.js";
 import { createRevisionQueryGateway } from "../../../../src/host/revision-query.js";
@@ -19,10 +20,15 @@ export function createWorkflowQueryGateway(bindingFile, options = {}) {
       }),
     },
   );
+  const studio = createWorkflowStudioSource(bindingFile);
   const settings = createWorkflowSettings(bindingFile);
   return {
     close: reads.close,
     async handle(endpoint, payload) {
+      if(['studio/read','studio/save','studio/mutate'].includes(endpoint)){
+        try{return {ok:true,value:await studio[endpoint.slice('studio/'.length)](payload)};}
+        catch(error){return {ok:false,error:{code:error.code||'WORKFLOW_STUDIO_UNAVAILABLE',message:error.message}};}
+      }
       if (endpoint !== "settings/read" && endpoint !== "settings/save")
         return reads.handle(endpoint, payload);
       try {

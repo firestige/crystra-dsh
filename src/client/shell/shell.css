@@ -46,3 +46,11 @@
 .crystra-product-list small {
   color: var(--color-text-muted);
 }
+.crystra-workflow-bench{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.crystra-workflow-bench>.crystra-tabs{display:contents}
+.crystra-workflow-bench>.crystra-tabs>.crystra-tab-panel{display:none}
+.crystra-workflow-map{height:100%;min-height:0;padding:0 24px;overflow:hidden}
+.crystra-workflow-resources{height:100%;min-height:0;overflow:hidden}
+.crystra-product-main .crystra-page-chat {display:flex;flex-direction:column;min-height:0;}
+.crystra-product-main .crystra-page-chat > :last-child {min-height:0;flex:1;}
+.crystra-product-main .crystra-page-chat > .crystra-discussion-topics {flex:none;}

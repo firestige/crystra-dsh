@@ -1,3 +1,4 @@
+import {createWorkflowSessions} from "./host/workflow-sessions.js";
 import {createTaskControl} from './host/task-control.js';
 import {LlmAdapter} from '@deepseek-ai/dsh-llm';
 import {createExternalChatAdapter} from './host/external-chat.js';
@@ -22,8 +23,12 @@ export function createHostPlugin({executionModule=execution,studioModule=studio,
    conversationSettings.apply(ctx);
    const configuration=normalizePluginConfiguration(input);
    registerWorkflowQueryGateway(ctx,path.join(configuration.paths.stateRoot,"workflow-directories.json"));
+   ctx.inject(['sessionController','workspaceRegistry','agents','sessions'],inner=>{
+    const workflowSessions=createWorkflowSessions({stateRoot:configuration.paths.stateRoot,isRunning:id=>inner.agents.roots().some(a=>a.session.id===id&&a.status==='running'),firstMessage:id=>inner.sessions.get(id)?.ownEvents().find(e=>e.type==='user/message'&&e.data?.source?.kind==='user')?.data.content?.filter(p=>p.type==='text').map(p=>p.text).join('\n'),bindingFile:path.join(configuration.paths.stateRoot,'workflow-directories.json'),create:async request=>{const workspace=await inner.workspaceRegistry.create(request.cwd);return inner.sessionController.create({sessionId:request.sessionId,workspaceId:workspace.id});}});
+    registerCrystraRpc(inner,'/crystra-workflow-sessions',async(endpoint,payload)=>{try{return {ok:true,value:await (endpoint==='ensure'?workflowSessions.ensure(payload):workflowSessions.topics(endpoint.replace('topics/',''),payload))};}catch(error){return {ok:false,error:{code:'WORKFLOW_SESSION_UNAVAILABLE',message:error.message}};}});
+   });
    let host,readGateway,unregister,executionRuntime;
-   ctx.inject(['sessions','workspaceRegistry','sessionPersistence'], async inner=>{
+   ctx.inject(['sessions','workspaceRegistry','sessionPersistence','sessionController','agents'], async inner=>{
     const admission=await createTaskAdmission({ctx:inner,stateRoot:configuration.paths.stateRoot,owner:()=>executionRuntime?.control});
     const control=createTaskControl({ctx:inner,stateRoot:path.join(configuration.paths.stateRoot,"conversations"),admission,runtime:()=>executionRuntime});
     inner.provide('crystraTaskControl',control);

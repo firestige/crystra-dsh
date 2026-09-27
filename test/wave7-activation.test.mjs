@@ -74,7 +74,7 @@ test("generated clients use one module identity and no private source or direct 
     let definition;
     vm.runInNewContext(source, {
       TextDecoder, TextEncoder, URL, URLSearchParams, setTimeout, clearTimeout,
-      document: { querySelector() { return {}; }, createElement() { return {}; } },
+      document: { documentElement: {style:{}}, querySelector() { return {}; }, createElement() { return {}; } },
       window: { Error, setTimeout, clearTimeout, __ModuleLoader__: { load(value) { definition = value; } } },
     });
     assert.equal(definition.id, expected);
@@ -82,6 +82,7 @@ test("generated clients use one module identity and no private source or direct 
       if (name === "@deepseek-ai/dsh-client-ui-slots") return Slots;
       if (name === "@deepseek-ai/cordis") return Cordis;
       if (name === "@deepseek-ai/dsh-client-store") return DshStore;
+      if (name === "@deepseek-ai/dsh-api-session-controller") return { createScope() { throw new Error("Scope must only be created for a user quote action"); } };
       if (name === "react") return React;
       if (name === "react-dom") return ReactDOM;
       if (name === "react/jsx-runtime") return { jsx() {}, jsxs() {} };

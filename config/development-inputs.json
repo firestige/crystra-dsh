@@ -13,13 +13,13 @@
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "20088eac1ea5439742a2b6f337a1cf0931785843",
+      "revision": "aa6a44bbba3543c8cd14d3f2abeaef9a1e0d0739",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
-      "sha256": "338b86eed8ed0f83acd495cbf55f67207bce25f2d733fb070ca51d98ff37e4fb",
+      "sha256": "1446bdd750acf93df4315c86d4413208b3f1713f121b38ee594aacc1d68bf01b",
       "sourceState": "committed",
-      "integrationNote": "Task resource management and shared-component consolidation, 2026-09-26. Artifact dist verified against this component commit. Local integration; not a published release."
+      "integrationNote": "Workflow workbench, shared discussion topics and responsive header convergence. Local integration artifact built from this UI source; not a published release."
     }
   }
 }

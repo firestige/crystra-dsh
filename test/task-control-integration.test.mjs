@@ -85,6 +85,8 @@ test("native Chat updates Brief, receives approval, advances Plan and feeds the 
       runtime: () => runtime,
     });
     ctx.crystraTaskControl = control;
+    assert.equal(await control.forSession('crystra-workflow-test'),undefined);
+    assert.equal((await control.handle('tasks/admit',{sessionId:'crystra-workflow-test'})).ok,false);
     assert.equal(
       await control.forSession(session.id),
       undefined,
@@ -509,4 +511,20 @@ test('UI projection holds a complete snapshot throughout a provider write, then 
   const endBad=await control.beginUpdate(task);await writeFile(join(dir,'brief.json'),'{');endBad();
   assert.equal((await control.handle('tasks/projection',{taskId:task.taskId})).value.brief.state,'invalid');
  } finally {await rm(root,{recursive:true,force:true});}
+});
+test('new topic retains the admitted Task and validates grilling across registered topic sources',async t=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-topic-control-'));t.after(()=>rm(root,{recursive:true,force:true}));const sessions=new Map();let admissions=0;const primary={taskId:'task-topic-test',sessionId:'primary',workspaceId:'w',workspacePath:root};
+ const addSession=(id,text)=>{const session=Session.create(id,[],{id,version:SESSION_FORMAT_VERSION,createdAt:123,cwd:root,isSeeded:false});if(text)session.append('user/message',{id:'message-'+id,role:'user',source:{kind:'user'},content:[{type:'text',text}]},{surfaceOp:'append'});sessions.set(id,session);return session;};addSession('primary','为 iphone 设计一个时钟 app');
+ const workspace={id:'w',path:root,get sessionIds(){return [...sessions.keys()];}};
+ const ctx={sessions:{get:id=>sessions.get(id)},workspaceRegistry:{list:()=>[workspace]},agents:{roots:()=>[]},sessionController:{create:async({sessionId})=>{addSession(sessionId);return {sessionId};}}};const control=createTaskControl({ctx,stateRoot:root,admission:{bindings:async()=>[primary],admit:async()=>{admissions++;return primary;}},runtime:()=>undefined});
+ const first=(await control.handle('topics/read',{taskId:primary.taskId})).value;const created=await control.handle('topics/create',{taskId:primary.taskId,groupId:first.group.id});assert.equal(created.ok,true);const id=created.value.selected.sessionId;const local=await control.forSession(id);const bound=await local.tasks.admit(id);assert.equal(bound.taskId,primary.taskId);assert.equal(bound.sessionId,id);assert.equal(admissions,0);await assert.rejects(control.tasks.admit('primary'),/NOT_ACTIVE/);
+ const view=await control.flow.read(bound);assert.equal(view.taskId,primary.taskId);assert.equal(view.artifactRoot,join(await (await import('node:fs/promises')).realpath(root),'.crystra','tasks',primary.taskId));assert.equal(sessions.get(id).ownEvents().filter(e=>e.type==='user/message').length,0);
+ sessions.get(id).append('user/message',{id:'message-topic',role:'user',source:{kind:'user'},content:[{type:'text',text:'中文'}]},{surfaceOp:'append'});
+ const brief={schema:'crystra.brief@1',taskId:primary.taskId,goal:'时钟',scope:['iPhone'],nonGoals:[],assumptions:[],questions:[],acceptance:['可用'],requestConfirmation:false,grilling:{round:1,budget:{initial:1,remaining:0},topics:[{id:'language',title:'语言',estimatedQuestions:1}],questions:[{id:'q',topicId:'language',text:'语言？',status:'answered',origin:'initial',sourceMessageIds:['message-primary','message-topic'],reason:'交付',answer:'中文'}]}};
+ await writeFile(join(view.artifactRoot,'brief.json'),JSON.stringify(brief));
+ assert.equal((await control.flow.read(bound)).brief.state,'available');
+ brief.grilling.questions[0].sourceMessageIds.push('foreign-message');
+ await writeFile(join(view.artifactRoot,'brief.json'),JSON.stringify(brief));
+ assert.equal((await control.flow.read(bound)).brief.state,'invalid');
+ const other=await control.handle('topics/select',{taskId:'task-other',groupId:first.group.id,topicId:first.selected.id});assert.equal(other.ok,false);
 });

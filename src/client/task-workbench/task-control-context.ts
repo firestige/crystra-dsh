@@ -1,9 +1,2 @@
-import { createContext } from "react";
-export interface TaskControlRpc {
-  call(
-    channel: string,
-    endpoint: string,
-    payload: Record<string, unknown>,
-  ): Promise<any>;
-}
-export const TaskControlContext = createContext<TaskControlRpc | null>(null);
+export { HostRpcContext as TaskControlContext } from "../host/host-rpc-context";
+export type { HostRpc as TaskControlRpc } from "../host/host-rpc-context";
