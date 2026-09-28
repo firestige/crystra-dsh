@@ -13,7 +13,7 @@
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "454b613f7b5475b477683062a22bee4dc3656b50",
+      "revision": "01c49ecf96cb55b11d341caef45a75d304b2dbe1",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
