@@ -13,13 +13,13 @@
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "78f41980da67aa9278ba7c76a657da1c2eca1099",
+      "revision": "454b613f7b5475b477683062a22bee4dc3656b50",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
-      "sha256": "4d0fab0475003d29c4a023656b920c21820534c94945c54d9bd1e7436ae12e2f",
+      "sha256": "c57e1143059730c75d0ddc349aadb103ce6a3c97ce9ccd6077d9ff4383ecf74f",
       "sourceState": "committed",
-      "integrationNote": "Restore v8 system-wide time-range Analysis overview and shared layout; unbound metrics explicit. Local working-tree review 2026-09-28, not published."
+      "integrationNote": "Recorded-time Analysis queries, independent Delivery/Trace loading and preferences; local artifact built from the committed UI implementation. Not published."
     }
   }
 }

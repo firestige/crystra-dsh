@@ -53,3 +53,20 @@ test('global period navigation preserves identity but drops Task scope outside T
  const next=analysisPeriodPath(href,'30d');
  assert(next.includes('period=30d'));assert(next.includes('task_id=task-a'));assert(!next.includes('secret'));
 });
+
+test('analysis configuration persists across stores and tolerates corrupt or unavailable localStorage',async()=>{
+ const {build}=await import('esbuild');
+ const result=await build({entryPoints:['src/client/analysis/configuration-store.ts'],bundle:true,format:'esm',platform:'node',write:false});
+ const {createAnalysisConfigurationStore}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+ const values=new Map();const storage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v)};
+ const first=createAnalysisConfigurationStore(storage);
+ first.setSettings([{id:'saved',name:'持久设置',charts:[]}]);
+ assert.equal(createAnalysisConfigurationStore(storage).getSnapshot().settings[0]?.id,'saved');
+ assert.equal(values.size,1);
+ storage.setItem([...values.keys()][0],'{broken');
+ assert.deepEqual(createAnalysisConfigurationStore(storage).getSnapshot().settings,[]);
+ const failed=createAnalysisConfigurationStore({getItem(){throw Error('denied');},setItem(){throw Error('quota');}});
+ assert.doesNotThrow(()=>failed.setSettings([{id:'memory',name:'当前页面',charts:[]}]));
+ assert.equal(failed.getSnapshot().settings[0].id,'memory');
+ assert(failed.getSnapshot().storageError);
+});

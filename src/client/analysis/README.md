@@ -1,62 +1,20 @@
 # Analysis host integration
 
-## Current implementation — 2026-09-28 correction
+## Current candidate — 2026-09-28
 
-The v8 page contract controls the UI. Overview observes the whole system within the
-global time range; it has no Task selector or drill-down. Trace selects one Delivery
-inside the global time range and optional Task context. Comparison uses observation
-settings and an optional Delivery subset inside that same global range.
+Crystra-ui owns the reusable query resources, generic decoding interfaces, metadata/metric adapters and presentation. DSH coordinates route, host transport, selection and browser persistence. Panels do not fetch. Evidence owns recorded Observation metadata; Evaluation owns metric calculation. No Contracts or Observation schema files change in this candidate.
 
-The temporary Task compute overview and its three-card replacement were removed.
-`HostAnalysis` now mounts the shared `AnalysisSurface` directly. No Task directory or
-whole-Task compute is requested on page entry. Shared query primitives, validated
-Contract adapters, projection helpers and DSH allowlisted transport remain available
-for future integration, but are not substitutes for a time-scoped data source.
+- Overview queries Evaluation over the global Evidence recorded-time range, without a Task selector.
+- Trace queries the paginated Evidence Delivery directory. Selecting a Delivery issues a separate exact Trace request in the same recorded-time range. Trace does not issue Evaluation compute requests.
+- Comparison combines Evaluation with Delivery metadata for its optional subset. Directory paging does not imply complete membership until exhausted; server total remains distinct from loaded/local-filtered count.
+- Directory search is sent to Evidence for the whole query range. Local refinement only filters loaded rows. Cursor pagination backs incremental scrolling; the mounted list window is capped at 30 rows.
+- Relative ranges are resolved again when refreshed, including across midnight. Cadence and manual refresh share that path.
+- Selected Trace pages remain explicitly partial until loaded; selection switches cancel stale requests.
 
-Overview preserves the resources/quality themes, default Widget layout, grouping,
-layout editing and configuration import/export/add/save/cancel. Missing values are
-explicitly unavailable, including scalar values represented as null. No provider,
-model, price, subscription or measurement is fabricated. Provider-specific widgets
-must be expanded from actual dimensions; the unbound page uses a generic cache slot.
+`configuration-store` stores accepted layout and observation settings in localStorage under `crystra.analysis.configuration.v1`. UI validates the structural shape independently of the metric catalogue, so retired metrics do not destroy saved layouts. Drafts, observations and transient selections are not persisted. Malformed/denied reads use defaults; failed writes keep the in-memory change and show a notice. Browser storage is local to the origin/browser, not cross-device storage.
 
-Global date controls are restored. Period changes are reflected in the host URL;
-Task scope is only retained in Trace URLs. Source identities are not applied to
-Overview or Comparison. Date changes and page switches do not change layout/settings.
-Refresh and its cadence control remain visible (manual, 15s, 30s, 1m, 5m), disabled
-with an explicit explanation until a correctly time-scoped request can be supplied.
-No fake refresh or whole-Task compute is issued as a fallback.
+## Interfaces
 
-`configuration-store` owns accepted layout/settings for the host session. UI owns
-editing drafts and display state. Crystra-ui owns reusable query/business/presentation
-code; DSH owns routing, configuration and host transport. No Contracts or Observation
-schemas changed. No new backend API or production metric is asserted by the UI catalog.
+The DSH gateway allowlists `deliveries/list` to Evidence `GET /v1/evidence/deliveries`. This additive local query candidate requires `recorded_from` and `recorded_to`, supports metadata filters and snapshot-bound cursors, and returns metadata only. The existing Trace and Evaluation contracts retain ownership of their payloads.
 
-## Validation
-
-Regression coverage verifies the empty-data overview retains both themes, metric
-placeholders and layout controls, without a Task selector. The query decoder tests
-continue to validate exact Task selection independently from the overview UI.
-Validation after correction: UI 479 Vitest tests plus 34 script tests passed;
-DSH 266 tests passed in a settled, serial run (the parallel run hit the existing
-cold-start polling timeout). Type checks, builds and boundary/dependency checks passed.
-The authenticated 3085 browser check found no errors, no Task/compute requests and
-15 unavailable Widget slots. Date changes persisted in the URL across tabs; layout
-cancel worked. At 1180px viewport width the header client/scroll heights were both
-87px and the page had no horizontal overflow. Refresh is explicitly unavailable.
-
-The separate UI package-artifact guard previously reported a CommonJS loader helper
-also present in the pre-integration deployed baseline; this is a separate packaging
-issue, not a passing release qualification.
-
-## Authority and remaining work
-
-- [v8 page](../../../../workflow-self-recursive/tmp/20260907/Crystra-ui-design/pages/analysis-audit.md)
-- [Package boundary](../../../../wsr-ui/docs/analysis-data-boundaries.md)
-- [Three-layer design](./data-design.md)
-- [Query primitives](./query-design.md)
-- [Missing data versus composition cost](./contract-composition-report.md)
-
-Still unbound: system time-range metrics, Delivery index/Trace data and comparison
-series. Relative-range rolling policy and refresh scheduling for inactive views or
-terminal Deliveries require explicit decisions. API limitations must be recorded as
-gaps rather than changing these page semantics.
+See [UI binding notes](../../../../wsr-ui/docs/analysis-metric-bindings.md) and [three-layer design](./data-design.md). Earlier verification results in those documents describe their particular candidate, not a release qualification.

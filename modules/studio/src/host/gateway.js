@@ -63,7 +63,7 @@ const FACT_KEYS = [
   "kind", "event_name", "family_schema", "delivery_id", "trace_id",
   "recorded_from", "recorded_to", "limit", "cursor",
 ];
-const TRACE_KEYS = ["trace_id", "delivery_id", "limit", "cursor"];
+const TRACE_KEYS = ["trace_id", "delivery_id", "recorded_from", "recorded_to", "limit", "cursor"];
 const FACT_KINDS = new Set([
   "EVENT_CONTRIBUTION", "FINDING_ASSERTION", "FINDING_TARGET", "FINDING_STATUS",
   "FINDING_FIX", "FINDING_RECHECK", "ROLE_LINEAGE", "DELIVERY_ROOT_BINDING",
@@ -94,6 +94,12 @@ function membershipRequest(payload) {
   if (typeof payload.as_of !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(payload.as_of) || !Number.isFinite(Date.parse(payload.as_of))) return undefined;
   return {path:`/v1/evidence/tasks${query([["task_id",payload.task_id],["as_of",payload.as_of],["limit",payload.limit ?? 100],["cursor",payload.cursor]])}`,method:"GET"};
 }
+function directoryRequest(payload) {
+ const keys=['recorded_from','recorded_to','delivery_id','task_id','task_name','workflow_id','workflow_version','limit','cursor'];
+ if(!validCommon(payload,new Set(keys))||!recordedRange(payload))return undefined;
+ for(const key of keys.filter(k=>!['limit','cursor'].includes(k)))if(payload[key]!==undefined&&!boundedText(payload[key],256))return undefined;
+ return {path:`/v1/evidence/deliveries${query(keys.map(key=>[key,payload[key]]))}`,method:'GET'};
+}
 function manifestRequest(payload) {
   if (!exactKeys(payload,["manifest_digest"]) || typeof payload.manifest_digest !== "string" || !/^[a-f0-9]{64}$/.test(payload.manifest_digest)) return undefined;
   return {path:`/v1/evidence/manifests${query([["manifest_digest",payload.manifest_digest]])}`,method:"GET"};
@@ -113,13 +119,26 @@ function factsRequest(payload) {
 
 function tracesRequest(payload) {
   if (!validCommon(payload, new Set(TRACE_KEYS))) return undefined;
-  if ((payload.trace_id === undefined) === (payload.delivery_id === undefined)) return undefined;
+  const exact = payload.trace_id !== undefined || payload.delivery_id !== undefined;
+  if (payload.trace_id !== undefined && payload.delivery_id !== undefined) return undefined;
+  if (!exact && !recordedRange(payload)) return undefined;
+  if ((payload.recorded_from !== undefined || payload.recorded_to !== undefined) && !recordedRange(payload)) return undefined;
   if (payload.trace_id !== undefined && !TRACE_ID.test(payload.trace_id)) return undefined;
   if (payload.delivery_id !== undefined && !boundedText(payload.delivery_id, 256)) return undefined;
   return { path: `/v1/evidence/traces${query(TRACE_KEYS.map((key) => [key, payload[key]]))}`, method: "GET" };
 }
 
+function recordedRange(value) {
+  const valid = (text) => typeof text === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(text) && Number.isFinite(Date.parse(text));
+  if (!valid(value.recorded_from) || !valid(value.recorded_to)) return false;
+  const span=Date.parse(value.recorded_to)-Date.parse(value.recorded_from);
+  return span>=0 && span<=366*86400000;
+}
 function selection(value) {
+  if (record(value) && value.selection_version===2) {
+    return exactKeys(value,["selection_version","recorded_from","recorded_to"],["delivery_ids"]) && recordedRange(value) &&
+      (value.delivery_ids===undefined || value.delivery_ids===null || (Array.isArray(value.delivery_ids) && value.delivery_ids.length<=500 && new Set(value.delivery_ids).size===value.delivery_ids.length && value.delivery_ids.every(id=>boundedText(id,256))));
+  }
   return exactKeys(value, ["selection_version", "task_ids"]) &&
     value.selection_version === 1 &&
     Array.isArray(value.task_ids) &&
@@ -143,6 +162,7 @@ function computeRequest(payload) {
 }
 
 function requestFor(endpoint, payload) {
+  if (endpoint === "deliveries/list") return {owner:"evidence", request:directoryRequest(payload)};
   if (endpoint === "tasks/membership") return { owner: "evidence", request: membershipRequest(payload) };
   if (endpoint === "manifests/read") return { owner: "evidence", request: manifestRequest(payload) };
   if (endpoint === "tasks/list") return { owner: "evidence", request: taskRequest(payload) };

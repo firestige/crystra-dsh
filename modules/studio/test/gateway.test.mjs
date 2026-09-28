@@ -181,8 +181,8 @@ test("registration uses exact DSH authenticated Fetch routes and disposes them",
  const routes=[];let disposed=0;
  const ctx={connection:{fetch:{register(route){routes.push(route);return async()=>{disposed++;};}}},effect(){}};
  const stop=registerStudioGateway(ctx,{...bases,fetcher:async()=>jsonResponse({})});
- assert.equal(routes.length,7);assert.ok(routes.every(route=>route.path.startsWith("/api/crystra-studio/")&&route.methods[0]==="POST"));
- await stop();assert.equal(disposed,7);
+ assert.equal(routes.length,8);assert.ok(routes.every(route=>route.path.startsWith("/api/crystra-studio/")&&route.methods[0]==="POST"));
+ await stop();assert.equal(disposed,8);
 });
 
 test("registration maps Studio domain failures onto the DSH transport error contract", async () => {
@@ -219,4 +219,24 @@ test('membership and manifest reads preserve exact contract parameters and rejec
 test('structured upstream errors retain their semantic code',async()=>{
  const handler=createStudioGatewayHandler({...bases,fetcher:async()=>jsonResponse({error:{code:'CURSOR_EXPIRED',message:'cursor lease expired'}},{status:400})});
  const result=await handler('tasks/list',{limit:1});assert.equal(result.error.code,'CURSOR_EXPIRED');
+});
+
+test('recorded range is forwarded without converting it to Task or execution-time selection',async()=>{
+ const calls=[];
+ const handler=createStudioGatewayHandler({...bases,fetcher:async(url,init)=>{calls.push({url:String(url),init});return jsonResponse({});}});
+ const range={recorded_from:'2026-09-01T00:00:00Z',recorded_to:'2026-09-28T00:00:00Z'};
+ assert.equal((await handler('traces/read',{...range,limit:200})).ok,true);
+ assert.equal((await handler('evaluations/compute',{api_version:1,mode:'SINGLE',selection:{selection_version:2,...range,delivery_ids:[]}})).ok,true);
+ assert.equal(new URL(calls[0].url).searchParams.get('recorded_from'),range.recorded_from);
+ assert.deepEqual(JSON.parse(calls[1].init.body).selection,{selection_version:2,...range,delivery_ids:[]});
+ assert.equal((await handler('traces/read',{recorded_from:range.recorded_from})).ok,false);
+ assert.equal((await handler('evaluations/compute',{api_version:1,mode:'SINGLE',selection:{selection_version:2,...range,recorded_to:'2026-08-01T00:00:00Z'}})).ok,false);
+});
+
+test('Delivery directory forwards bounded metadata search to Evidence',async()=>{
+ const calls=[];const handler=createStudioGatewayHandler({...bases,fetcher:async(url)=>{calls.push(String(url));return jsonResponse({});}});
+ const range={recorded_from:'2026-09-01T00:00:00Z',recorded_to:'2026-09-28T00:00:00Z'};
+ assert.equal((await handler('deliveries/list',{...range,task_name:'时钟',limit:100})).ok,true);
+ assert.equal(new URL(calls[0]).pathname,'/v1/evidence/deliveries');
+ assert.equal((await handler('deliveries/list',{limit:100})).ok,false);
 });

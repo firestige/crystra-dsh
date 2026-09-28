@@ -14,3 +14,10 @@ test('0.1.5 channels use exact authenticated Fetch routes and validate envelopes
  assert.deepEqual(await response.json(),{type:'server-response',rpcId:'one',result:{ok:true,value:{endpoint:'list',payload:{}}}});
  assert.ok(signal instanceof AbortSignal);await stop();assert.equal(routes.size,0);
 });
+test('analysis metadata directory is exposed through the authenticated host route',async()=>{
+ const routes=new Map();const ctx={connection:{fetch:{register(route){routes.set(route.path,route);return async()=>{};}}},effect(){}};
+ registerCrystraRpc(ctx,'/crystra-studio',async(endpoint,payload)=>({ok:true,value:{endpoint,payload}}));
+ const route=routes.get('/api/crystra-studio/deliveries/list');assert.ok(route);
+ const response=await route.fetch(new Request('http://localhost/api/crystra-studio/deliveries/list',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:'client-request',rpcId:'directory',method:'crystra-studio/deliveries/list',payload:{limit:100}})}));
+ assert.equal((await response.json()).result.value.endpoint,'deliveries/list');
+});

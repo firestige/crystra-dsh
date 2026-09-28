@@ -1,4 +1,4 @@
-> 2026-09-28 交互纠正：总览必须使用全系统时间范围，不能以 Task selection compute 替代。临时三卡总览已移除；查询基础设施保留但未绑定页面。调用追踪和对比分析的数据范围按 v8 定义。当前实现以 README.md 为准，以下早期首批接入记录不代表现行页面行为。
+> 2026-09-28 实施更新：时间范围 Evaluation、Delivery 元数据目录、独立 Trace 查询与 localStorage 配置已接入。当前页面与验证边界见 [README](README.md)，跨层决策见 [Analysis 设计修订](../../../../workflow-self-recursive/docs/systems/bi/analysis-data-integration.md)。下文保留设计推演，涉及“尚未接入”的表述是历史状态，不作为当前待办。
 
 # Analysis query hooks — candidate infrastructure
 
