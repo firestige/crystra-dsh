@@ -158,7 +158,7 @@ test("a downstream HTTP failure cannot masquerade as a successful Task page", as
   const result = await handler("tasks/list", { limit: 1 }, new AbortController().signal);
   assert.deepEqual(result, {
     ok: false,
-    error: { code: "downstream-http-error", message: "Studio downstream rejected the request" },
+    error: { code: "QUERY_UNAVAILABLE", message: "Studio downstream rejected the request" },
   });
 });
 
@@ -181,8 +181,8 @@ test("registration uses exact DSH authenticated Fetch routes and disposes them",
  const routes=[];let disposed=0;
  const ctx={connection:{fetch:{register(route){routes.push(route);return async()=>{disposed++;};}}},effect(){}};
  const stop=registerStudioGateway(ctx,{...bases,fetcher:async()=>jsonResponse({})});
- assert.equal(routes.length,5);assert.ok(routes.every(route=>route.path.startsWith("/api/crystra-studio/")&&route.methods[0]==="POST"));
- await stop();assert.equal(disposed,5);
+ assert.equal(routes.length,7);assert.ok(routes.every(route=>route.path.startsWith("/api/crystra-studio/")&&route.methods[0]==="POST"));
+ await stop();assert.equal(disposed,7);
 });
 
 test("registration maps Studio domain failures onto the DSH transport error contract", async () => {
@@ -200,7 +200,23 @@ test("registration maps Studio domain failures onto the DSH transport error cont
     error: {
       code: "internal",
       message: "Studio gateway (downstream-unavailable): Studio downstream is unavailable",
-      details: {},
+      details: { serviceCode: "downstream-unavailable" },
     },
   });
+});
+
+test('membership and manifest reads preserve exact contract parameters and reject broad queries',async()=>{
+ const urls=[];const handler=createStudioGatewayHandler({...bases,fetcher:async url=>{urls.push(String(url));return jsonResponse({});}});
+ const membership=await handler('tasks/membership',{task_id:'t-1',as_of:'2026-09-28T00:00:00.000000Z',limit:20,cursor:'next'});
+ const manifest=await handler('manifests/read',{manifest_digest:'a'.repeat(64)});
+ assert.equal(membership.ok,true);assert.equal(manifest.ok,true);
+ const q=new URL(urls[0]);assert.equal(q.searchParams.get('task_id'),'t-1');assert.equal(q.searchParams.get('cursor'),'next');assert.equal(q.searchParams.get('as_of'),'2026-09-28T00:00:00.000000Z');
+ assert.equal((await handler('tasks/membership',{task_id:'t-1'})).ok,false);
+ assert.equal((await handler('manifests/read',{manifest_digest:'a'.repeat(64),limit:10})).ok,false);
+ assert.equal(urls.length,2);
+});
+
+test('structured upstream errors retain their semantic code',async()=>{
+ const handler=createStudioGatewayHandler({...bases,fetcher:async()=>jsonResponse({error:{code:'CURSOR_EXPIRED',message:'cursor lease expired'}},{status:400})});
+ const result=await handler('tasks/list',{limit:1});assert.equal(result.error.code,'CURSOR_EXPIRED');
 });

@@ -1,6 +1,7 @@
+import {HostAnalysis} from "../analysis/host-analysis";
 import {HostWorkflowStudio} from "../workflows/host-workflow-studio";
 import {useState, type ReactNode} from 'react';
-import {AnalysisAuditPage, PageHeader, TaskDetailPage} from 'crystra-ui-core';
+import {PageHeader, TaskDetailPage} from 'crystra-ui-core';
 import type {Route} from '../navigation/routes.js';
 import {useTasks} from '../tasks/use-tasks';
 import {TasksFeedback} from '../tasks/task-views';
@@ -18,7 +19,7 @@ export function ProductPages({route,chat,bench,onNavigate=navigate,hostRoot=fals
   case 'new-task':return <><PageHeader title="新建任务" description="描述你想完成的工作"/>{chat}</>;
   case 'workflows':return <WorkflowBrowser onNavigate={onNavigate} hostRoot={hostRoot}/>;
   case 'workflow':return <HostWorkflowStudio key={route.definitionId} definitionId={route.definitionId} revision={route.revision??undefined} view={route.view} chat={chat} onNavigate={onNavigate} onQuote={onWorkflowQuote}/>;
-  case 'analysis':return <AnalysisAuditPage title={{dashboard:'总览',traces:'调用追踪',reports:'对比分析'}[route.view]} description="Analysis & Audit" bench={bench}/>;
+  case 'analysis':return <HostAnalysis view={route.view} onNavigate={onNavigate}/>;
   default:return <PageHeader title="页面不存在" description="请从侧栏选择页面"/>;
  }
 }

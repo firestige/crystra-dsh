@@ -13,13 +13,13 @@
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "e6bfdf84dd76769a7ce694513175ee2166be7dcc",
+      "revision": "78f41980da67aa9278ba7c76a657da1c2eca1099",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
-      "sha256": "f5e127c1accfb5c8245d0188f9444fcf99779508bb5e20b6aaa803151eb357d7",
+      "sha256": "4d0fab0475003d29c4a023656b920c21820534c94945c54d9bd1e7436ae12e2f",
       "sourceState": "committed",
-      "integrationNote": "Workflow Browser integration and shared resource components. Artifact dist verified against this UI commit. Local integration; not a published release."
+      "integrationNote": "Restore v8 system-wide time-range Analysis overview and shared layout; unbound metrics explicit. Local working-tree review 2026-09-28, not published."
     }
   }
 }

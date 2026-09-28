@@ -6,7 +6,7 @@ const endpoints = {
   '/crystra-execution': ['inventory/read', 'session/read'],
   '/crystra-tasks': ['list', 'changes', 'update'],
   '/crystra-workflows': ['list', 'changes', 'settings/read', 'settings/save', 'studio/read', 'studio/save', 'studio/mutate'],
-  '/crystra-studio': ['services/status', 'tasks/list', 'facts/read', 'traces/read', 'evaluations/compute'],
+  '/crystra-studio': ['services/status', 'tasks/list', 'tasks/membership', 'manifests/read', 'facts/read', 'traces/read', 'evaluations/compute'],
 };
 
 /** Public 0.1.5 Fetch routes; DSH owns authentication, trust checks and body limits. */

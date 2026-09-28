@@ -88,6 +88,17 @@ function taskRequest(payload) {
   return { path: `/v1/evidence/tasks${query([["limit", limit], ["cursor", payload.cursor]])}`, method: "GET" };
 }
 
+function membershipRequest(payload) {
+  if (!validCommon(payload,new Set(["task_id","as_of","limit","cursor"]))) return undefined;
+  if (typeof payload.task_id !== "string" || !TASK_ID.test(payload.task_id)) return undefined;
+  if (typeof payload.as_of !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(payload.as_of) || !Number.isFinite(Date.parse(payload.as_of))) return undefined;
+  return {path:`/v1/evidence/tasks${query([["task_id",payload.task_id],["as_of",payload.as_of],["limit",payload.limit ?? 100],["cursor",payload.cursor]])}`,method:"GET"};
+}
+function manifestRequest(payload) {
+  if (!exactKeys(payload,["manifest_digest"]) || typeof payload.manifest_digest !== "string" || !/^[a-f0-9]{64}$/.test(payload.manifest_digest)) return undefined;
+  return {path:`/v1/evidence/manifests${query([["manifest_digest",payload.manifest_digest]])}`,method:"GET"};
+}
+
 function factsRequest(payload) {
   if (!validCommon(payload, new Set(FACT_KEYS))) return undefined;
   if (payload.kind !== undefined && !FACT_KINDS.has(payload.kind)) return undefined;
@@ -132,6 +143,8 @@ function computeRequest(payload) {
 }
 
 function requestFor(endpoint, payload) {
+  if (endpoint === "tasks/membership") return { owner: "evidence", request: membershipRequest(payload) };
+  if (endpoint === "manifests/read") return { owner: "evidence", request: manifestRequest(payload) };
   if (endpoint === "tasks/list") return { owner: "evidence", request: taskRequest(payload) };
   if (endpoint === "facts/read") return { owner: "evidence", request: factsRequest(payload) };
   if (endpoint === "traces/read") return { owner: "evidence", request: tracesRequest(payload) };
@@ -217,7 +230,11 @@ export function createStudioGatewayHandler(options) {
       );
       const decoded = await boundedJson(response, maximumBytes);
       if (!decoded.ok) return decoded;
-      if (!response.ok) return downstream("downstream-http-error", "Studio downstream rejected the request");
+      if (!response.ok) {
+        const error = decoded.value?.error;
+        if (record(error) && boundedText(error.code,128) && boundedText(error.message,8192)) return downstream(error.code,"Studio downstream rejected the request");
+        return downstream("downstream-http-error", "Studio downstream rejected the request");
+      }
       return decoded;
     } catch (error) {
       const timedOut = timer.aborted && !signal?.aborted;
@@ -241,7 +258,7 @@ export function registerStudioGateway(ctx, options) {
         error: {
           code: "internal",
           message: `Studio gateway (${result.error.code}): ${result.error.message}`,
-          details: {},
+          details: { serviceCode: result.error.code },
         },
       };
     },
