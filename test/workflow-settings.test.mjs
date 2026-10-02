@@ -1,9 +1,10 @@
+import { createTemporaryDirectory } from "./support/temporary-directory.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, readFile, rm } from "node:fs/promises";
 import { createWorkflowQueryGateway } from "../modules/studio/src/workflows/gateway.js";
 test("persists validated source bindings and rejects stale saves and invalid directories", async (t) => {
-  const root = await mkdtemp("/private/tmp/crystra-settings-");
+  const root = await createTemporaryDirectory("crystra-settings-");
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(root + "/collection");
   const gateway = createWorkflowQueryGateway(root + "/bindings.json");

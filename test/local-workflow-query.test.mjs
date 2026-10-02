@@ -1,10 +1,11 @@
+import { createTemporaryDirectory } from "./support/temporary-directory.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, rm, symlink } from "node:fs/promises";
+import { mkdir, writeFile, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { createLocalWorkflowQuery } from "../modules/studio/src/workflows/local-workflow-query.js";
 async function fixture(t) {
-  const root = await mkdtemp("/private/tmp/crystra-workflows-");
+  const root = await createTemporaryDirectory("crystra-workflows-");
   t.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }

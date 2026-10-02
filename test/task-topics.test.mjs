@@ -1,9 +1,10 @@
+import { createTemporaryDirectory } from "./support/temporary-directory.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { createTaskTopics } from "../src/host/task-topics.js";
 test("topics retain Task identity, group by semantic Plan revision, persist selection and never copy history", async (t) => {
-  const root = await mkdtemp("/private/tmp/task-topics-");
+  const root = await createTemporaryDirectory("task-topics-");
   t.after(() => rm(root, { recursive: true, force: true }));
   const task = {
     taskId: "task-test",

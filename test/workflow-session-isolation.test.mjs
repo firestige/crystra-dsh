@@ -1,11 +1,12 @@
+import { createTemporaryDirectory } from "./support/temporary-directory.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, cp, writeFile, rm } from "node:fs/promises";
+import { cp, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { createWorkflowSessions } from "../src/host/workflow-sessions.js";
 import { workflowSessionReady } from "../src/client/workflows/workflow-session-policy.js";
 test("workflow session identity is independent of Task, revision and duplicate ensure calls", async (t) => {
-  const root = await mkdtemp("/private/tmp/workflow-session-");
+  const root = await createTemporaryDirectory("workflow-session-");
   t.after(() => rm(root, { recursive: true, force: true }));
   await cp(new URL("./fixtures/workflow-studio/", import.meta.url), root, {
     recursive: true,
@@ -39,7 +40,7 @@ test("workflow session identity is independent of Task, revision and duplicate e
   assert.equal(workflowSessionReady("test", a, a.sessionId), true);
 });
 test("workflow topics persist selection, retain original Session and reject foreign or busy switches", async (t) => {
-  const root = await mkdtemp("/private/tmp/workflow-topics-");
+  const root = await createTemporaryDirectory("workflow-topics-");
   t.after(() => rm(root, { recursive: true, force: true }));
   await cp(new URL("./fixtures/workflow-studio/", import.meta.url), root, {
     recursive: true,

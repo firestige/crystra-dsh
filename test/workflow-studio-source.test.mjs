@@ -1,7 +1,7 @@
+import { createTemporaryDirectory } from "./support/temporary-directory.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  mkdtemp,
   cp,
   writeFile,
   readFile,
@@ -11,7 +11,7 @@ import {
 import path from "node:path";
 import { createWorkflowStudioSource } from "../modules/studio/src/workflows/studio-source.js";
 test("bound package read, durable CAS write and path boundary", async (t) => {
-  const root = await mkdtemp("/private/tmp/crystra-studio-");
+  const root = await createTemporaryDirectory("crystra-studio-");
   t.after(() => rm(root, { recursive: true, force: true }));
   await cp(new URL("./fixtures/workflow-studio/", import.meta.url), root, {
     recursive: true,
@@ -65,7 +65,7 @@ test("bound package read, durable CAS write and path boundary", async (t) => {
   await assert.rejects(api.read(request), /SYMLINK/);
 });
 test("resource add, rename, delete persist with owner declarations, CAS and reference guards", async (t) => {
-  const root = await mkdtemp("/private/tmp/crystra-resources-");
+  const root = await createTemporaryDirectory("crystra-resources-");
   t.after(() => rm(root, { recursive: true, force: true }));
   await cp(new URL("./fixtures/workflow-studio/", import.meta.url), root, {
     recursive: true,
@@ -166,7 +166,7 @@ test("resource add, rename, delete persist with owner declarations, CAS and refe
   );
 });
 test("interrupted resource transaction is rolled back before the first read", async (t) => {
-  const root = await mkdtemp("/private/tmp/crystra-recover-");
+  const root = await createTemporaryDirectory("crystra-recover-");
   t.after(() => rm(root, { recursive: true, force: true }));
   await cp(new URL("./fixtures/workflow-studio/", import.meta.url), root, {
     recursive: true,
@@ -202,7 +202,7 @@ test("interrupted resource transaction is rolled back before the first read", as
   assert(!source.files.some((f) => f.path === "roles/new.md"));
 });
 test("semantic identity is independent of location and labels; encoded references are authoritative", async (t) => {
-  const root = await mkdtemp("/private/tmp/crystra-semantic-");
+  const root = await createTemporaryDirectory("crystra-semantic-");
   t.after(() => rm(root, { recursive: true, force: true }));
   await cp(new URL("./fixtures/workflow-studio/", import.meta.url), root, {
     recursive: true,
