@@ -65,7 +65,7 @@ try{
  const navigation=await page.goto(launch);assert.equal(navigation.status(),200);assert.equal(new URL(page.url()).search,'');
  for(const name of ['Continue','Configure later']){const button=page.getByRole('button',{name,exact:true});if(await button.isVisible())await button.click();}
  const rpc=async(method,payload)=>page.evaluate(async({method,payload})=>{const rpcId=crypto.randomUUID();const response=await fetch(`/api/${method}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:'client-request',rpcId,method,payload})});const envelope=await response.json();if(!response.ok||envelope.rpcId!==rpcId||envelope.result?.ok!==true)throw Error(`RPC_FAILED ${method}: ${JSON.stringify(envelope.result)}`);return envelope.result.value;},{method,payload});
- assert.equal((await page.request.post(`${origin}/api/workspace/create`,{headers:{origin:'https://invalid.example'},data:{}})).status,403,'foreign-origin RPC must be rejected');
+ assert.equal((await page.request.post(`${origin}/api/workspace/create`,{headers:{origin:'https://invalid.example'},data:{}})).status(),403,'foreign-origin RPC must be rejected');
  await rpc('workspace/create',{args:{request:{path:workspace}}});
  await page.locator('[data-section-id="new-task-action"]').click();
  const choose=page.getByRole('button',{name:/^(Choose workspace|选择工作区)$/});
