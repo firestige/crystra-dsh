@@ -52,13 +52,19 @@ try {
   if(!response.ok || !Array.isArray(result.items) || result.items.length!==0)throw new Error(`RECORDED_QUERY_FAILED: ${route} ${response.status}`);
   if(route==='deliveries' && result.contract?.name!=='evidence.delivery-directory')throw new Error('DELIVERY_DIRECTORY_CONTRACT_MISMATCH');
  }
+ const evaluation=await fetch(`http://127.0.0.1:${ports.evolution}/api/evolution/v1/evaluations:compute`,{
+  method:'POST',headers:{'content-type':'application/json'},signal:AbortSignal.timeout(20_000),
+  body:JSON.stringify({api_version:1,mode:'SINGLE',selection:{selection_version:2,recorded_from:recordedFrom,recorded_to:recordedTo}}),
+ });
+ const computed=await evaluation.json();
+ if(!evaluation.ok || computed.result?.receipt?.context_version!==2 || !Array.isArray(computed.result?.metric_results) || computed.result.metric_results.length===0)throw new Error(`RECORDED_EVALUATION_FAILED: ${evaluation.status}`);
  if((await lifecycle.operate('stop')).status!=='STOPPED')throw new Error('STOP_FAILED');
  if((await lifecycle.operate('doctor')).status!=='DEGRADED')throw new Error('STOPPED_READINESS_FAILED');
  execFileSync('docker',['volume','inspect',namespace.volume],{stdio:'ignore'});
  if((await lifecycle.operate('start')).status!=='READY')throw new Error('RESTART_FAILED');
  await lifecycle.dispose();
  if((await adapter.inspect()).ready!==true)throw new Error('DISPOSE_STOPPED_SERVICES');
- console.log(JSON.stringify({qualification:'development-only',status:'PASS',images:ids,sources:{evidence:inputs.evidence.revision,evolution:inputs.evolution.revision},ports,checks:['setup','doctor','recorded-time-traces','recorded-time-deliveries','stop','preserve-volume','restart','dispose-preserve-running']},null,2));
+ console.log(JSON.stringify({qualification:'development-only',status:'PASS',images:ids,sources:{evidence:inputs.evidence.revision,evolution:inputs.evolution.revision},ports,checks:['setup','doctor','recorded-time-traces','recorded-time-deliveries','recorded-time-evaluation','stop','preserve-volume','restart','dispose-preserve-running']},null,2));
 }catch(error){
  try{console.error(await readFile(path.join(stateRoot,'services-last-error.log'),'utf8'));}catch{}
  throw error;

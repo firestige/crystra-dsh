@@ -1,0 +1,24 @@
+# Deployment readiness after DSH 0.1.5-rc.2 alignment
+
+The component sources now align the Execution provider and public DSH host to `0.1.5-rc.2`. Development acceptance and a complete published installation are separate checkpoints. The superproject's version references stay unchanged until GA.
+
+## Development inputs
+
+`config/development-inputs.json` binds the exact committed Execution and UI package bytes. Execution provides endpoint-backed DSH model discovery without default model substitution, in addition to session creation, persistence and restoration. UI remains on the recorded-time Analysis implementation.
+
+`config/development-services.json` binds Evidence `e23eec0702cb5d9deadcbf0e162edd9dfa68c2ad` and Evolution `6e6942811e39d5277b6cba0d00bfafb29ff636b5`. The PR service check builds these sources and Evolution's pinned Contracts dependency, verifies image source labels, then runs initialization, recorded-time Trace/Delivery queries, recorded-time Evaluation through the real services, stop/restart and data-volume preservation. It uses a fresh isolated database, not user data.
+
+## Why the existing service descriptor is insufficient
+
+The published [services rc.3 manifest](https://github.com/firestige/crystra/releases/download/crystra-services-v0.1.0-rc.3/crystra-services-0.1.0.release.json) binds Evidence `84bb3152162dee4d448f4c8227f34a686af008d6` and Evolution `c5aa85ec25781d11df31354b076764fa900754a7`. These precede the current recorded-time query and computation implementations. Substituting that descriptor can start a stack while leaving the current Analysis UI unsupported.
+
+The plugin's `modules/initialization/src/service-descriptor.json` is supplied by release assembly. Its absence in a source checkout is explicit, not repaired by inventing a URL or silently selecting a historical bundle.
+
+## Remaining complete-installation acceptance
+
+1. Qualify the current authenticated rc.2 host with the current Task UI. The old `qualify-real-harness` browser flow predates token/cookie authentication and the current New Task controls. Its synthetic service responses do not establish a real service chain. The existing Task admission/projection browser scripts cover narrower interactions.
+2. Verify a newly admitted Task through planning, real provider execution, durable Delivery, observed Evidence and Evaluation rendered by the current UI. Preserve explicit unavailable/empty states and verify refresh/recovery; a service health check or an empty-database query alone is insufficient.
+3. Assemble fresh component/service release candidates from accepted commits and bind their exact published digests in the plugin descriptor. Apply the repository's release discipline before publishing. Verify the packed plugin in a clean rc.2 profile using the published bytes.
+4. Promote and update the superproject version references only at the authorized GA checkpoint.
+
+The development service qualifier injects an Execution activation callback; it does not execute a model or prove this complete user flow. Its PASS must not be reported as full deployment readiness.
