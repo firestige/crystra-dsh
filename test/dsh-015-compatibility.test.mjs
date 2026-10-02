@@ -17,3 +17,17 @@ test('DSH 0.1.5 closure uses split Session and UI packages instead of removed cl
   assert.equal(lock.packages[`node_modules/${name}`]?.version,version,name);
  }
 });
+
+test('qualification CLI and profile pin every DSH component to the compatibility policy', async()=>{
+ const policy=JSON.parse(await readFile('config/dsh-compatibility.json','utf8'));
+ const runtime=JSON.parse(await readFile('config/dsh-qualification-runtime.json','utf8'));
+ const lock=JSON.parse(await readFile('package-lock.json','utf8'));
+ assert.equal(runtime.dependencies['@deepseek-ai/dsh'],policy.dsh);
+ for(const [name,version] of Object.entries(runtime.overrides)) {
+  assert.ok(name.startsWith('@deepseek-ai/'),name);
+  if(name.startsWith('@deepseek-ai/dsh-')) assert.equal(version,policy.dsh,name);
+ }
+ for(const name of Object.keys(lock.packages).filter(name=>name.startsWith('node_modules/@deepseek-ai/dsh-'))) {
+  assert.equal(runtime.overrides[name.slice('node_modules/'.length)],policy.dsh,name);
+ }
+});

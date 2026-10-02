@@ -28,10 +28,13 @@ jobs:
       - run: node scripts/verify-candidate-inputs.mjs --cache
       - name: Install the frozen DSH qualification CLI outside the workspace graph
         run: |
-          npm install --global --prefix "$RUNNER_TEMP/dsh-cli" --ignore-scripts --no-audit --no-fund @deepseek-ai/dsh@0.1.1-rc.2 pnpm@11.23.0
-          echo "$RUNNER_TEMP/dsh-cli/bin" >> "$GITHUB_PATH"
+          mkdir -p "$RUNNER_TEMP/dsh-cli"
+          cp config/dsh-qualification-runtime.json "$RUNNER_TEMP/dsh-cli/package.json"
+          cd "$RUNNER_TEMP/dsh-cli"
+          npm install --ignore-scripts --no-audit --no-fund
+          echo "$RUNNER_TEMP/dsh-cli/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Verify the frozen DSH qualification CLI
-        run: test "$(dsh --version)" = 0.1.1-rc.2
+        run: test "$(dsh --version)" = 0.1.5-rc.2
       - run: npm test
         env:
           CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome

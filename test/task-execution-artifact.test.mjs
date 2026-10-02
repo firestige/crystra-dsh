@@ -10,7 +10,7 @@ test("the installed Execution artifact retains the mainline DSH Provider alongsi
   assert.equal(typeof execution.createDshAgentProviderFactory, "function");
   const factory = execution.createDshAgentProviderFactory({ stateDirectory: join(tmpdir(), "crystra-provider-probe") });
   const registry = new execution.AgentProviderFactoryRegistry([factory]);
-  assert.equal(registry.admit({ identity: "provider.dsh", version: "0.1.1-rc.2" }, ["structured-completion"]).adapterKey, "dsh-headless");
+  assert.equal(registry.admit({ identity: "provider.dsh", version: "0.1.5-rc.2" }, ["structured-completion"]).adapterKey, "dsh-headless");
 });
 
 test("the host gateway persists task edits through the actual installed Execution owner", async () => {
