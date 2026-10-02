@@ -470,14 +470,6 @@ try {
   await Promise.all([cdp.command("Runtime.enable"), cdp.command("Page.enable"), cdp.command("Log.enable")]);
 
   await cdp.command("Page.bringToFront");
-  // Qualify the new default product surface and its public return path before
-  // retaining the complete native Harness/session/Studio checks below.
-  await waitFor(async () => cdp.evaluate(`(() => {
-    const shell=document.querySelector('[data-crystra-theme]');
-    const back=document.querySelector('button[aria-label="切换到 DeepSeek Harness"]');
-    if(!shell || !back || back.getBoundingClientRect().width===0)return false;
-    back.click();return true;
-  })()`), "CRYSTRA_PRODUCT_RETURN_TO_HARNESS_UNAVAILABLE");
   await waitFor(async () => cdp.evaluate(`document.querySelector('textarea:not(:disabled)') !== null`), "HARNESS_WORKSPACE_PICKER_UNAVAILABLE");
   const workspaceSelected = await cdp.evaluate(`(() => {
     const input = document.querySelector('textarea:not(:disabled)');
@@ -526,9 +518,7 @@ try {
   } else {
   if (terminalFixture) {
     await waitFor(async () => cdp.evaluate(`(() => {
-      if (document.title === 'Terminal C — DeepSeek Harness') return true;
-      if (document.querySelector('.pI_x6G_frame')?.getAttribute('data-sidebar-collapsed') === 'true') document.querySelector('button.hHd-Xa_toggle')?.click();
-      const row = [...document.querySelectorAll('[role="treeitem"]')].find(node => [...node.querySelectorAll('span')].some(label => label.textContent.trim() === 'Terminal C'));
+      const row = document.querySelector('.crystra-delivery-row[aria-label="delivery-completed, SUCCEEDED"]');
       if (!row) return undefined;
       row.click();
       return true;
@@ -603,25 +593,175 @@ try {
     isolated: true,
   };
 
-  await cdp.evaluate(`(() => {
-    if (document.querySelector('.pI_x6G_frame')?.getAttribute('data-sidebar-collapsed') === 'true')
-      document.querySelector('button.hHd-Xa_toggle')?.click();
-  })()`);
   const shell = await waitFor(async () => cdp.evaluate(`(() => {
+    const resource = document.querySelector('[data-crystra-sidebar-resources="true"]');
+    const delivery = document.querySelector('button[aria-controls="crystra-sidebar-delivery"]');
     const tabs = [...document.querySelectorAll('[role="tab"]')];
-    const delivery = tabs.find(node => node.textContent.trim() === 'Delivery');
-    const studio = tabs.find(node => node.textContent.trim() === 'CRYSTRA Studio');
-    const banner = document.querySelector('button[aria-label="进入 Crystra"]');
-    if (!delivery || !studio || !banner || document.readyState !== 'complete') return undefined;
-    return { ready: document.readyState, tabOrder: [delivery.textContent.trim(), studio.textContent.trim()],
-      adjacent: tabs.indexOf(studio) === tabs.indexOf(delivery) + 1,
-      legacySidebar: !!document.querySelector('[data-crystra-sidebar-resources]'),
-      footerEntry: !!document.querySelector('.hHd-Xa_footerActions button') };
+    const deliveryTab = tabs.find((node) => node.textContent.trim() === 'Delivery');
+    const studio = tabs.find((node) => node.textContent.trim() === 'CRYSTRA Studio');
+    const empty = document.body.innerText.includes('No Deliveries');
+    const terminalRows = [...document.querySelectorAll('.crystra-delivery-row')].map((node) => node.getAttribute('aria-label'));
+    if (!resource || !delivery || !deliveryTab || !studio || ${terminalFixture ? "terminalRows.length !== 3" : "!empty"} || document.readyState !== 'complete') return undefined;
+    return { ready: document.readyState, delivery: delivery.textContent.trim(), empty, terminalRows,
+      tabOrder: [deliveryTab.textContent.trim(), studio.textContent.trim()],
+      adjacent: tabs.indexOf(studio) === tabs.indexOf(deliveryTab) + 1 };
   })()`), "HARNESS_CRYSTRA_SURFACES_UNAVAILABLE", 30_000);
-  if (!shell.adjacent || shell.legacySidebar || shell.footerEntry) {
-    throw new Error(`HARNESS_NAVIGATION_RESIDUE: ${JSON.stringify(shell)}`);
+  if (shell.ready !== "complete" || (terminalFixture ? shell.terminalRows.length !== 3 : !shell.empty) || !shell.adjacent) {
+    throw new Error(`HARNESS_DELIVERY_READ_FAILED: ${JSON.stringify(shell)}`);
   }
-  const sidebarQualification = { nativeWorkspace: true, legacyDeliveryAccordion: false, footerEntry: false };
+  const setSidebarDisclosure = async (id, expanded) => {
+    const selector = `button[aria-controls=${JSON.stringify(id)}]`;
+    await waitFor(async () => cdp.evaluate(`(() => {
+      const button = document.querySelector(${JSON.stringify(selector)});
+      if (!button) return undefined;
+      if (button.getAttribute('aria-expanded') !== ${JSON.stringify(String(expanded))}) button.click();
+      return button.getAttribute('aria-expanded') === ${JSON.stringify(String(expanded))};
+    })()`), `HARNESS_SIDEBAR_DISCLOSURE_${id}_${expanded ? "EXPAND" : "COLLAPSE"}_FAILED`);
+  };
+  const expandHostSidebar = async () => {
+    await waitFor(async () => cdp.evaluate(`(() => {
+      const resources = document.querySelector('[data-crystra-sidebar-resources="true"]');
+      if (resources?.getBoundingClientRect().width > 100) return true;
+      const shell = document.querySelector('[data-sidebar-collapsed="true"]');
+      if (shell) {
+        const toggle = [...document.querySelectorAll('button')].find((node) => /打开侧边栏|Open sidebar/i.test(node.getAttribute('aria-label') ?? ''));
+        if (!toggle) return undefined;
+        toggle.click();
+        return false;
+      }
+      return undefined;
+    })()`), "HARNESS_SIDEBAR_HOST_EXPAND_FAILED", 3_000);
+  };
+  const measureSidebar = async (label) => {
+    const geometry = await cdp.evaluate(`(() => {
+      const root = document.querySelector('[data-crystra-sidebar-resources="true"]');
+      const workspaceSection = root?.querySelector('section[aria-label="Workspace"]');
+      const deliverySection = root?.querySelector('section[aria-label="Delivery"]');
+      const workspaceHeader = root?.querySelector('button[aria-controls="crystra-sidebar-workspace"]');
+      const deliveryHeader = root?.querySelector('button[aria-controls="crystra-sidebar-delivery"]');
+      const workspaceContent = document.getElementById('crystra-sidebar-workspace');
+      const deliveryContent = document.getElementById('crystra-sidebar-delivery');
+      if (!root || !workspaceSection || !deliverySection || !workspaceHeader || !deliveryHeader
+        || !workspaceContent || !deliveryContent) return null;
+      root.querySelectorAll('[data-crystra-sidebar-qualification]').forEach((node) => node.remove());
+      const workspaceOverflow = document.createElement('div');
+      workspaceOverflow.dataset.crystraSidebarQualification = 'workspace-overflow';
+      workspaceOverflow.style.height = '1800px';
+      workspaceOverflow.style.flex = '0 0 1800px';
+      workspaceOverflow.setAttribute('aria-hidden', 'true');
+      workspaceContent.append(workspaceOverflow);
+      const deliveryList = deliveryContent.querySelector('[role="list"]') ?? deliveryContent;
+      const deliveryOverflow = document.createElement('div');
+      deliveryOverflow.dataset.crystraSidebarQualification = 'delivery-overflow';
+      deliveryOverflow.style.height = '1800px';
+      deliveryOverflow.setAttribute('aria-hidden', 'true');
+      deliveryList.append(deliveryOverflow);
+      const rect = (node) => {
+        const value = node.getBoundingClientRect();
+        return { top: value.top, bottom: value.bottom, left: value.left, right: value.right, height: value.height, width: value.width };
+      };
+      const rootRect = rect(root);
+      const workspaceSectionRect = rect(workspaceSection);
+      const deliverySectionRect = rect(deliverySection);
+      const workspaceHeaderBefore = rect(workspaceHeader);
+      const deliveryHeaderBefore = rect(deliveryHeader);
+      workspaceContent.scrollTop = 120;
+      deliveryContent.scrollTop = 140;
+      const workspaceHeaderAfter = rect(workspaceHeader);
+      const deliveryHeaderAfter = rect(deliveryHeader);
+      const style = (node) => getComputedStyle(node);
+      return {
+        viewport: { width: innerWidth, height: innerHeight }, root: rootRect,
+        sections: { workspace: workspaceSectionRect, delivery: deliverySectionRect },
+        headers: { workspaceBefore: workspaceHeaderBefore, workspaceAfter: workspaceHeaderAfter,
+          deliveryBefore: deliveryHeaderBefore, deliveryAfter: deliveryHeaderAfter },
+        content: {
+          workspace: { clientHeight: workspaceContent.clientHeight, scrollHeight: workspaceContent.scrollHeight,
+            scrollTop: workspaceContent.scrollTop, overflowY: style(workspaceContent).overflowY },
+          delivery: { clientHeight: deliveryContent.clientHeight, scrollHeight: deliveryContent.scrollHeight,
+            scrollTop: deliveryContent.scrollTop, overflowY: style(deliveryContent).overflowY },
+        },
+        documentOverflow: document.documentElement.scrollHeight > document.documentElement.clientHeight,
+      };
+    })()`);
+    if (geometry === null
+      || geometry.root.height <= 0
+      || geometry.headers.workspaceBefore.top < geometry.root.top - 1
+      || geometry.headers.deliveryBefore.bottom > geometry.root.bottom + 1
+      || geometry.sections.workspace.bottom > geometry.sections.delivery.top + 1
+      || geometry.content.workspace.scrollHeight <= geometry.content.workspace.clientHeight
+      || geometry.content.delivery.scrollHeight <= geometry.content.delivery.clientHeight
+      || geometry.content.workspace.scrollTop <= 0 || geometry.content.delivery.scrollTop <= 0
+      || geometry.content.workspace.overflowY !== "auto" || geometry.content.delivery.overflowY !== "auto"
+      || Math.abs(geometry.headers.workspaceBefore.top - geometry.headers.workspaceAfter.top) > 1
+      || Math.abs(geometry.headers.deliveryBefore.top - geometry.headers.deliveryAfter.top) > 1
+      || geometry.documentOverflow) {
+      throw new Error(`${label}: ${JSON.stringify(geometry)}`);
+    }
+    return geometry;
+  };
+  await setSidebarDisclosure("crystra-sidebar-workspace", true);
+  await setSidebarDisclosure("crystra-sidebar-delivery", true);
+  await cdp.command("Emulation.setDeviceMetricsOverride", { width: 720, height: 420, deviceScaleFactor: 1, mobile: false });
+  await expandHostSidebar();
+  const sidebarNarrow = await measureSidebar("HARNESS_SIDEBAR_NARROW_GEOMETRY_FAILED");
+  await cdp.command("Emulation.setDeviceMetricsOverride", { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await expandHostSidebar();
+  const sidebarWide = await measureSidebar("HARNESS_SIDEBAR_WIDE_GEOMETRY_FAILED");
+
+  const workspaceHeader = await cdp.evaluate(`(() => {
+    const button = document.querySelector('button[aria-controls="crystra-sidebar-workspace"]');
+    button.focus();
+    return document.activeElement === button;
+  })()`);
+  if (!workspaceHeader) throw new Error("HARNESS_SIDEBAR_WORKSPACE_FOCUS_FAILED");
+  await cdp.command("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  await cdp.command("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+  const workspaceCollapsed = await waitFor(async () => cdp.evaluate(`(() => {
+    const button = document.querySelector('button[aria-controls="crystra-sidebar-workspace"]');
+    const delivery = document.querySelector('section[aria-label="Delivery"]');
+    const root = document.querySelector('[data-crystra-sidebar-resources="true"]');
+    if (button?.getAttribute('aria-expanded') !== 'false') return undefined;
+    const buttonRect = button.getBoundingClientRect();
+    const deliveryRect = delivery.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    return { focused: document.activeElement === button, hiddenContentAbsent: document.getElementById('crystra-sidebar-workspace') === null,
+      stored: localStorage.getItem('crystra.sidebar.workspace.expanded.v1'),
+      bounded: buttonRect.top >= rootRect.top - 1 && deliveryRect.bottom <= rootRect.bottom + 1 };
+  })()`), "HARNESS_SIDEBAR_WORKSPACE_COLLAPSE_FAILED");
+  if (!workspaceCollapsed.focused || !workspaceCollapsed.hiddenContentAbsent || workspaceCollapsed.stored !== "false" || !workspaceCollapsed.bounded) {
+    throw new Error(`HARNESS_SIDEBAR_WORKSPACE_COLLAPSE_INVALID: ${JSON.stringify(workspaceCollapsed)}`);
+  }
+  await setSidebarDisclosure("crystra-sidebar-workspace", true);
+  await setSidebarDisclosure("crystra-sidebar-delivery", false);
+  const deliveryCollapsed = await cdp.evaluate(`(() => {
+    const button = document.querySelector('button[aria-controls="crystra-sidebar-delivery"]');
+    const workspace = document.querySelector('section[aria-label="Workspace"]');
+    const root = document.querySelector('[data-crystra-sidebar-resources="true"]');
+    const buttonRect = button.getBoundingClientRect();
+    const workspaceRect = workspace.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    return { expanded: button.getAttribute('aria-expanded'), hiddenContentAbsent: document.getElementById('crystra-sidebar-delivery') === null,
+      stored: localStorage.getItem('crystra.sidebar.delivery.expanded.v1'),
+      bounded: workspaceRect.top >= rootRect.top - 1 && buttonRect.bottom <= rootRect.bottom + 1 };
+  })()`);
+  if (deliveryCollapsed.expanded !== "false" || !deliveryCollapsed.hiddenContentAbsent || deliveryCollapsed.stored !== "false" || !deliveryCollapsed.bounded) {
+    throw new Error(`HARNESS_SIDEBAR_DELIVERY_COLLAPSE_INVALID: ${JSON.stringify(deliveryCollapsed)}`);
+  }
+  const sidebarDocumentOrigin = await cdp.evaluate(`performance.timeOrigin`);
+  await cdp.command("Page.reload", { ignoreCache: true });
+  const sidebarPersistence = await waitFor(async () => cdp.evaluate(`(() => {
+    const workspace = document.querySelector('button[aria-controls="crystra-sidebar-workspace"]');
+    const delivery = document.querySelector('button[aria-controls="crystra-sidebar-delivery"]');
+    if (performance.timeOrigin === ${JSON.stringify(sidebarDocumentOrigin)} || !workspace || !delivery) return undefined;
+    return { workspace: workspace.getAttribute('aria-expanded'), delivery: delivery.getAttribute('aria-expanded'),
+      deliveryHidden: document.getElementById('crystra-sidebar-delivery') === null };
+  })()`), "HARNESS_SIDEBAR_PERSISTENCE_FAILED", 30_000);
+  if (sidebarPersistence.workspace !== "true" || sidebarPersistence.delivery !== "false" || !sidebarPersistence.deliveryHidden) {
+    throw new Error(`HARNESS_SIDEBAR_PERSISTENCE_INVALID: ${JSON.stringify(sidebarPersistence)}`);
+  }
+  await setSidebarDisclosure("crystra-sidebar-delivery", true);
+  const sidebarQualification = { narrow: sidebarNarrow, wide: sidebarWide, workspaceCollapsed, deliveryCollapsed, persistence: sidebarPersistence };
   let terminalView;
   if (terminalFixture) {
     await cdp.command("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
@@ -724,16 +864,17 @@ try {
     } };
   }
   await cdp.command("Page.bringToFront");
-  const focused = await cdp.evaluate(`(() => {
-    const button = document.querySelector('button[aria-label="进入 Crystra"]');
-    button.focus();return document.activeElement === button;
+  const before = await cdp.evaluate(`(() => {
+    const button = document.querySelector('button[aria-controls="crystra-sidebar-delivery"]');
+    button.focus();
+    return { expanded: button.getAttribute('aria-expanded'), active: document.activeElement === button };
   })()`);
-  if (!focused) throw new Error("HARNESS_BANNER_FOCUS_FAILED");
-  // Browser keyboard semantics are covered by verify-host-navigation.mjs.
-  await cdp.evaluate(`document.querySelector('button[aria-label="进入 Crystra"]').click()`);
-  await waitFor(async () => cdp.evaluate(`!!document.querySelector('[data-crystra-product-overlay]')`), "HARNESS_BANNER_CLICK_FAILED");
-  await cdp.evaluate(`document.querySelector('button[aria-label="切换到 DeepSeek Harness"]').click()`);
-  await waitFor(async () => cdp.evaluate(`!document.querySelector('[data-crystra-product-overlay]')`), "HARNESS_BANNER_RETURN_FAILED");
+  if (!before.active) throw new Error("HARNESS_KEYBOARD_FOCUS_FAILED");
+  await cdp.evaluate(`document.querySelector('button[aria-controls="crystra-sidebar-delivery"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true, cancelable: true }))`);
+  const after = await waitFor(async () => {
+    const value = await cdp.evaluate(`document.querySelector('button[aria-controls="crystra-sidebar-delivery"]')?.getAttribute('aria-expanded')`);
+    return value !== before.expanded ? value : undefined;
+  }, "HARNESS_KEYBOARD_DISCLOSURE_FAILED");
 
   await cdp.command("Emulation.setDeviceMetricsOverride", {
     width: 1440,
@@ -906,7 +1047,7 @@ try {
     const studio = document.querySelector('[data-crystra-studio-view="evaluate"]');
     const hierarchy = view?.closest('[data-studio-trace-hierarchy]');
     const navigation = hierarchy?.querySelector('[aria-label="Trace renderer views"]');
-    const rendererHeader = view;
+    const rendererHeader = view?.querySelector('.trace-view-header');
     const headerButtons = [...studio.querySelectorAll('[data-crystra-studio-region="header"] button')];
     const actions = Object.fromEntries(['Back to Dashboard', 'Open Evidence', 'Copy trace identity'].map((label) => {
       const button = headerButtons.find((node) => node.textContent.trim() === label);
@@ -946,9 +1087,11 @@ try {
   const expectedTraceViews = [
     { label: "Waterfall", appearance: "segment", selected: "true" },
     { label: "Tree", appearance: "segment", selected: "false" },
+    { label: "Statistics", appearance: "segment", selected: "false" },
   ];
   if (waterfall.schemaVersion !== "crystra.studio-render@1" || waterfall.spans !== 7 || !waterfall.passport ||
-      waterfall.summaryLabels.length !== 0 ||
+      JSON.stringify(waterfall.summaryLabels) !== JSON.stringify(["Duration", "Start", "Spans", "Errors"]) ||
+      waterfall.summaryTones.Errors !== "error" ||
       waterfall.rulerTicks.some((tick) => tick.includes("%")) || waterfall.rulerTicks.length !== 5 ||
       waterfall.oldToolbar || Object.values(waterfall.controls).some((value) => !value) ||
       waterfall.iconActions.count !== 3 || !waterfall.iconActions.grouped || waterfall.iconActions.segmented !== null ||
@@ -967,7 +1110,7 @@ try {
     const view = document.querySelector('[data-trace-renderer="tree"]');
     const hierarchy = view?.closest('[data-studio-trace-hierarchy]');
     const navigation = hierarchy?.querySelector('[aria-label="Trace renderer views"]');
-    const rendererHeader = view;
+    const rendererHeader = view?.querySelector('.trace-view-header');
     const graph = view?.querySelector('canvas[aria-label="Recorded span call tree graph"]');
     return view && view.textContent.includes('Qualification evaluate') && view.querySelector('[aria-label="Span passport"]')
       && graph && view.querySelector('[aria-label="Tree minimap navigation"]')
@@ -984,7 +1127,29 @@ try {
   if (tree.schemaVersion !== "crystra.trace-graph@1" || tree.spans !== 7 || tree.parentEdgeCount !== 6 || tree.linkCount !== 1 || !tree.graph || !tree.cameraMap || !tree.passport ||
       tree.navigationNote !== "Deterministic geometry · depth → recorded start/end → Span ID" || !tree.navigationBeforeHeader) throw new Error(`HARNESS_STUDIO_TRACE_TREE_DENSITY_INVALID: ${JSON.stringify(tree)}`);
   const studioTreeScreenshot = await captureScreenshot(cdp, "studio-trace-tree-dark-desktop");
-  const trace = { waterfall, tree };
+  await cdp.evaluate(`(() => { [...document.querySelectorAll('button')].find((node) => node.textContent.trim() === 'Statistics').click(); })()`);
+  const statistics = await waitFor(async () => cdp.evaluate(`(() => {
+    const view = document.querySelector('[data-trace-renderer="statistics"]');
+    const hierarchy = view?.closest('[data-studio-trace-hierarchy]');
+    const navigation = hierarchy?.querySelector('[aria-label="Trace renderer views"]');
+    const rendererHeader = view?.querySelector('.trace-view-header');
+    return view && view.textContent.includes('Recorded spans') && view.textContent.includes('Recorded links')
+      && !view.textContent.toLowerCase().includes('critical path') && !view.textContent.toLowerCase().includes('service map')
+      ? { exactInventory: true, inferredAnalysis: false,
+          navigationNote: hierarchy?.querySelector('.studio-trace-view-note')?.textContent.trim(),
+          navigationBeforeHeader: Boolean(navigation && rendererHeader && (navigation.compareDocumentPosition(rendererHeader) & Node.DOCUMENT_POSITION_FOLLOWING)),
+          typography: [...view.querySelectorAll('[data-variant]')].map((node) => node.dataset.variant) }
+      : undefined;
+  })()`), "HARNESS_STUDIO_TRACE_STATISTICS_FAILED");
+  const expectedStatisticsTypography = ["overline", "h2", "subtitle1", "body1", "body2", "caption"];
+  if (statistics.navigationNote !== "Exact inventory · recorded-time aggregates · no inferred causality" || !statistics.navigationBeforeHeader ||
+      expectedStatisticsTypography.some((variant) => !statistics.typography.includes(variant))) {
+    throw new Error(`HARNESS_STUDIO_TRACE_STATISTICS_SEMANTICS_INVALID: ${JSON.stringify(statistics)}`);
+  }
+  const studioStatisticsScreenshot = await captureScreenshot(cdp, "studio-trace-statistics-dark-desktop");
+  await cdp.evaluate(`(() => { [...document.querySelectorAll('button')].find((node) => node.textContent.trim() === 'Tree').click(); })()`);
+  await waitFor(async () => cdp.evaluate(`document.querySelector('[data-trace-renderer="tree"]') !== null`), "HARNESS_STUDIO_TRACE_TREE_RESTORE_FAILED");
+  const trace = { waterfall, tree, statistics };
   const storedLocation = await cdp.evaluate(`sessionStorage.getItem('crystra.studio.location@1')`);
   const urlLocation = await cdp.evaluate(`new URL(location.href).searchParams.get('crystra-studio')`);
   if (!storedLocation?.startsWith('/evaluate/trace/') || urlLocation !== null) {
@@ -1051,10 +1216,10 @@ try {
     owner: { version: owner.version, resolved: owner.resolved, integrity: owner.integrity, qualificationAsset: executionAsset },
     host: {
       origin,
-      csp: csp === "" ? "absent-in-dsh-0.1.1-rc.2" : createHash("sha256").update(csp).digest("hex"),
+      csp: csp === "" ? "absent-in-dsh-0.1.5-rc.2" : createHash("sha256").update(csp).digest("hex"),
       activation: ["crystra-execution", "crystra-studio"],
     },
-    browser: { deliveryInventory: "control-plane-session-view", terminalView: terminalView ?? null, commandDiagnostic, sessionQualification, bannerRoundTrip: "PASS", sidebarQualification, tabOrder: shell.tabOrder, studio,
+    browser: { deliveryInventory: terminalFixture ? shell.terminalRows : "empty-ready", terminalView: terminalView ?? null, commandDiagnostic, sessionQualification, keyboardDisclosure: `${before.expanded}->${after}`, sidebarQualification, tabOrder: shell.tabOrder, studio,
       evaluate: "single-adjustable-dashboard-compare-metric-receipt-fact-trace", dashboard, savedDashboard,
       themes: { dark: dashboard.coreTheme, light: lightTheme ? "light" : "invalid" }, storedLocation, urlLocation, refreshRecovery: restored,
       screenshots: {
@@ -1062,6 +1227,7 @@ try {
         dashboardDarkDesktop: studioDashboardScreenshot,
         waterfallDarkDesktop: studioWaterfallScreenshot,
         treeDarkDesktop: studioTreeScreenshot,
+        statisticsDarkDesktop: studioStatisticsScreenshot,
         treeDarkNarrow: studioNarrowScreenshot,
         waterfallLightNarrow: studioLightScreenshot,
       },

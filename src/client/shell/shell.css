@@ -1,0 +1,56 @@
+.crystra-product-sidebar {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background-sidebar);
+}
+.crystra-product-sidebar > .crystra-sidebar {
+  flex: 1;
+  height: 100%;
+}
+.crystra-product-main {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-background-workspace);
+  color: var(--color-text-primary);
+}
+.crystra-product-empty {
+  padding: 24px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+.crystra-product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  overflow: auto;
+}
+.crystra-product-list > button {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 6px;
+  padding: 16px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.crystra-product-list small {
+  color: var(--color-text-muted);
+}
+.crystra-workflow-bench{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.crystra-workflow-bench>.crystra-tabs{display:contents}
+.crystra-workflow-bench>.crystra-tabs>.crystra-tab-panel{display:none}
+.crystra-workflow-map{height:100%;min-height:0;padding:0 24px;overflow:hidden}
+.crystra-workflow-resources{height:100%;min-height:0;overflow:hidden}
+.crystra-product-main .crystra-page-chat {display:flex;flex-direction:column;min-height:0;}
+.crystra-product-main .crystra-page-chat > :last-child {min-height:0;flex:1;}
+.crystra-product-main .crystra-page-chat > .crystra-discussion-topics {flex:none;}

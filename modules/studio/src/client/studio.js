@@ -7,6 +7,7 @@ export const STUDIO_PAGES = Object.freeze([
 export const STUDIO_TRACE_VIEWS = Object.freeze([
   Object.freeze({ id: "waterfall", label: "Waterfall", renderer: "TraceWaterfall", note: "Exact span timing" }),
   Object.freeze({ id: "tree", label: "Tree", renderer: "TraceTree", note: "Deterministic geometry · depth → recorded start/end → Span ID" }),
+  Object.freeze({ id: "statistics", label: "Statistics", renderer: "TraceStatistics", note: "Exact inventory · recorded-time aggregates · no inferred causality" }),
 ]);
 
 const ACCESSIBILITY = Object.freeze({
@@ -25,7 +26,7 @@ export function studioAccessibilityModel() {
 export function createStudioGatewayPort(ctx) {
   return Object.freeze({
     call(endpoint, payload, signal) {
-      return ctx.connection.rpc.call("/crystra-studio", endpoint, payload, signal);
+      return ctx.connection.rpc.call("/api", `crystra-studio/${endpoint}`, payload, signal);
     },
   });
 }
@@ -318,7 +319,7 @@ export function reduceSingleTaskSelection(_current, taskId, checked) {
   return checked ? Object.freeze({ mode: "single", taskIds: Object.freeze([taskId]) }) : undefined;
 }
 
-export function StudioView(React, Primitives, Bi, sharedStyles, controller, explicitThemeMode, layoutStorage) {
+function StudioView(React, Primitives, Bi, sharedStyles, controller, explicitThemeMode, layoutStorage) {
   const Button = Bi.Button;
   const ButtonGroup = Bi.ButtonGroup;
   const StatusBadge = Bi.StatusBadge;
@@ -734,7 +735,6 @@ export function StudioView(React, Primitives, Bi, sharedStyles, controller, expl
                 traceViewNavigation,
                 React.createElement(Bi[STUDIO_TRACE_VIEWS.find(({ id }) => id === traceView)?.renderer ?? "TraceWaterfall"], {
                   trace: recorded,
-                  showSummary: false,
                 })))) : null),
       studioPage === "dashboard" && snapshot.route.page === "results" && snapshot.result !== undefined ? React.createElement(Surface, { as: "footer", border: "dashed", level: "raised", "data-crystra-studio-region": "footer" },
         React.createElement(Typography, { as: "strong", variant: "label" }, presentation.trace.length > 0 ? "Recorded Trace is available" : "Recorded Trace availability follows current Evidence"),
@@ -754,7 +754,7 @@ export function createStudioClientPlugin({ React, Primitives = {}, Bi, sharedSty
   if (Bi === undefined || !component(Bi.BiSurface) || !component(Bi.Button) || !component(Bi.ButtonGroup) ||
       !component(Bi.DashboardMetricPanel) || !component(Bi.StatusBadge) || !component(Bi.Surface) || !component(Bi.TextInput) || !component(Bi.Typography) || !component(Bi.MetricPanel) ||
       !component(Bi.CompareResultFrame) || !component(Bi.ReceiptView) || !component(Bi.ScopedError) ||
-      !component(Bi.EvidenceConsoleFoundation) || !component(Bi.TraceWaterfall) || !component(Bi.TraceTree) ||
+      !component(Bi.EvidenceConsoleFoundation) || !component(Bi.TraceWaterfall) || !component(Bi.TraceTree) || !component(Bi.TraceStatistics) ||
       typeof Bi.compileTraceView !== "function" || typeof Bi.selectDefaultVisualizer !== "function" ||
       typeof Bi.createBiTheme !== "function") {
     throw new Error("STUDIO_BI_REQUIRED");

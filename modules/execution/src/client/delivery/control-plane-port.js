@@ -1,4 +1,4 @@
-const CHANNEL = "/crystra-execution";
+const CHANNEL = "/api";
 const ERROR_CODES = new Set([
   "DELIVERY_PROJECTION_CORRUPT",
   "DELIVERY_PROJECTION_STALE_BINDING",
@@ -27,9 +27,8 @@ export function createDeliveryControlPlaneClient(rpc) {
   if (typeof rpc?.call !== "function") throw new TypeError("DSH_CONNECTION_RPC_REQUIRED");
   const inventory = createStore(Object.freeze({ kind: "loading" }));
   const sessions = new Map();
-  let inventoryRequest = 0;
   const read = async (endpoint, payload) => {
-    const result = await rpc.call(CHANNEL, endpoint, payload);
+    const result = await rpc.call(CHANNEL, `crystra-execution/${endpoint}`, payload);
     if (result?.ok !== true) throw Object.assign(new Error(message(result?.error)), {
       code: ERROR_CODES.has(result?.error?.code) ? result.error.code : "DELIVERY_PROJECTION_UNAVAILABLE",
     });
@@ -38,14 +37,11 @@ export function createDeliveryControlPlaneClient(rpc) {
   const client = {
     inventory,
     async refresh() {
-      const request = ++inventoryRequest;
       try {
         const value = await read("inventory/read", {});
-        if (request !== inventoryRequest) return;
         inventory.publish({ kind: "ready", snapshot: value });
         for (const source of sessions.values()) void source.refresh();
       } catch (error) {
-        if (request !== inventoryRequest) return;
         const previous = inventory.getSnapshot();
         inventory.publish({
           kind: previous.kind === "ready" ? "reconnecting" : "error",
@@ -61,14 +57,12 @@ export function createDeliveryControlPlaneClient(rpc) {
       }
       if (sessions.has(sessionCorrelation)) return sessions.get(sessionCorrelation);
       const store = createStore(Object.freeze({ kind: "loading" }));
-      let sessionRequest = 0;
       const source = Object.freeze({
         getSnapshot: store.getSnapshot,
         subscribe: store.subscribe,
         async refresh() {
-          const request = ++sessionRequest;
-          try { const view = await read("session/read", { sessionCorrelation }); if (request !== sessionRequest) return; store.publish({ kind: "ready", view }); }
-          catch (error) { if (request !== sessionRequest) return; store.publish({ kind: "error", code: typeof error?.code === "string" ? error.code : "DELIVERY_PROJECTION_UNAVAILABLE", message: message(error) }); }
+          try { store.publish({ kind: "ready", view: await read("session/read", { sessionCorrelation }) }); }
+          catch (error) { store.publish({ kind: "error", code: typeof error?.code === "string" ? error.code : "DELIVERY_PROJECTION_UNAVAILABLE", message: message(error) }); }
         },
       });
       sessions.set(sessionCorrelation, source);
@@ -76,12 +70,4 @@ export function createDeliveryControlPlaneClient(rpc) {
     },
   };
   return Object.freeze(client);
-}
-
-// One read stream per injected RPC service; product pages reuse Execution's poller.
-const sharedClients=new WeakMap();
-export function getSharedDeliveryControlPlaneClient(rpc){
- let client=sharedClients.get(rpc);
- if(!client){client=createDeliveryControlPlaneClient(rpc);sharedClients.set(rpc,client);}
- return client;
 }

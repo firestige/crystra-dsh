@@ -3,19 +3,23 @@
   "inputs": {
     "execution": {
       "repository": "firestige/crystra-execution",
-      "revision": "82a88ea4222e40810a387863d654a12e008a5b26",
+      "revision": "0572430875bb6d5b32b9a67f9e7f9430fa83be44",
       "package": "crystra-execution",
       "version": "0.1.0",
       "artifact": "crystra-execution-0.1.0.tgz",
-      "sha256": "72a30478e47183752b84c9294999ffc6a31469bb227c16300c910f119e4567c8"
+      "sha256": "898a6bdd8eba9a3264a0e1bc9e918aa9da8a55729bd23dbcf06bb0590d64e0de",
+      "sourceState": "committed",
+      "integrationNote": "UI backend dependency integration from latest main, including DSH provider and durable Task metadata. Exact committed development artifact; not a published release."
     },
     "ui": {
       "repository": "firestige/crystra-ui",
-      "revision": "556da96715839f89ff394fdb1ea6a6a268ae7d85",
+      "revision": "01c49ecf96cb55b11d341caef45a75d304b2dbe1",
       "package": "crystra-ui-core",
       "version": "0.1.0",
       "artifact": "crystra-ui-core-0.1.0.tgz",
-      "sha256": "d7c5175dabfda8123b0d9b191aabd36801a0230c3d754ea351916190db3b3227"
+      "sha256": "c57e1143059730c75d0ddc349aadb103ce6a3c97ce9ccd6077d9ff4383ecf74f",
+      "sourceState": "committed",
+      "integrationNote": "Recorded-time Analysis queries, independent Delivery/Trace loading and preferences; local artifact built from the committed UI implementation. Not published."
     }
   }
 }

@@ -218,7 +218,7 @@ test("the browser port uses only the DSH Host channel and exposes no downstream 
   });
   await port.call("tasks/list", { limit: 1 });
   assert.deepEqual(calls.map(({ channel, endpoint, payload }) => ({ channel, endpoint, payload })), [
-    { channel: "/crystra-studio", endpoint: "tasks/list", payload: { limit: 1 } },
+    { channel: "/api", endpoint: "crystra-studio/tasks/list", payload: { limit: 1 } },
   ]);
   assert.doesNotMatch(JSON.stringify(port), /127\.0\.0\.1|Authorization|cookie/i);
 });
@@ -271,6 +271,7 @@ test("the Studio shell advertises one Evaluate route and complete keyboard/scree
   assert.deepEqual(STUDIO_TRACE_VIEWS, [
     { id: "waterfall", label: "Waterfall", renderer: "TraceWaterfall", note: "Exact span timing" },
     { id: "tree", label: "Tree", renderer: "TraceTree", note: "Deterministic geometry · depth → recorded start/end → Span ID" },
+    { id: "statistics", label: "Statistics", renderer: "TraceStatistics", note: "Exact inventory · recorded-time aggregates · no inferred causality" },
   ]);
 });
 
@@ -416,7 +417,7 @@ test("all four Studio navigation items expose real handlers and exact-target ava
     },
   };
   const ctx = {
-    connection: { rpc: { call: async (_channel, endpoint) => endpoint === "evaluations/compute"
+    connection: { rpc: { call: async (_channel, endpoint) => endpoint === "crystra-studio/evaluations/compute"
       ? { ok: true, value: result }
       : { ok: true, value: { items: [] } } } },
     slots: {
@@ -544,8 +545,8 @@ test("compare, receipt, Fact and recorded Trace routes use shared BI foundations
   const ctx = {
     connection: { rpc: { call: async (_channel, endpoint) => ({
       ok: true,
-      value: endpoint === "evaluations/compute" ? comparison
-        : endpoint === "facts/read" ? { items: [fact] }
+      value: endpoint === "crystra-studio/evaluations/compute" ? comparison
+        : endpoint === "crystra-studio/facts/read" ? { items: [fact] }
           : { items: [traceItem] },
     }) } },
     slots: {
@@ -587,8 +588,7 @@ test("compare, receipt, Fact and recorded Trace routes use shared BI foundations
   const hierarchy = elementsOf(rendered).find((element) => element.props?.["data-studio-trace-hierarchy"] === "navigation-header-content");
   assert.match(textOf(hierarchy.children[1]), /Waterfall/);
   assert.match(textOf(hierarchy.children[1]), /Tree/);
-  assert.doesNotMatch(textOf(hierarchy.children[1]), /Statistics/);
-  assert.equal(traceRenderer.props.showSummary, false);
+  assert.match(textOf(hierarchy.children[1]), /Statistics/);
   assert.equal(hierarchy.children[2], traceRenderer);
   assert.equal(traceRenderer.props.viewNavigation, undefined);
 });

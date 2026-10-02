@@ -1,0 +1,550 @@
+/* Geometry from the accepted Task v8 sidebar; tokens resolve inside the UI surface. */
+.crystra-sidebar {
+  --cs-bg: var(--color-background-sidebar, #1b1b1c);
+  --cs-text: var(--color-text-primary, #f9fafb);
+  --cs-secondary: var(--color-text-secondary, #cfd3d6);
+  --cs-muted: var(--color-text-muted, #adb2b8);
+  --cs-border: var(--color-border-subtle, #ffffff0f);
+  --cs-hover: var(--color-background-hover, #ffffff0d);
+  --cs-accent: var(--color-info-text, #679efe);
+  --cs-duration: 340ms;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 14px;
+  border-right: 1px solid var(--cs-border);
+  color: var(--cs-text);
+  background: var(--cs-bg);
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.crystra-sidebar *,
+.crystra-sidebar *::before,
+.crystra-sidebar *::after {
+  box-sizing: border-box;
+}
+.crystra-sidebar button,
+.crystra-sidebar a {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+.crystra-sidebar button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.crystra-sidebar button:disabled {
+  cursor: default;
+}
+.crystra-sidebar button:focus-visible,
+.crystra-sidebar a:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: 2px;
+}
+.crystra-sidebar [hidden] {
+  display: none !important;
+}
+.cs-brand-row {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 0 2px;
+}
+.cs-brand-row > .cs-tool:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.cs-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+.cs-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--cs-accent);
+}
+.cs-brand-mark svg {
+  width: 24px;
+  height: 24px;
+}
+.cs-brand-name {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.cs-brand-expand {
+  display: none;
+}
+.cs-tool {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.cs-tooltip {
+  position: fixed;
+  z-index: 200;
+  max-width: 280px;
+  border: 1px solid var(--color-border-default, #ffffff1f);
+  border-radius: 7px;
+  background: var(--color-background-floating, #353638);
+  color: var(--color-text-primary, #f9fafb);
+  padding: 7px 10px;
+  box-shadow: 0 6px 24px #0005;
+  font: 12px/18px system-ui;
+  pointer-events: none;
+}
+.crystra-sidebar .cs-icon-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  color: var(--cs-muted);
+}
+.crystra-sidebar .cs-collapse {
+  width: 32px;
+  height: 32px;
+}
+.crystra-sidebar .cs-icon-button:hover {
+  background: var(--cs-hover);
+  color: var(--cs-text);
+}
+.crystra-sidebar .cs-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  margin-top: 24px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-default, #ffffff1f);
+  background: var(--color-background-action, #43454a);
+  font-size: 14px;
+}
+.crystra-sidebar .cs-new:hover {
+  background: var(--color-background-action-hover, #353638);
+}
+.cs-directories {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-top: 20px;
+  overflow: clip;
+}
+.cs-section {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cs-section[data-kind="task"][data-expanded="true"] {
+  flex: 1;
+}
+.cs-section + .cs-section {
+  margin-top: 12px;
+}
+.cs-section-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  margin: 0 4px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.cs-section-header:has(.cs-disclosure:hover) {
+  background: var(--cs-hover);
+}
+.cs-disclosure {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  min-width: 0;
+  text-align: left;
+}
+.crystra-sidebar .cs-disclosure {
+  color: var(--cs-muted);
+  font-size: 12px;
+}
+.cs-chevron {
+  flex-shrink: 0;
+  transition: transform 160ms ease;
+}
+.cs-chevron[data-expanded="false"] {
+  transform: rotate(-90deg);
+}
+.cs-search-seat {
+  width: 28px;
+  flex-shrink: 0;
+}
+.cs-section-content {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+}
+.cs-section-content::-webkit-scrollbar {
+  display: none;
+}
+.cs-task-list {
+  padding-top: 4px;
+}
+.cs-link {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  border-radius: 8px;
+}
+.crystra-sidebar .cs-task-row {
+  height: 40px;
+  padding: 0 10px;
+  margin-bottom: 2px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+.crystra-sidebar .cs-workflow-row {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.crystra-sidebar .cs-analysis-row {
+  height: 34px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+.cs-link:hover {
+  background: var(--cs-hover);
+}
+.crystra-sidebar .cs-link[aria-current="page"] {
+  background: color-mix(in srgb, var(--cs-accent) 8%, transparent);
+  color: var(--cs-accent);
+  box-shadow: inset 0 0 0 1px var(--cs-accent);
+}
+.cs-row-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-time {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--cs-muted);
+}
+.cs-workflow-row .cs-time {
+  font-size: 10px;
+}
+.cs-status {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--cs-border);
+}
+.cs-workflow-row .cs-status {
+  width: 6px;
+  height: 6px;
+}
+.cs-status[data-status="failed"] {
+  background: var(--color-danger-text, #f35b62);
+}
+.cs-status[data-status="review"] {
+  background: var(--color-warning-text, #f2a900);
+}
+.cs-status[data-status="running"] {
+  background: var(--cs-accent);
+}
+.cs-status[data-status="complete"] {
+  background: var(--color-success-text, #21c77a);
+}
+.cs-badge {
+  min-width: 17px;
+  height: 17px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 4px;
+  border-radius: 9px;
+  font-size: 10px;
+  color: var(--color-warning-text, #f2a900);
+  background: color-mix(
+    in srgb,
+    var(--color-warning-text, #f2a900) 15%,
+    transparent
+  );
+}
+.cs-empty {
+  margin: 8px 10px;
+  color: var(--cs-muted);
+  font-size: 12px;
+}
+.cs-footer {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--cs-border);
+}
+.cs-footer > .cs-tool {
+  width: 100%;
+}
+.crystra-sidebar .cs-settings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.cs-settings:hover:not(:disabled) {
+  background: var(--cs-hover);
+}
+.cs-settings:disabled {
+  opacity: 0.55;
+}
+.cs-menu {
+  position: absolute;
+  z-index: 100;
+  top: 40px;
+  right: 0;
+  min-width: 180px;
+  padding: 5px;
+  border: 1px solid var(--cs-border);
+  border-radius: 10px;
+  background: var(--color-background-floating, #353638);
+  box-shadow: 0 8px 24px #0005;
+}
+.crystra-sidebar .cs-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px;
+  border-radius: 5px;
+  font-size: 12px;
+  text-align: left;
+}
+.cs-menu button:hover {
+  background: var(--cs-hover);
+}
+.cs-option-check {
+  display: grid;
+  width: 14px;
+  height: 14px;
+}
+.cs-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Reuse the reviewed expanding search field, with the trigger in the first tool seat. */
+.crystra-sidebar .crystra-expandable-search {
+  height: 36px;
+}
+.crystra-sidebar .crystra-expandable-search-title {
+  padding: 0;
+  gap: 0;
+  background: transparent;
+}
+.crystra-sidebar .crystra-expandable-search-trigger {
+  top: 4px;
+  left: calc(100% - 56px);
+}
+.crystra-sidebar
+  .crystra-expandable-search[data-open="true"]
+  .crystra-expandable-search-trigger {
+  left: 6px;
+}
+.crystra-sidebar .crystra-expandable-search-title[aria-hidden="true"] {
+  visibility: hidden;
+}
+.crystra-sidebar .crystra-expandable-search-content {
+  height: 36px;
+}
+/* A single directory subtree is shown in the drawer; no cloned task/workflow lists. */
+.cs-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cs-border);
+}
+.cs-rail .cs-icon-button {
+  width: 40px;
+  height: 40px;
+  position: relative;
+}
+.cs-rail .cs-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.crystra-sidebar[data-collapsed="true"] {
+  padding: 16px 12px;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-brand-row {
+  padding: 0;
+  height: 40px;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-brand {
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  border-radius: 10px;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-brand:hover {
+  background: var(--cs-hover);
+}
+.crystra-sidebar[data-collapsed="true"]
+  .cs-brand:is(:hover, :focus-visible)
+  .cs-brand-mark {
+  display: none;
+}
+.crystra-sidebar[data-collapsed="true"]
+  .cs-brand:is(:hover, :focus-visible)
+  .cs-brand-expand {
+  display: grid;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-brand-name,
+.crystra-sidebar[data-collapsed="true"] .cs-brand-row > .cs-tool:last-child,
+.crystra-sidebar[data-collapsed="true"] .cs-new span,
+.crystra-sidebar[data-collapsed="true"] .cs-settings span {
+  display: none;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-new {
+  width: 40px;
+  height: 40px;
+  margin-top: 20px;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-settings {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-directories {
+  position: absolute;
+  left: 64px;
+  top: 140px;
+  width: 300px;
+  max-height: calc(100% - 200px);
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--cs-border);
+  border-radius: 12px;
+  background: var(--cs-bg);
+  box-shadow: 0 12px 30px #0005;
+  overflow: visible;
+}
+.crystra-sidebar[data-collapsed="true"][data-open-panel=""] .cs-directories {
+  visibility: hidden;
+  pointer-events: none;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-section {
+  display: none;
+  margin: 0;
+  max-height: calc(100vh - 220px);
+}
+.crystra-sidebar[data-collapsed="true"] .cs-section[data-panel-open="true"] {
+  display: flex;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crystra-sidebar {
+    --cs-duration: 0ms;
+  }
+  .cs-chevron {
+    transition: none;
+  }
+}
+/* Keep the full directory width during the 340ms shell transition. */
+.crystra-sidebar {
+  overflow: clip;
+}
+.crystra-sidebar .cs-directories {
+  position: absolute;
+  top: 140px;
+  bottom: 64px;
+  left: 14px;
+  width: calc(var(--crystra-sidebar-expanded-width, 260px) - 28px);
+  margin: 0;
+  overflow: visible;
+  visibility: visible;
+  transform: translateX(0);
+  transition:
+    transform var(--cs-duration) cubic-bezier(0.22, 0.68, 0.2, 1),
+    visibility 0s;
+}
+.crystra-sidebar[data-collapsed="true"][data-open-panel=""] .cs-directories {
+  top: 140px;
+  bottom: 64px;
+  left: 14px;
+  width: calc(var(--crystra-sidebar-expanded-width, 260px) - 28px);
+  max-height: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: translateX(
+    calc(-1 * var(--crystra-sidebar-expanded-width, 260px))
+  );
+  visibility: hidden;
+  transition:
+    transform var(--cs-duration) cubic-bezier(0.22, 0.68, 0.2, 1),
+    visibility 0s var(--cs-duration);
+}
+.crystra-sidebar[data-collapsed="true"][data-open-panel=""] .cs-section {
+  display: flex;
+}
+.crystra-sidebar[data-collapsed="true"]:not([data-open-panel=""]) {
+  overflow: visible;
+}
+.crystra-sidebar[data-collapsed="true"]:not([data-open-panel=""])
+  .cs-directories {
+  bottom: auto;
+  transition: none;
+}
+.crystra-sidebar .cs-row-title {
+  font-size: var(--type-item-title-size, 14px);
+  line-height: var(--type-item-title-line, 20px);
+  font-weight: var(--type-item-title-weight, 500);
+}
+.crystra-sidebar .cs-task-row {
+  border: 0;
+}
+.cs-task-row:has([data-status="failed"]) .cs-badge {
+  color: var(--color-status-danger-text, #f35b62);
+  background: var(--color-status-danger-surface, #f35b6220);
+}
+
+.crystra-sidebar .cs-disclosure {
+  padding-left: 8px;
+}
+.crystra-sidebar[data-collapsed="true"] .cs-new svg {
+  width: 18px;
+  height: 18px;
+}

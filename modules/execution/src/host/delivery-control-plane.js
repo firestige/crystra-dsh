@@ -1,3 +1,4 @@
+import { registerCrystraRpc } from "../../../../src/host/rpc-routes.js";
 const CHANNEL = "/crystra-execution";
 const ERROR_CODES = new Set([
   "DELIVERY_PROJECTION_CORRUPT",
@@ -148,7 +149,7 @@ export function createDshSessionControlPlaneReadModel(readModel, bindings) {
 export async function registerDeliveryControlPlaneGateway(ctx, readModel) {
   if (typeof ctx?.connection?.rpc?.handle !== "function") throw new TypeError("DSH_CONNECTION_RPC_REQUIRED");
   const gateway = await createDeliveryControlPlaneGateway(readModel);
-  const unregister = ctx.connection.rpc.handle(CHANNEL, gateway.handle, { authority: "loopback" });
+  const unregister = registerCrystraRpc(ctx, CHANNEL, gateway.handle, { authority: "loopback" });
   ctx.effect(function* deliveryControlPlaneGatewayLifecycle() {
     yield async () => {
       await unregister?.();

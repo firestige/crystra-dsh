@@ -1,0 +1,199 @@
+/* Shell geometry follows @deepseek-ai/dsh-client-ui-settings-general 0.1.5-rc.2. */
+.crystra-settings {
+  width: 800px;
+  max-width: calc(100vw - 48px);
+  height: min(800px, calc(100dvh - 48px));
+  max-height: none;
+  padding: 0;
+  margin: auto;
+  border: none;
+  border-radius: 32px;
+  background: var(--dsw-alias-bg-layer-2, var(--color-background-sidebar));
+  color: var(--color-text-primary);
+  box-shadow: var(--dsw-elevation-prominent, 0 24px 80px #0006);
+  overflow: hidden;
+}
+.crystra-settings[open] {
+  display: flex;
+}
+.crystra-settings::backdrop {
+  background: var(--dsw-alias-bg-mask-1, #0006);
+  backdrop-filter: var(--dsw-mask-blur, blur(2px));
+}
+.crystra-settings-index {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 18px;
+  width: 188px;
+  padding: 22px 12px 0;
+}
+.crystra-settings-index > h2.crystra-typography {
+  margin: 0;
+  padding: 0 12px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.crystra-settings-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.crystra-settings-nav-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 9px 16px 9px 12px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  cursor: pointer;
+}
+.crystra-settings-nav-item[aria-current="page"] {
+  background: var(--dsw-specific-sidebar-nav-item-active, #ffffff0f);
+}
+.crystra-settings-nav-item:hover {
+  background: var(--dsw-specific-sidebar-nav-item-hover, #ffffff14);
+}
+.crystra-settings-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.crystra-settings-header {
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex: none;
+  height: 54px;
+  padding: 20px 14px 8px 10px;
+}
+.crystra-settings-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 28px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.crystra-settings-close:hover {
+  background: var(--dsw-alias-interactive-bg-hover, #ffffff14);
+}
+.crystra-settings-close:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.crystra-settings-content {
+  flex: 1;
+  min-height: 0;
+  padding: 0 24px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.crystra-workflow-settings {
+  display: flex;
+  flex-direction: column;
+}
+.crystra-settings-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+.crystra-settings-option-copy {
+  min-width: 0;
+}
+.crystra-settings-option-copy h3,
+.crystra-settings-option-copy p {
+  margin: 0;
+}
+.crystra-settings-option-copy p {
+  margin-top: 4px;
+}
+.crystra-settings-option > .crystra-button {
+  flex: none;
+}
+.crystra-source-list {
+  display: flex;
+  flex-direction: column;
+}
+.crystra-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--color-border-default);
+}
+.crystra-source-path {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+.crystra-source-path .crystra-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.crystra-source-row .crystra-field {
+  min-width: 0;
+  max-width: 220px;
+}
+.crystra-settings-feedback {
+  margin-top: 16px;
+}
+.crystra-settings-feedback p {
+  margin: 0;
+}
+.crystra-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 16px;
+}
+@media (max-width: 600px) {
+  .crystra-settings {
+    max-width: calc(100vw - 24px);
+    height: calc(100dvh - 24px);
+    border-radius: 24px;
+  }
+  .crystra-settings-index {
+    width: 120px;
+    padding-inline: 8px;
+  }
+  .crystra-settings-content {
+    padding-inline: 16px;
+  }
+  .crystra-settings-option {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .crystra-source-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crystra-source-row > .crystra-button {
+    justify-self: start;
+  }
+}

@@ -1,13 +1,13 @@
-import * as product from './product-entry.js';
+import { registerProductShell } from "./shell/register.tsx";
+import { registerTaskWorkbench } from "./task-workbench/register.js";
 import * as initialization from '../../modules/initialization/src/client.js';
 import * as execution from '../../modules/execution/src/client/browser-entry.js';
 import * as studio from '../../modules/studio/src/client/browser-entry.js';
 
 export const name = 'crystra-client';
-export const inject = [...new Set([...execution.inject, ...studio.inject, ...initialization.inject, ...product.inject])];
+export const inject = [...new Set([...execution.inject, ...studio.inject, ...initialization.inject])];
 export function apply(ctx) {
   ctx.plugin(initialization);
-  ctx.plugin(execution);
+  ctx.plugin(execution, { registerTaskWorkbench, registerProductShell });
   ctx.plugin(studio);
-  ctx.plugin(product);
 }

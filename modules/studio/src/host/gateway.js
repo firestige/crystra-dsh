@@ -1,3 +1,4 @@
+import { registerCrystraRpc } from "../../../../src/host/rpc-routes.js";
 const DEFAULT_TIMEOUT_MS = 125_000;
 const DEFAULT_MAXIMUM_RESPONSE_BYTES = 8 * 1024 * 1024;
 const TASK_ID = /^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,127}$/u;
@@ -62,7 +63,7 @@ const FACT_KEYS = [
   "kind", "event_name", "family_schema", "delivery_id", "trace_id",
   "recorded_from", "recorded_to", "limit", "cursor",
 ];
-const TRACE_KEYS = ["trace_id", "delivery_id", "limit", "cursor"];
+const TRACE_KEYS = ["trace_id", "delivery_id", "recorded_from", "recorded_to", "limit", "cursor"];
 const FACT_KINDS = new Set([
   "EVENT_CONTRIBUTION", "FINDING_ASSERTION", "FINDING_TARGET", "FINDING_STATUS",
   "FINDING_FIX", "FINDING_RECHECK", "ROLE_LINEAGE", "DELIVERY_ROOT_BINDING",
@@ -87,6 +88,23 @@ function taskRequest(payload) {
   return { path: `/v1/evidence/tasks${query([["limit", limit], ["cursor", payload.cursor]])}`, method: "GET" };
 }
 
+function membershipRequest(payload) {
+  if (!validCommon(payload,new Set(["task_id","as_of","limit","cursor"]))) return undefined;
+  if (typeof payload.task_id !== "string" || !TASK_ID.test(payload.task_id)) return undefined;
+  if (typeof payload.as_of !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(payload.as_of) || !Number.isFinite(Date.parse(payload.as_of))) return undefined;
+  return {path:`/v1/evidence/tasks${query([["task_id",payload.task_id],["as_of",payload.as_of],["limit",payload.limit ?? 100],["cursor",payload.cursor]])}`,method:"GET"};
+}
+function directoryRequest(payload) {
+ const keys=['recorded_from','recorded_to','delivery_id','task_id','task_name','workflow_id','workflow_version','limit','cursor'];
+ if(!validCommon(payload,new Set(keys))||!recordedRange(payload))return undefined;
+ for(const key of keys.filter(k=>!['limit','cursor'].includes(k)))if(payload[key]!==undefined&&!boundedText(payload[key],256))return undefined;
+ return {path:`/v1/evidence/deliveries${query(keys.map(key=>[key,payload[key]]))}`,method:'GET'};
+}
+function manifestRequest(payload) {
+  if (!exactKeys(payload,["manifest_digest"]) || typeof payload.manifest_digest !== "string" || !/^[a-f0-9]{64}$/.test(payload.manifest_digest)) return undefined;
+  return {path:`/v1/evidence/manifests${query([["manifest_digest",payload.manifest_digest]])}`,method:"GET"};
+}
+
 function factsRequest(payload) {
   if (!validCommon(payload, new Set(FACT_KEYS))) return undefined;
   if (payload.kind !== undefined && !FACT_KINDS.has(payload.kind)) return undefined;
@@ -101,13 +119,26 @@ function factsRequest(payload) {
 
 function tracesRequest(payload) {
   if (!validCommon(payload, new Set(TRACE_KEYS))) return undefined;
-  if ((payload.trace_id === undefined) === (payload.delivery_id === undefined)) return undefined;
+  const exact = payload.trace_id !== undefined || payload.delivery_id !== undefined;
+  if (payload.trace_id !== undefined && payload.delivery_id !== undefined) return undefined;
+  if (!exact && !recordedRange(payload)) return undefined;
+  if ((payload.recorded_from !== undefined || payload.recorded_to !== undefined) && !recordedRange(payload)) return undefined;
   if (payload.trace_id !== undefined && !TRACE_ID.test(payload.trace_id)) return undefined;
   if (payload.delivery_id !== undefined && !boundedText(payload.delivery_id, 256)) return undefined;
   return { path: `/v1/evidence/traces${query(TRACE_KEYS.map((key) => [key, payload[key]]))}`, method: "GET" };
 }
 
+function recordedRange(value) {
+  const valid = (text) => typeof text === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(text) && Number.isFinite(Date.parse(text));
+  if (!valid(value.recorded_from) || !valid(value.recorded_to)) return false;
+  const span=Date.parse(value.recorded_to)-Date.parse(value.recorded_from);
+  return span>=0 && span<=366*86400000;
+}
 function selection(value) {
+  if (record(value) && value.selection_version===2) {
+    return exactKeys(value,["selection_version","recorded_from","recorded_to"],["delivery_ids"]) && recordedRange(value) &&
+      (value.delivery_ids===undefined || value.delivery_ids===null || (Array.isArray(value.delivery_ids) && value.delivery_ids.length<=500 && new Set(value.delivery_ids).size===value.delivery_ids.length && value.delivery_ids.every(id=>boundedText(id,256))));
+  }
   return exactKeys(value, ["selection_version", "task_ids"]) &&
     value.selection_version === 1 &&
     Array.isArray(value.task_ids) &&
@@ -131,6 +162,9 @@ function computeRequest(payload) {
 }
 
 function requestFor(endpoint, payload) {
+  if (endpoint === "deliveries/list") return {owner:"evidence", request:directoryRequest(payload)};
+  if (endpoint === "tasks/membership") return { owner: "evidence", request: membershipRequest(payload) };
+  if (endpoint === "manifests/read") return { owner: "evidence", request: manifestRequest(payload) };
   if (endpoint === "tasks/list") return { owner: "evidence", request: taskRequest(payload) };
   if (endpoint === "facts/read") return { owner: "evidence", request: factsRequest(payload) };
   if (endpoint === "traces/read") return { owner: "evidence", request: tracesRequest(payload) };
@@ -216,7 +250,11 @@ export function createStudioGatewayHandler(options) {
       );
       const decoded = await boundedJson(response, maximumBytes);
       if (!decoded.ok) return decoded;
-      if (!response.ok) return downstream("downstream-http-error", "Studio downstream rejected the request");
+      if (!response.ok) {
+        const error = decoded.value?.error;
+        if (record(error) && boundedText(error.code,128) && boundedText(error.message,8192)) return downstream(error.code,"Studio downstream rejected the request");
+        return downstream("downstream-http-error", "Studio downstream rejected the request");
+      }
       return decoded;
     } catch (error) {
       const timedOut = timer.aborted && !signal?.aborted;
@@ -230,7 +268,7 @@ export function createStudioGatewayHandler(options) {
 
 export function registerStudioGateway(ctx, options) {
   const handle = createStudioGatewayHandler(options);
-  return ctx.connection.rpc.handle(
+  return registerCrystraRpc(ctx,
     "/crystra-studio",
     async (...args) => {
       const result = await handle(...args);
@@ -240,7 +278,7 @@ export function registerStudioGateway(ctx, options) {
         error: {
           code: "internal",
           message: `Studio gateway (${result.error.code}): ${result.error.message}`,
-          details: {},
+          details: { serviceCode: result.error.code },
         },
       };
     },

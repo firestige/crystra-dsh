@@ -1,0 +1,49 @@
+{
+  "baseline": "task-workbench-2026-09-25",
+  "acceptance": "User approved the current 3085 Task Workbench for finalization.",
+  "dsh": "0.1.5-rc.2",
+  "scope": [
+    "requirements",
+    "plan",
+    "execution",
+    "review",
+    "delivery",
+    "native Chat control integration"
+  ],
+  "inputs": {
+    "execution": {
+      "repository": "firestige/crystra-execution",
+      "revision": "8b3fe21cfd78c869fc3bfaa202bc8d109859597e",
+      "package": "crystra-execution",
+      "version": "0.1.0",
+      "artifact": "crystra-execution-0.1.0.tgz",
+      "sha256": "693d7c3104c9348cb0b491a8f59b755561bca3f4d60002b38ae0e07e0f46be35",
+      "sourceState": "committed",
+      "integrationNote": "Task Workbench accepted local integration baseline, 2026-09-25. Artifact dist bytes verified against this component commit. Not a published release."
+    },
+    "ui": {
+      "repository": "firestige/crystra-ui",
+      "revision": "5f45b18c28a41504f3573160fcbb119aa0c86019",
+      "package": "crystra-ui-core",
+      "version": "0.1.0",
+      "artifact": "crystra-ui-core-0.1.0.tgz",
+      "sha256": "c5c6900f81aa9d2ce330e406accc01368e98c37261c0cda060afed696e577e9d",
+      "sourceState": "committed",
+      "integrationNote": "Task Workbench accepted local integration baseline, 2026-09-25. Artifact dist bytes verified against this component commit. Not a published release."
+    }
+  },
+  "clientSha256": "371011b2a28544af9150f806bc86bd2cad589ac742055df996bd0833504dad7b",
+  "verification": {
+    "installedDshFilesCompared": 149,
+    "installedDshFileDifferences": 0,
+    "dshTestsPassed": 246,
+    "uiVitestPassed": 435,
+    "uiNodeTestsPassed": 34,
+    "executionFocusedTestsPassed": 22,
+    "browser": "Live Brief scroll to bottom; empty skeleton has zero badges; no page errors."
+  },
+  "limits": [
+    "Local committed baseline; no publishing, version bump or release tag.",
+    "UI acceptance does not assert live end-to-end Workflow completion."
+  ]
+}

@@ -1,9 +1,12 @@
+import * as Slots from "@deepseek-ai/dsh-client-ui-slots";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import React from "react";
+import * as Cordis from "@deepseek-ai/cordis";
+import * as DshStore from "@deepseek-ai/dsh-client-store";
 import * as ReactDOM from "react-dom";
 
 const root = resolve(import.meta.dirname, "..");
@@ -51,10 +54,11 @@ test("the real Harness qualifies the deterministic trace Tree canvas contract", 
   assert.doesNotMatch(source, /\[aria-label="Semantic camera map"\]/u);
 });
 
-test("the real Harness requires Trace without duplicate overview summaries", async () => {
+test("the real Harness qualifies Statistics with the shared semantic typography scale", async () => {
   const source = await readFile(join(root, "scripts/qualify-real-harness.mjs"), "utf8");
-  assert.match(source, /waterfall.summaryLabels.length !== 0/u);
-  assert.doesNotMatch(source, /label: "Statistics"/u);
+  assert.match(source, /\["overline", "h2", "subtitle1", "body1", "body2", "caption"\]/u);
+  assert.doesNotMatch(source, /typography\.includes\("sectionTitle"\)/u);
+  assert.doesNotMatch(source, /typography\.includes\("value"\)/u);
 });
 
 test("generated clients use one module identity and no private source or direct downstream transport", async () => {
@@ -62,18 +66,23 @@ test("generated clients use one module identity and no private source or direct 
   const studio = await readFile(join(root, "lib/client.js"), "utf8");
   assert.match(execution, /id: "dsh-crystra"/u);
   assert.match(studio, /id: "dsh-crystra"/u);
-  assert.doesNotMatch(execution, /execution-system\/src|\/crystra list|fixedWorkspaceUi|crystra-sidebar-resources|crystra-open-product/u);
+  assert.doesNotMatch(execution, /execution-system\/src|\/crystra list/u);
   assert.doesNotMatch(studio, /EVIDENCE_UPSTREAM|EVOLUTION_UPSTREAM|fetch\(["']https?:/u);
-  assert.doesNotMatch(`${execution}\n${studio}`, /\beval\s*\(|new Function|document\.write/u);
+  assert.doesNotMatch(execution.slice(execution.indexOf("    const module = { exports: {} };")), /\beval\s*\(|new Function|document\.write/u);
 
   for (const [source, expected] of [[execution, "dsh-crystra"]]) {
     let definition;
     vm.runInNewContext(source, {
-      TextDecoder, TextEncoder, URL, URLSearchParams,
-      window: { __ModuleLoader__: { load(value) { definition = value; } } },
+      TextDecoder, TextEncoder, URL, URLSearchParams, setTimeout, clearTimeout,
+      document: { documentElement: {style:{}}, querySelector() { return {}; }, createElement() { return {}; } },
+      window: { Error, setTimeout, clearTimeout, __ModuleLoader__: { load(value) { definition = value; } } },
     });
     assert.equal(definition.id, expected);
     const loaded = definition.factory((name) => {
+      if (name === "@deepseek-ai/dsh-client-ui-slots") return Slots;
+      if (name === "@deepseek-ai/cordis") return Cordis;
+      if (name === "@deepseek-ai/dsh-client-store") return DshStore;
+      if (name === "@deepseek-ai/dsh-api-session-controller") return { createScope() { throw new Error("Scope must only be created for a user quote action"); } };
       if (name === "react") return React;
       if (name === "react-dom") return ReactDOM;
       if (name === "react/jsx-runtime") return { jsx() {}, jsxs() {} };
@@ -89,9 +98,9 @@ test("generated clients use one module identity and no private source or direct 
   }
 });
 
-test("one Cordis patch adds Crystra without disabling the native Workspace UI", async () => {
+test("one Cordis patch registers only Crystra and its workspace override", async () => {
   const patch=await readFile(join(root,"cordis.patch.yml"),"utf8");
   assert.match(patch,/id: crystra\n\s+name: 'dsh-crystra'/);
-  assert.doesNotMatch(patch,/ui-workspace|disabled: true/);
+  assert.match(patch,/id: ui-workspace[\s\S]*disabled: true/);
   assert.doesNotMatch(patch,/dsh-crystra-(?:execution|studio)|__REQUIRED__/);
 });

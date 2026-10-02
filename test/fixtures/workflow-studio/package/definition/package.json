@@ -1,0 +1,22 @@
+{
+  "kind": "agentops.package",
+  "schemaVersion": "agentops.workflow-dsl@2.0.0",
+  "package": {
+    "name": "test",
+    "version": "1",
+    "status": "DRAFT"
+  },
+  "documents": {
+    "workflow": "workflow.json"
+  },
+  "resources": {
+    "owned": [
+      {
+        "id": "resource.test",
+        "kind": "role-prompt",
+        "owner": "owned",
+        "path": "../roles/test.md"
+      }
+    ]
+  }
+}

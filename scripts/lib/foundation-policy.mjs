@@ -89,7 +89,7 @@ export function validateDependencyGraph(manifests, domainOwnerRoles = [
 
 export function validatePackInventory({ name, files }) {
   const required = ["package/LICENSE", "package/NOTICE.md", "package/README.md", "package/package.json", "package/cordis.patch.yml", "package/src/index.js", "package/lib/client.js", "package/modules/execution/src/index.js", "package/modules/studio/src/index.js"];
-  const allowed = /^package\/(?:node_modules\/crystra-(?:execution|ui-core)\/(?!.*node_modules\/).+|LICENSE|NOTICE\.md|README\.md|package\.json|cordis\.patch\.yml|lib\/client\.js|src\/.+|modules\/(?:execution|studio|initialization)\/(?:src\/.+|README\.md|NOTICE\.md)|skills\/.+)$/u;
+  const allowed = /^package\/(?:LICENSE|NOTICE\.md|README\.md|package\.json|cordis\.patch\.yml|lib\/client\.js|src\/.+|modules\/(?:execution|studio|initialization)\/(?:src\/.+|README\.md|NOTICE\.md)|skills\/.+)$/u;
   if (name !== "dsh-crystra" || required.some(file => !files.includes(file))
       || files.some(file => !allowed.test(file) || /(?:^|\/)test(?:s)?\/|\.test\.[cm]?[jt]sx?$/u.test(file))) {
     throw new BoundaryViolation("PACK_INVENTORY", name);
@@ -120,7 +120,7 @@ export async function validateRepository(root) {
   if (manifest.dsh?.bundle?.patch !== "./cordis.patch.yml") throw new BoundaryViolation("BUNDLE_PATCH_MISSING", manifest.name);
   const patch = await readFile(resolve(repositoryRoot, "cordis.patch.yml"), "utf8");
   const names = [...patch.matchAll(/^\s+name:\s*['"]([^'"]+)['"]/gmu)].map(match => match[1]);
-  if (names.join(",") !== "dsh-crystra") throw new BoundaryViolation("ACTIVATION_GRAPH", names.join(","));
+  if (names.join(",") !== "@deepseek-ai/dsh-client-ui-conversation,@deepseek-ai/dsh-client-ui-sidebar,@deepseek-ai/dsh-client-ui-workspace,dsh-crystra") throw new BoundaryViolation("ACTIVATION_GRAPH", names.join(","));
   const inputs = await json(resolve(repositoryRoot, "config/development-inputs.json"));
   for (const input of Object.values(inputs.inputs)) {
     if (manifest.dependencies?.[input.package] === undefined || !/^[0-9a-f]{40}$/u.test(input.revision)) throw new BoundaryViolation("COMPONENT_DEPENDENCY", input.package);

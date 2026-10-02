@@ -1,0 +1,65 @@
+.crystra-execution-motion {
+  --execution-signal: #60a5fa;
+  --execution-duration: 1.05s;
+}
+.crystra-execution-motion[data-pace="slow"] {
+  --execution-signal: #f6c453;
+  --execution-duration: 2.8s;
+}
+.crystra-execution-motion[data-pace="fast"] {
+  --execution-signal: #8cd8ff;
+  --execution-duration: 0.62s;
+}
+.crystra-execution-motion[data-pace="error"] {
+  --execution-signal: #ff4d5f;
+}
+.execution-active-edge {
+  fill: none;
+  stroke: var(--execution-signal);
+  stroke-width: 2;
+}
+.execution-flow-sweep {
+  fill: none;
+  stroke: var(--execution-signal);
+  stroke-width: 4;
+  stroke-dasharray: 12 42;
+  animation: execution-flow var(--execution-duration) linear infinite;
+  filter: drop-shadow(0 0 4px var(--execution-signal));
+}
+.execution-node-halo {
+  fill: none;
+  stroke: var(--execution-signal);
+  stroke-width: 3;
+  animation: execution-breathe 2.2s ease-in-out infinite;
+}
+.crystra-execution-motion[data-pace="error"] .execution-node-halo {
+  animation-duration: 1.25s;
+}
+@keyframes execution-flow {
+  to {
+    stroke-dashoffset: -108;
+  }
+}
+@keyframes execution-breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+[data-effects="off"] .execution-flow-sweep {
+  display: none;
+}
+[data-effects="off"] .execution-node-halo {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .execution-flow-sweep {
+    display: none;
+  }
+  .execution-node-halo {
+    animation: none;
+  }
+}
