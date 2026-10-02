@@ -12,7 +12,7 @@ try{
   const button=page.getByRole('button',{name,exact:true});
   if(await button.isVisible())await button.click();
  }
- await page.getByRole('button',{name:'新建任务',exact:true}).click();
+ await page.locator('[data-section-id="new-task-action"]').click();
  await page.getByRole('button',{name:'Choose workspace',exact:true}).click();
  await page.getByText(process.env.CRYSTRA_TEST_WORKSPACE||'Projects',{exact:true}).last().click();
  await page.locator('[data-slot="conversation.input.model"] button').first().click();
