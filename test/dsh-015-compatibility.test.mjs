@@ -37,7 +37,7 @@ test('qualification CLI and profile pin every DSH component to the compatibility
 
 test('installing the public host requires the runtime used by its Execution provider',async()=>{
  const manifest=JSON.parse(await readFile('package.json','utf8'));
- assert.equal(manifest.dependencies['@deepseek-ai/dsh'],'0.1.5-rc.2');
+ for(const name of ['dsh','dsh-anonymous-user-id','dsh-attachment','dsh-session-persistence'])assert.equal(manifest.dependencies[`@deepseek-ai/${name}`],'0.1.5-rc.2');
  assert.notEqual(manifest.peerDependenciesMeta?.['@deepseek-ai/dsh']?.optional,true);
  const runtime=JSON.parse(await readFile('config/dsh-qualification-runtime.json','utf8'));
  assert.deepEqual(manifest.overrides,runtime.overrides);
