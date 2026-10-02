@@ -48,3 +48,42 @@ jobs:
           CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
       - run: npm run build
       - run: npm run pack:verify
+      - name: Read exact development service sources
+        id: services
+        run: |
+          echo "evidence_repo=$(jq -er .evidence.repository config/development-services.json)" >> "$GITHUB_OUTPUT"
+          echo "evidence_sha=$(jq -er .evidence.revision config/development-services.json)" >> "$GITHUB_OUTPUT"
+          echo "evolution_repo=$(jq -er .evolution.repository config/development-services.json)" >> "$GITHUB_OUTPUT"
+          echo "evolution_sha=$(jq -er .evolution.revision config/development-services.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.services.outputs.evidence_repo }}
+          ref: ${{ steps.services.outputs.evidence_sha }}
+          path: .crystra-inputs/services/evidence
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.services.outputs.evolution_repo }}
+          ref: ${{ steps.services.outputs.evolution_sha }}
+          path: .crystra-inputs/services/evolution
+      - name: Read Evolution contract source
+        id: service_contract
+        run: |
+          echo "repository=$(jq -er .repository .crystra-inputs/services/evolution/config/development-contract.json)" >> "$GITHUB_OUTPUT"
+          echo "revision=$(jq -er .revision .crystra-inputs/services/evolution/config/development-contract.json)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.service_contract.outputs.repository }}
+          ref: ${{ steps.service_contract.outputs.revision }}
+          path: .crystra-inputs/services/evolution/.crystra-inputs/contracts
+      - name: Build and qualify current development services
+        timeout-minutes: 20
+        run: |
+          for service in evidence evolution; do
+            docker build \
+              --build-arg "CRYSTRA_RELEASE_REVISION=$(jq -er .$service.revision config/development-services.json)" \
+              --tag "$(jq -er .$service.image config/development-services.json)" \
+              --file ".crystra-inputs/services/$service/$(jq -er .$service.dockerfile config/development-services.json)" \
+              ".crystra-inputs/services/$service"
+          done
+          docker pull "$(jq -er .postgres config/development-services.json)"
+          npm run qualify:initialization-services
