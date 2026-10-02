@@ -9,6 +9,7 @@ import { createTaskQueryGateway } from "../modules/execution/src/host/task-query
 test("the installed Execution artifact retains the mainline DSH Provider alongside Task APIs", () => {
   assert.equal(typeof execution.createDshAgentProviderFactory, "function");
   const factory = execution.createDshAgentProviderFactory({ stateDirectory: join(tmpdir(), "crystra-provider-probe") });
+  assert.equal(typeof factory.listModels, "function");
   const registry = new execution.AgentProviderFactoryRegistry([factory]);
   assert.equal(registry.admit({ identity: "provider.dsh", version: "0.1.5-rc.2" }, ["structured-completion"]).adapterKey, "dsh-headless");
 });

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "crystra.dsh.development-services@1.0.0",
+  "postgres": "postgres:18.4-bookworm",
+  "evidence": {
+    "repository": "firestige/crystra-evidence",
+    "revision": "e23eec0702cb5d9deadcbf0e162edd9dfa68c2ad",
+    "image": "crystra-evidence:readiness-e23eec0702cb",
+    "dockerfile": "deployment/Dockerfile"
+  },
+  "evolution": {
+    "repository": "firestige/crystra-evolution",
+    "revision": "6e6942811e39d5277b6cba0d00bfafb29ff636b5",
+    "image": "crystra-evolution:readiness-6e6942811e39",
+    "dockerfile": "Dockerfile"
+  }
+}

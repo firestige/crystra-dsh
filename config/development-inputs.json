@@ -3,13 +3,13 @@
   "inputs": {
     "execution": {
       "repository": "firestige/crystra-execution",
-      "revision": "147a3e6e6270c3ef5ede002a5f72ffaa9468eca8",
+      "revision": "ea98bbe1f5e5cb46258a78a3245b4efad0657c5c",
       "package": "crystra-execution",
       "version": "0.1.0",
       "artifact": "crystra-execution-0.1.0.tgz",
-      "sha256": "8fe44610a9b2557931010c0a15efd276de41a88d4d89b33333e5fe8a01e3d666",
+      "sha256": "1a62e11241df143ab024332e990beebf3db59246e2cbb5de50e2da6197c04f45",
       "sourceState": "committed",
-      "integrationNote": "DSH provider and real runtime aligned to 0.1.5-rc.2, retaining Task APIs. Exact committed development artifact; not a published release."
+      "integrationNote": "DSH 0.1.5-rc.2 with endpoint-backed planning model discovery. Exact committed development artifact; not a published release."
     },
     "ui": {
       "repository": "firestige/crystra-ui",

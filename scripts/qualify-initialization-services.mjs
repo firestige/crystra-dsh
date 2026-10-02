@@ -6,15 +6,20 @@ import {mkdtemp,mkdir,readFile,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
+import {validateDevelopmentImage} from './lib/development-services.mjs';
 import {createComposeAdapter,serviceNamespace} from '../modules/initialization/src/compose-adapter.js';
 import {initializeHost} from '../modules/initialization/src/host.js';
 import {normalizePluginConfiguration} from '../modules/initialization/src/configuration.js';
 import {realpath} from 'node:fs/promises';
+const inputs=JSON.parse(await readFile(new URL('../config/development-services.json',import.meta.url),'utf8'));
+const images={postgres:inputs.postgres,evidence:inputs.evidence.image,evolution:inputs.evolution.image};
+const ids=Object.fromEntries(Object.entries(images).map(([name,image])=>{
+ const inspected=JSON.parse(execFileSync('docker',['image','inspect',image],{encoding:'utf8'}))[0];
+ return [name,name==='postgres'?inspected.Id:validateDevelopmentImage(inspected,inputs[name])];
+}));
 const root=await realpath(await mkdtemp(path.join(tmpdir(),'crystra-service-qualification-')));
 const stateRoot=path.join(root,'state');await mkdir(stateRoot);
 const namespace=serviceNamespace(stateRoot);
-const images={postgres:'postgres:18.4-bookworm',evidence:'crystra-evidence-deployment-evidence:latest',evolution:'crystra-evolution-dev:20260913'};
-const ids=Object.fromEntries(Object.entries(images).map(([name,image])=>[name,execFileSync('docker',['image','inspect',image,'--format','{{.Id}}'],{encoding:'utf8'}).trim()]));
 const ports={evidence:Number(process.env.CRYSTRA_TEST_EVIDENCE_PORT??25318),evolution:Number(process.env.CRYSTRA_TEST_EVOLUTION_PORT??29000)};
 let lifecycle;
 try {
@@ -36,13 +41,24 @@ try {
  lifecycle=await initializeHost(normalizePluginConfiguration({stateRoot,services:{ports}}),{loadDescriptor:async()=>descriptor,makeAdapter:()=>adapter,activateExecution:async(profile)=>{const configuration=JSON.parse(await readFile(profile.configFile,'utf8'));if(configuration.schemaVersion!=='execution.config@2.0.0')throw new Error('EXECUTION_CONFIG_INVALID');const bindingDirectory=path.join(configuration.paths.repositoryRoot,'.crystra');await mkdir(bindingDirectory,{recursive:true});await writeFile(path.join(bindingDirectory,'role-provider-bindings.json'),JSON.stringify({schemaVersion:'execution.repository-role-provider-bindings@1.0.0',bindings:{'role.greeter':{agentProvider:{identity:'provider.codex',version:'0.144.5'},model:{provider:'openai',model:'gpt-5.6-sol'}}}}));}});
  const setup=await lifecycle.operate('setup');if(setup.status!=='READY')throw new Error(`SETUP_FAILED: ${JSON.stringify(setup)}`);
  if((await lifecycle.operate('doctor')).status!=='READY')throw new Error('DOCTOR_FAILED');
+ // The old service bundle starts successfully but lacks recorded-time queries.
+ // Probe the current UI query contract against the real empty database.
+ const recordedTo=new Date().toISOString();
+ const recordedFrom=new Date(Date.now()-60_000).toISOString();
+ const bounds=new URLSearchParams({recorded_from:recordedFrom,recorded_to:recordedTo,limit:'10'});
+ for(const route of ['traces','deliveries']) {
+  const response=await fetch(`http://127.0.0.1:${ports.evidence}/v1/evidence/${route}?${bounds}`,{signal:AbortSignal.timeout(10_000)});
+  const result=await response.json();
+  if(!response.ok || !Array.isArray(result.items) || result.items.length!==0)throw new Error(`RECORDED_QUERY_FAILED: ${route} ${response.status}`);
+  if(route==='deliveries' && result.contract?.name!=='evidence.delivery-directory')throw new Error('DELIVERY_DIRECTORY_CONTRACT_MISMATCH');
+ }
  if((await lifecycle.operate('stop')).status!=='STOPPED')throw new Error('STOP_FAILED');
  if((await lifecycle.operate('doctor')).status!=='DEGRADED')throw new Error('STOPPED_READINESS_FAILED');
  execFileSync('docker',['volume','inspect',namespace.volume],{stdio:'ignore'});
  if((await lifecycle.operate('start')).status!=='READY')throw new Error('RESTART_FAILED');
  await lifecycle.dispose();
  if((await adapter.inspect()).ready!==true)throw new Error('DISPOSE_STOPPED_SERVICES');
- console.log(JSON.stringify({qualification:'development-only',status:'PASS',images:ids,ports,checks:['setup','doctor','stop','preserve-volume','restart','dispose-preserve-running']},null,2));
+ console.log(JSON.stringify({qualification:'development-only',status:'PASS',images:ids,sources:{evidence:inputs.evidence.revision,evolution:inputs.evolution.revision},ports,checks:['setup','doctor','recorded-time-traces','recorded-time-deliveries','stop','preserve-volume','restart','dispose-preserve-running']},null,2));
 }catch(error){
  try{console.error(await readFile(path.join(stateRoot,'services-last-error.log'),'utf8'));}catch{}
  throw error;
