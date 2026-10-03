@@ -94,7 +94,7 @@ try{
  assert.equal((await page.reload()).status(),200);await page.getByText(prompt,{exact:true}).first().waitFor();
  assert.equal(new URL(page.url()).hash,route);
  const restored=await rpc('crystra-control/tasks/projection',{taskId});assert.equal(restored.taskId,taskId);assert.equal(restored.brief.digest,projection.brief.digest);assert.equal(restored.plan.digest,projection.plan.digest);assert.equal(restored.run.current.nodes.ready.state,'completed');
- const tasks=await rpc('crystra-tasks/list',{});assert.equal(tasks.items.filter(task=>task.id===taskId).length,1);
+ const tasks=await rpc('crystra-tasks/list',{});assert.equal(tasks.items.filter(task=>task.id===taskId).length,1);assert.equal(tasks.items.find(task=>task.id===taskId).status,'执行阶段');assert.equal(tasks.items.find(task=>task.id===taskId).workspace,'workspace');
  assert.ok(requests.length>0);assert.ok(requests.every(request=>request.model==='crystra-test-model'));assert.deepEqual(errors,[]);assert.deepEqual(fixtureErrors,[]);
  console.log(JSON.stringify({qualification:'current-host-local-protocol',runtime:'0.1.5-rc.2',status:'PASS',checks:['unauthenticated-rejected','token-exchange','workspace-registration','task-admission','installed-execution-model-query','native-deepseek-protocol','native-task-document-tool','brief-human-confirmation','plan-human-confirmation','owner-control-receipt','confirmed-state-restart','task-projection','five-tabs','authenticated-reload','host-restart','single-durable-task','foreign-origin-rejected']},null,2));
 }catch(error){

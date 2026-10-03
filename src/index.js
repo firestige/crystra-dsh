@@ -1,3 +1,5 @@
+import {registerTaskQueryGateway} from '../modules/execution/src/host/task-query.js';
+import {withTaskListMetadata} from './host/task-list-metadata.js';
 import {createWorkflowSessions} from "./host/workflow-sessions.js";
 import {createTaskControl} from './host/task-control.js';
 import {registerNativeTaskControl} from './host/native-task-control.js';
@@ -28,10 +30,11 @@ export function createHostPlugin({executionModule=execution,studioModule=studio,
     const workflowSessions=createWorkflowSessions({stateRoot:configuration.paths.stateRoot,isRunning:id=>inner.agents.roots().some(a=>a.session.id===id&&a.status==='running'),firstMessage:id=>inner.sessions.get(id)?.ownEvents().find(e=>e.type==='user/message'&&e.data?.source?.kind==='user')?.data.content?.filter(p=>p.type==='text').map(p=>p.text).join('\n'),bindingFile:path.join(configuration.paths.stateRoot,'workflow-directories.json'),create:async request=>{const workspace=await inner.workspaceRegistry.create(request.cwd);return inner.sessionController.create({sessionId:request.sessionId,workspaceId:workspace.id});}});
     registerCrystraRpc(inner,'/crystra-workflow-sessions',async(endpoint,payload)=>{try{return {ok:true,value:await (endpoint==='ensure'?workflowSessions.ensure(payload):workflowSessions.topics(endpoint.replace('topics/',''),payload))};}catch(error){return {ok:false,error:{code:'WORKFLOW_SESSION_UNAVAILABLE',message:error.message}};}});
    });
-   let host,readGateway,unregister,executionRuntime;
+   let host,readGateway,unregister,executionRuntime,taskControl;
    ctx.inject(['sessions','workspaceRegistry','sessionPersistence','sessionController','agents'], async inner=>{
     const admission=await createTaskAdmission({ctx:inner,stateRoot:configuration.paths.stateRoot,owner:()=>executionRuntime?.control});
     const control=createTaskControl({ctx:inner,stateRoot:path.join(configuration.paths.stateRoot,"conversations"),admission,runtime:()=>executionRuntime});
+    taskControl=control;
     inner.provide('crystraTaskControl',control);
     registerCrystraRpc(inner,'/crystra-control',control.handle);
     inner.inject(['systemPrompt','agents','userQuestions','tools','crystraTaskControl'],registerNativeTaskControl);
@@ -57,7 +60,7 @@ export function createHostPlugin({executionModule=execution,studioModule=studio,
    });
    const activateExecution=(profile)=>new Promise((resolve,reject)=>{
     ctx.plugin({name:executionModule.name,inject:executionModule.inject,async apply(inner,config){
-     try{await executionModule.apply(inner,config,{registerCommand:router.bindExecution,registerRuntime:runtime=>{executionRuntime=runtime;},registerGateway:async(readModel)=>{
+     try{await executionModule.apply(inner,config,{registerCommand:router.bindExecution,registerTaskGateway:query=>registerTaskQueryGateway(inner,withTaskListMetadata(query,()=>taskControl)),registerRuntime:runtime=>{executionRuntime=runtime;},registerGateway:async(readModel)=>{
       const gateway=await execution.createDeliveryControlPlaneGateway(readModel);readGateway=gateway;
       inner.effect(async function*(){yield async()=>{if(readGateway===gateway)readGateway=undefined;await gateway.close();};},'Crystra Execution read model');
      }});resolve();}

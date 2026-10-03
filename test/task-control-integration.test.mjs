@@ -528,3 +528,14 @@ test('new topic retains the admitted Task and validates grilling across register
  assert.equal((await control.flow.read(bound)).brief.state,'invalid');
  const other=await control.handle('topics/select',{taskId:'task-other',groupId:first.group.id,topicId:first.selected.id});assert.equal(other.ok,false);
 });
+test('Task list metadata joins the current selected Session and Task flow; inaccessible history stays explicit',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystra-task-list-'));
+ try{
+  const task={taskId:'task-list',sessionId:'session-list',workspacePath:root};
+  let events=[{type:'turn/end',data:{reason:{kind:'error'}}}];
+  const control=createTaskControl({ctx:{sessions:{get:()=>({ownEvents:()=>events})}},stateRoot:root,admission:{bindings:async()=>[task]},runtime:()=>undefined});
+  assert.equal((await control.listMetadata([task.taskId]))[task.taskId].status,'对话失败');
+  events=[];assert.equal((await control.listMetadata([task.taskId]))[task.taskId].status,'需求澄清');
+  assert.deepEqual(await control.listMetadata(['unknown']),{});
+ }finally{await rm(root,{recursive:true,force:true});}
+});
