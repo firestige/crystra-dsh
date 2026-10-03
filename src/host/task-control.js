@@ -1,8 +1,10 @@
+import {basename} from 'node:path';
+import {taskListMetadata} from './task-list-metadata.js';
 import {createTaskTopics} from './task-topics.js';
 import { createTaskFlow } from "./task-flow.js";
 import { createTaskPlanRuns } from "./task-plan-run.js";
 import { createTaskControlRequests } from "./task-control-request.js";
-export async function taskSourceMessages(ctx, sessionId) {
+async function sessionEvents(ctx, sessionId) {
   const session = ctx.sessions.get(sessionId);
   let events;
   if (session) events = session.ownEvents();
@@ -14,7 +16,10 @@ export async function taskSourceMessages(ctx, sessionId) {
       await handle.close();
     }
   }
-  return events.filter(e => e.type === "user/message" && e.data?.source?.kind === "user")
+  return events;
+}
+export async function taskSourceMessages(ctx, sessionId) {
+  return (await sessionEvents(ctx,sessionId)).filter(e => e.type === "user/message" && e.data?.source?.kind === "user")
     .map(e => ({ id: e.data.id }));
 }
 /** Existing control owners composed against the 0.1.5 Session and Execution ports. */
@@ -69,6 +74,17 @@ export function createTaskControl({ ctx, stateRoot, admission, runtime }) {
   topics=createTaskTopics({stateRoot,taskFor,projection:task=>serializeProjection(task,()=>updates.get(task.taskId)?.value??loadProjection(task)),createSession:request=>{if(!ctx.sessionController)throw Error('TOPIC_SESSION_SERVICE_UNAVAILABLE');return ctx.sessionController.create(request);},isRunning:id=>ctx.agents?.roots().some(agent=>agent.session?.id===id&&agent.status==='running')??false,firstMessage:id=>ctx.sessions.get(id)?.ownEvents().find(e=>e.type==='user/message'&&e.data?.source?.kind==='user')?.data.content?.filter(p=>p.type==='text').map(p=>p.text).join('\n')});
   return {
     ...control, topics,
+    async listMetadata(ids) {
+      const wanted=new Set(ids),rows=(await admission.bindings()).filter(t=>wanted.has(t.taskId));
+      return Object.fromEntries(await Promise.all(rows.map(async task=>{
+        try{
+          const sessionId=await topics.selectedSession(task);
+          const view=await serializeProjection(task,()=>updates.get(task.taskId)?.value??loadProjection(task));
+          const events=await sessionEvents(ctx,sessionId);
+          return [task.taskId,{...taskListMetadata({view,events}),workspacePath:task.workspacePath,workspace:basename(task.workspacePath)}];
+        }catch{return [task.taskId,{status:'状态读取失败',attention:1}];}
+      })));
+    },
     async forSession(id) {
       if(id.startsWith("crystra-workflow-"))return undefined;
       return !!(await topics.binding(id)) || enrolled.has(id) ||

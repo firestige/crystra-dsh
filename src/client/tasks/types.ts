@@ -1,4 +1,4 @@
-/** Task facts projected exclusively from the Execution owner. */
+/** Execution-owned Task identity/presentation with host-owned discussion metadata. */
 export interface Task {
   presentationRevision?: number;
   pinnedAt?: number | null;
@@ -9,7 +9,10 @@ export interface Task {
   createdAt?: number;
   lastActivityAt: number;
   deliveryIds: string[];
-  status?: "failed" | "review" | "running";
+  status?: string;
+  attention?: number;
+  workspace?: string;
+  workspacePath?: string;
   /** Only an explicit Task-owner fact may set this; Delivery terminal status cannot. */
   active?: boolean;
 }

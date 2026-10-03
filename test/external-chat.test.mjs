@@ -80,3 +80,18 @@ test('grilling only exposes one valid choice question while native answer is pen
  }}]});
  for await(const c of adapter.stream({provider:'p',model:'m',sessionId:'own-session',messages:[]})){}
 });
+
+test('external Chat presentation does not advertise display-only events as native model tools',async()=>{
+ const {Context}=await import('@deepseek-ai/cordis');
+ const {SystemPrompt}=await import('@deepseek-ai/dsh-system-prompt');
+ const {ToolRuntime}=await import('@deepseek-ai/dsh-tools');
+ const ctx=new Context(),prompt=ctx.plugin(SystemPrompt),tools=ctx.plugin(ToolRuntime,{mode:'native'});
+ await new Promise(resolve=>setImmediate(resolve));
+ try{
+  const before=ctx.tools.schemas();
+  createExternalChatAdapter({Base,ctx,providers:[]});
+  const after=ctx.tools.schemas();
+  assert.deepEqual(after,before,'presentation must not expand the model-callable registry');
+  assert.ok(after.every(tool=>/^[a-zA-Z0-9_-]+$/.test(tool.name)));
+ }finally{tools.dispose();prompt.dispose();}
+});
