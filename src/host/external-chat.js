@@ -1,8 +1,7 @@
 import {registerExternalChatPresenters,nativeToolCall,nativeToolResult} from './external-chat-presentation.js';
-import {askSelectedGate} from './task-gate-question.js';
+import {advanceTaskControl,taskContextFor} from './task-chat-control.js';
 import {randomUUID} from 'node:crypto';
 import {validateGrillingQuestion} from './grilling-policy.js';
-import {roleBindingsTable} from './plan-confirmation.js';
 
 /** DSH owns transport/history only; each provider owns its model and agent tools. */
 export function createExternalChatAdapter({Base,ctx,providers}) {
@@ -32,8 +31,7 @@ export function createExternalChatAdapter({Base,ctx,providers}) {
    const rootControl=ctx.crystraTaskControl;
    const control=rootControl?.forSession?await rootControl.forSession(session.id):rootControl;
    const task=control?await control.tasks.admit(session.id):undefined;
-   const sourceMessages=session.ownEvents().filter(e=>e.type==='user/message'&&e.data?.source?.kind==='user').map(e=>({id:e.data.id,text:e.data.content?.filter(p=>p.type==='text').map(p=>p.text).join('\n')}))??[];
-   const contextFor=async()=>task?{...await control.flow.prepare(task),discussion:task.discussion,sourceMessages,executionReady:!!control.execution?.(),run:await control.runs?.read(task),planningCapabilities:await control.execution?.()?.control?.planningCapabilities?.(),roleBindings:await control.execution?.()?.readRepositoryBindings?.(task.workspacePath),controlReceipts:(await control.requests?.receipts(task))?.slice(-5)}:undefined;
+   const contextFor=()=>taskContextFor(control,task,session);
    let taskContext=await contextFor();
    let questionPending=false, releaseUpdate;
    const askProvider=async request=>{
@@ -71,33 +69,16 @@ export function createExternalChatAdapter({Base,ctx,providers}) {
    }
    } finally {releaseUpdate?.();releaseUpdate=undefined;}
    yield* closeBlock();
-   if(task){
-    const view=await control.flow.read(task),kind=view.stage==='requirements'?'brief':view.stage==='planning'?'plan':undefined,item=view[kind];
-    if(item?.state==='invalid'){const message='\n\n管控文件校验未通过，请在下一轮修正：'+item.error;yield* content('text',message);}
-    if(item?.state==='available'&&!item.confirmed&&!item.feedback&&item.value.requestConfirmation&&item.value.questions.length===0&&!item.value.grilling?.questions.some(q=>['pending','disputed'].includes(q.status))){
-     const answer=await ask({question:kind==='brief'?'确认以下需求并进入计划？':'确认以下计划与绑定方案？',detail:[item.value.goal,'范围：'+item.value.scope.join('；'),'非目标：'+(item.value.nonGoals.join('；')||'无'),'建议：'+(item.value.assumptions.join('；')||'无'),'验收：'+item.value.acceptance.join('；'),...(kind==='plan'?['步骤：'+item.value.steps.join('；'),'绑定方案：'+item.value.bindings.join('；'),roleBindingsTable(item.value.roleBindings,taskContext.roleBindings)]:[])].join('\n\n'),choices:['确认此版本','需要修改']});
-     if(answer==='确认此版本'){await control.flow.confirm(task,kind,item.digest,`session:${session.id}:question:${lastQuestionId}`);const message=kind==='brief'?'\n\n需求已确认，开始编写计划。':(control.execution?.()?'\n\n计划已确认，按该版本检查执行条件。':'\n\n计划已确认。Execution 启动入口尚未接通，当前未开始实施。');yield* content('text',message);if(kind==='brief'||control.execution?.()){advance=true;taskContext=await contextFor();}}
-     else if(answer){await control.flow.respond(task,kind,item.digest,answer,`session:${session.id}:question:${lastQuestionId}`);advance=true;taskContext=await contextFor();}
-    }
-    if(control.requests&&(await control.flow.read(task)).stage==='ready'){
-     const receipt=await control.requests.apply(task,agent);
-     if(receipt.kind==='accepted'){const message='\n\n管控请求已记录：'+receipt.operation;yield* content('text',message);advance=receipt.operation!=='start-wave'||Object.values((await control.runs.read(task)).current?.nodes??{}).some(n=>n.state==='result-available');}
-     if(receipt.kind==='rejected'){const message='\n\n管控请求未生效：'+receipt.error;yield* content('text',message);}
-     const decision=await askSelectedGate({task,runs:control.runs,ask,signal:options.signal});
-     if(decision?.answer==='确认此版本'){
-      await control.runs.confirmGate(task,{...decision,answerId:`session:${session.id}:question:${lastQuestionId}`});
-      const message='\n\n已记录当前 Gate 的决定，审核工作台保留本次回执。';yield* content('text',message);advance=true;
-     }
-     if(decision?.answer&&decision.answer!=='确认此版本'){await control.runs.respondGate(task,{...decision,answerId:`session:${session.id}:question:${lastQuestionId}`});advance=true;}
-     taskContext=await contextFor();
-    }
-   }
+   const transition=await advanceTaskControl({control,task,taskContext,agent,ask,answerId:()=>`session:${session.id}:question:${lastQuestionId}`,signal:options.signal});
+   advance=transition.advance;
+   for(const message of transition.messages)yield* content('text',message);
+   if(advance)taskContext=await contextFor();
    if(!advance)break;
    if(pass===3)agent?.followup?.({id:randomUUID(),role:'user',source:{kind:'plugin',plugin:'crystra'},content:[{type:'text',text:'管控流程已产生新的已持久化状态。请读取当前 Task 状态后继续检查下一步；本通知不代表用户批准，不改变选中的审核问题。'}]});
    }
    yield* closeBlock();
    yield {type:'finish',reason:{type:'stop'}};
-   }finally{if(active){publish('interrupted');active=undefined;}}
+   }finally{releaseUpdate?.();active=undefined;}
   }
  }();
 }

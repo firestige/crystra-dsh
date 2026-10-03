@@ -1,5 +1,6 @@
 import {createWorkflowSessions} from "./host/workflow-sessions.js";
 import {createTaskControl} from './host/task-control.js';
+import {registerNativeTaskControl} from './host/native-task-control.js';
 import {LlmAdapter} from '@deepseek-ai/dsh-llm';
 import {createExternalChatAdapter} from './host/external-chat.js';
 import {createCodexChatProvider} from './host/external-chat-codex.js';
@@ -33,6 +34,7 @@ export function createHostPlugin({executionModule=execution,studioModule=studio,
     const control=createTaskControl({ctx:inner,stateRoot:path.join(configuration.paths.stateRoot,"conversations"),admission,runtime:()=>executionRuntime});
     inner.provide('crystraTaskControl',control);
     registerCrystraRpc(inner,'/crystra-control',control.handle);
+    inner.inject(['systemPrompt','agents','userQuestions','tools','crystraTaskControl'],registerNativeTaskControl);
     inner.inject(['llm','agents','userQuestions','tools','crystraTaskControl'],providerCtx=>{
      const providers=[createCodexChatProvider(),createCopilotChatProvider()];
      providerCtx.llm.registerAdapter(providers.map(p=>p.id),createExternalChatAdapter({Base:LlmAdapter,ctx:providerCtx,providers}));
