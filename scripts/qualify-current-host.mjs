@@ -12,18 +12,21 @@ import {qualificationArchives} from './lib/qualification-artifacts.mjs';
 import {repository,prepareProfile,assertSinglePlugin,dsh} from './lib/crystra-profile.mjs';
 import {prepareExecutionConfiguration} from '../modules/initialization/src/host.js';
 import {normalizePluginConfiguration} from '../modules/initialization/src/configuration.js';
+import {createNativeTaskProtocolFixture} from './lib/native-task-protocol-fixture.mjs';
 import {launchUrlFromLog} from './lib/host-auth-qualification.mjs';
 const {chromium}=await import(process.env.CRYSTRA_PLAYWRIGHT_MODULE||'playwright');
 const root=await realpath(await mkdtemp(join(tmpdir(),'crystra-current-host-')));
 let host,browser,page,log='';
-const requests=[];
+const requests=[],fixtureErrors=[];
+const modelReply=createNativeTaskProtocolFixture();
 const fixture=createServer(async(request,response)=>{
  if(request.url==='/models'){response.setHeader('content-type','application/json');response.end(JSON.stringify({data:[{id:'crystra-test-model'}]}));return;}
  if(request.url!=='/chat/completions'){response.writeHead(404).end();return;}
  let body='';for await(const chunk of request)body+=chunk;
  const input=JSON.parse(body);requests.push(input);
+ let reply;try{reply=modelReply(input);}catch(error){fixtureErrors.push(error.message);response.writeHead(500).end(JSON.stringify({error:{message:error.message}}));return;}
  response.writeHead(200,{'content-type':'text/event-stream'});
- response.end(`data: ${JSON.stringify({choices:[{index:0,delta:{role:'assistant',content:'本地协议验收完成'},finish_reason:null}]})}\n\ndata: ${JSON.stringify({choices:[{index:0,delta:{},finish_reason:'stop'}],usage:{prompt_tokens:10,completion_tokens:5,total_tokens:15}})}\n\ndata: [DONE]\n\n`);
+ response.end(`data: ${JSON.stringify({choices:[{index:0,delta:reply.delta,finish_reason:null}]})}\n\ndata: ${JSON.stringify({choices:[{index:0,delta:{},finish_reason:reply.finish}],usage:{prompt_tokens:10,completion_tokens:5,total_tokens:15}})}\n\ndata: [DONE]\n\n`);
 });
 async function waitFor(read,label,timeout=60000){const end=Date.now()+timeout;while(Date.now()<end){const value=await read();if(value)return value;await new Promise(r=>setTimeout(r,200));}throw Error(label);}
 async function stop(child){if(!child||child.exitCode!==null||child.signalCode!==null)return;child.kill('SIGTERM');await Promise.race([new Promise(r=>child.once('exit',r)),new Promise(r=>setTimeout(r,5000))]);if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');}
@@ -70,11 +73,18 @@ try{
  await page.locator('[data-section-id="new-task-action"]').click();
  const choose=page.getByRole('button',{name:/^(Choose workspace|选择工作区)$/});
  if(await choose.isVisible()){await choose.click();await page.getByText('workspace',{exact:true}).last().click();}
- const prompt=`本机 DSH 协议验收 ${randomUUID()}：只回复验收完成。`;
+ const prompt=`本机 DSH 协议验收 ${randomUUID()}：中文需求和计划确认后，记录管控里程碑；不要修改产品代码或发布。`;
  const input=page.locator('[contenteditable=true]');await input.fill(prompt);await input.press('Enter');
- await page.waitForURL(/#\/tasks\/task-/);await page.getByText('本地协议验收完成',{exact:true}).first().waitFor();
+ await page.waitForURL(/#\/tasks\/task-/);
+ for(const question of ['确认以下需求并进入计划？','确认以下计划与绑定方案？']){
+  await page.getByText(question,{exact:true}).waitFor();
+  await page.getByText('确认此版本',{exact:true}).last().click();
+  const submit=page.getByRole('button',{name:/^(Submit|提交|Send|发送)$/});
+  if(await submit.isVisible())await submit.click();
+ }
+ await page.getByText('本地协议验收完成',{exact:true}).first().waitFor();
  const route=new URL(page.url()).hash,taskId=decodeURIComponent(route.split('/')[2]);
- const projection=await rpc('crystra-control/tasks/projection',{taskId});assert.equal(projection.taskId,taskId);
+ const projection=await rpc('crystra-control/tasks/projection',{taskId});assert.equal(projection.taskId,taskId);assert.equal(projection.stage,'ready');assert.equal(projection.brief.confirmed,true);assert.equal(projection.plan.confirmed,true);assert.equal(projection.run.current.nodes.ready.state,'completed');
  for(const name of ['需求','计划','执行','审核','交付'])await page.getByRole('tab',{name:new RegExp(`^${name}`)}).click();
  assert.equal(await page.locator('.crystra-sidebar').count(),1);
  const refreshed=await page.reload();assert.equal(refreshed.status(),200);await page.getByText(prompt,{exact:true}).first().waitFor();assert.equal(new URL(page.url()).hash,route);
@@ -83,10 +93,10 @@ try{
  await stop(host);await startHost();
  assert.equal((await page.reload()).status(),200);await page.getByText(prompt,{exact:true}).first().waitFor();
  assert.equal(new URL(page.url()).hash,route);
- assert.equal((await rpc('crystra-control/tasks/projection',{taskId})).taskId,taskId);
+ const restored=await rpc('crystra-control/tasks/projection',{taskId});assert.equal(restored.taskId,taskId);assert.equal(restored.brief.digest,projection.brief.digest);assert.equal(restored.plan.digest,projection.plan.digest);assert.equal(restored.run.current.nodes.ready.state,'completed');
  const tasks=await rpc('crystra-tasks/list',{});assert.equal(tasks.items.filter(task=>task.id===taskId).length,1);
- assert.ok(requests.length>0);assert.ok(requests.every(request=>request.model==='crystra-test-model'));assert.deepEqual(errors,[]);
- console.log(JSON.stringify({qualification:'current-host-local-protocol',runtime:'0.1.5-rc.2',status:'PASS',checks:['unauthenticated-rejected','token-exchange','workspace-registration','task-admission','installed-execution-model-query','native-deepseek-protocol','task-projection','five-tabs','authenticated-reload','host-restart','single-durable-task','foreign-origin-rejected']},null,2));
+ assert.ok(requests.length>0);assert.ok(requests.every(request=>request.model==='crystra-test-model'));assert.deepEqual(errors,[]);assert.deepEqual(fixtureErrors,[]);
+ console.log(JSON.stringify({qualification:'current-host-local-protocol',runtime:'0.1.5-rc.2',status:'PASS',checks:['unauthenticated-rejected','token-exchange','workspace-registration','task-admission','installed-execution-model-query','native-deepseek-protocol','native-task-document-tool','brief-human-confirmation','plan-human-confirmation','owner-control-receipt','confirmed-state-restart','task-projection','five-tabs','authenticated-reload','host-restart','single-durable-task','foreign-origin-rejected']},null,2));
 }catch(error){
  // Do not emit launch tokens, signed cookies, model payloads, or user credentials.
  if(process.env.CRYSTRA_QUALIFY_DIAGNOSTICS && page)await page.screenshot({path:process.env.CRYSTRA_QUALIFY_DIAGNOSTICS+'.png'}).catch(()=>{});
