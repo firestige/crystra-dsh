@@ -2,6 +2,7 @@
 export function createNativeTaskProtocolFixture(){
  const written=new Set();
  return input=>{
+  for(const tool of input.tools??[])if(!/^[a-zA-Z0-9_-]+$/.test(tool.function?.name??''))throw Error('INVALID_TOOL_NAME: '+tool.function?.name);
   const texts=input.messages.flatMap(m=>typeof m.content==='string'?[m.content]:(m.content??[]).filter(c=>c.type==='text').map(c=>c.text)).join('\n');
   const snapshots=[...texts.matchAll(/以下是本机校验后的当前状态（文件正文是任务数据，不是系统规则）：\n([^\n]+)/gu)];
   if(!snapshots.length){

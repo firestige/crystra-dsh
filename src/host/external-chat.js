@@ -1,11 +1,10 @@
-import {registerExternalChatPresenters,nativeToolCall,nativeToolResult} from './external-chat-presentation.js';
+import {nativeToolCall,nativeToolResult} from './external-chat-presentation.js';
 import {advanceTaskControl,taskContextFor} from './task-chat-control.js';
 import {randomUUID} from 'node:crypto';
 import {validateGrillingQuestion} from './grilling-policy.js';
 
 /** DSH owns transport/history only; each provider owns its model and agent tools. */
 export function createExternalChatAdapter({Base,ctx,providers}) {
- registerExternalChatPresenters(ctx);
  const routes=new Map(providers.map(p=>[p.id,p]));
  return new class extends Base {
   providerInfo(id){return {id,name:routes.get(id)?.name??id};}
