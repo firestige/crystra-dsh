@@ -23,18 +23,20 @@ The build emits one CSP-compatible browser bundle with module identity `dsh-crys
 
 ## Isolated integration checks
 
-Use DSH `0.1.5-rc.2`. Set `CRYSTRA_DSH_BINARY` to that version's executable when the global DSH differs. Checks use temporary DSH homes and profiles:
+Use DSH `0.1.5-rc.2`. Set `CRYSTRA_DSH_BINARY` to that version's executable when the global DSH differs. The public plugin declares this runtime as a direct dependency as well as its host compatibility peer: a CLI outside the profile alone does not make the Execution provider resolvable. Development installs and qualification profiles pin the complete rc.2 closure. Checks use temporary DSH homes and profiles:
 
 ```sh
 npm run qualify:clean-profile
 npm run qualify:lifecycle
 npm run qualify:provider-routing
+# Requires Playwright 1.62.1 (or CRYSTRA_PLAYWRIGHT_MODULE) and Chrome.
+npm run qualify:current-host
 npm run qualify:real-harness
 CRYSTRA_QUALIFY_TERMINAL=1 npm run qualify:real-harness
 CRYSTRA_QUALIFY_INITIALIZATION=1 npm run qualify:real-harness
 ```
 
-Real Harness checks cover the Host, Chrome, Delivery, Studio, recorded traces, and downstream unavailability. The terminal fixture mode supplies deterministic owner facts without invoking an LLM. DSH 0.1.5-rc.2 supplies no CSP header; the bundle check separately rejects dynamic code and inline-script injection.
+The current-host check installs the packed plugin, queries models through its installed Execution provider, authenticates a browser, admits a real Task through a localhost DeepSeek protocol fixture, and checks reload and host-restart recovery. It uses explicit development Execution configuration and does not call a live model or prove the complete Delivery/Evidence/Evaluation chain. The historical Real Harness script targets an older browser flow and must be migrated before its Delivery/Studio/outage release checks can be claimed on rc.2. The terminal fixture mode supplies deterministic owner facts without invoking an LLM. DSH 0.1.5-rc.2 supplies no CSP header; the bundle check separately rejects dynamic code and inline-script injection.
 
 The root plugin loads without pre-existing Execution configuration. `/crystra setup` prepares configuration and the bound service group; `/crystra doctor` reports readiness and missing repository role bindings. `/crystra services start|stop|status` manages the installation's own Compose namespace. These commands are deterministic and do not invoke an LLM. No independent public product installer is shipped. See [initialization](docs/initialization.md).
 

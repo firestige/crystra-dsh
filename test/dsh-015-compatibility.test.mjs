@@ -27,7 +27,18 @@ test('qualification CLI and profile pin every DSH component to the compatibility
   assert.ok(name.startsWith('@deepseek-ai/'),name);
   if(name.startsWith('@deepseek-ai/dsh-')) assert.equal(version,policy.dsh,name);
  }
- for(const name of Object.keys(lock.packages).filter(name=>name.startsWith('node_modules/@deepseek-ai/dsh-'))) {
-  assert.equal(runtime.overrides[name.slice('node_modules/'.length)],policy.dsh,name);
+ for(const [path,entry] of Object.entries(lock.packages)) {
+  const name=path.match(/(?:^|\/)node_modules\/(@deepseek-ai\/dsh-[^/]+)$/u)?.[1];
+  if(!name)continue;
+  assert.equal(runtime.overrides[name],policy.dsh,name);
+  assert.equal(entry.version,policy.dsh,path);
  }
+});
+
+test('installing the public host requires the runtime used by its Execution provider',async()=>{
+ const manifest=JSON.parse(await readFile('package.json','utf8'));
+ for(const name of ['dsh','dsh-anonymous-user-id','dsh-attachment','dsh-session-persistence'])assert.equal(manifest.dependencies[`@deepseek-ai/${name}`],'0.1.5-rc.2');
+ assert.notEqual(manifest.peerDependenciesMeta?.['@deepseek-ai/dsh']?.optional,true);
+ const runtime=JSON.parse(await readFile('config/dsh-qualification-runtime.json','utf8'));
+ assert.deepEqual(manifest.overrides,runtime.overrides);
 });
