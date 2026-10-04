@@ -1,5 +1,4 @@
 /** Native provider events retain lossless logs; DSH owns cards and disclosure UI. */
-const installed=new WeakSet();
 const parse=value=>{if(typeof value!=='string')return value??{};try{return JSON.parse(value);}catch{return value;}};
 const blocks=text=>[{type:'text',text}];
 function resultValue(result){return parse(result.content?.filter(b=>b.type==='text').map(b=>b.text).join('\n')??'');}
@@ -27,18 +26,7 @@ function resultView(type,args,result){
  if(type==='mcpToolCall')return {card:'generic',content:blocks(readable(value.error??value.result??value))};
  return {card:'generic',content:blocks(readable(value))};
 }
-export function registerExternalChatPresenters(ctx){
- if(!ctx.tools||installed.has(ctx.tools))return;installed.add(ctx.tools);
- ctx.tools.register({name:'Crystra native command',description:'Display-only native command.',parameters:{type:'object'},output:{schema:{},render:()=>[]},async execute(){throw Error('CRYSTRA_PRESENTATION_ONLY');},presentCall:args=>callView('commandExecution',args),presentResult:(args,result)=>{const value=result.meta?.nativeResult;return {card:'terminal',output:result.content?.map(b=>b.text??'').join('\n')??'',...(typeof value?.exitCode==='number'?{exitCode:value.exitCode}:{})};}});
- for(const type of ['commandExecution','fileChange','mcpToolCall','webSearch','provider'])ctx.tools.register({
-  name:type==='provider'?'Crystra provider tool':`Codex ${type}`,
-  description:'Display-only native Provider event; execution belongs to its Provider.',
-  parameters:{type:'object',additionalProperties:true},
-  output:{schema:{},render:()=>[]},
-  async execute(){throw Error('CRYSTRA_PRESENTATION_ONLY');},
-  presentCall:args=>callView(type,args),presentResult:(args,result)=>resultView(type,args,result)
- });
-}
+// Presentation is projected into Session events, never registered as callable tools.
 
 export function nativeToolCall(event){
  const type=event.name.startsWith('Codex ')?event.name.slice(6):event.name==='Crystra provider tool'?'provider':null;
