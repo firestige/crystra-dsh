@@ -9,7 +9,7 @@ import {validateGrillingBatch,validateGrillingQuestion} from './grilling-policy.
 const documents=new Set(['brief.json','plan.json','control.json']);
 const readTools=new Set(['read','read_image','glob','grep','web_search','web_fetch']);
 const writeTool='crystra_write_task_document',readTool='crystra_read_task_context';
-const documentInstructions='原生 DSH 管控文件请用 crystra_write_task_document 写入，file 仅可为 brief.json、plan.json、control.json。此工具只保存草稿/请求，不能写入人工确认或正式执行结果。其他文件工具只用于阅读；不得使用 shell 或子 Agent 绕过管控。';
+const documentInstructions='提问时 question 只写简短题干，不要重复选项；选项仅放在 options，背景和长说明放在 detail。中断或取消的提问不算回答：用户继续对话时，先读取当前 Task 状态和历史已答记录，保留已确认答案，只对仍未解决的问题重新调用 ask_user_question；不得猜测答案或重放旧提问的提交。\n原生 DSH 管控文件请用 crystra_write_task_document 写入，file 仅可为 brief.json、plan.json、control.json。此工具只保存草稿/请求，不能写入人工确认或正式执行结果。其他文件工具只用于阅读；不得使用 shell 或子 Agent 绕过管控。';
 
 /** Public rc.2 assembly, guard and turn-stopping seams; never wrap the model adapter. */
 export function registerNativeTaskControl(ctx) {

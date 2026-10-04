@@ -89,3 +89,10 @@ test('a draft first step is constrained before user/message is persisted, then a
  await f.write('brief.json',brief((await f.control.tasks.admit(f.agent.session.id)).taskId));
  await f.stop();assert.equal(f.questions.length,1);
 });
+
+test('native Task instructions separate choices from title and preserve prior answers on continuation',async t=>{
+ const f=await fixture(t);const assembly=await f.assemble();
+ const prompt=assembly.variables.crystra_task_context;
+ assert.match(prompt,/选项仅放在 options/);assert.match(prompt,/背景和长说明放在 detail/);
+ assert.match(prompt,/保留已确认答案/);assert.match(prompt,/不得猜测答案或重放旧提问的提交/);
+});

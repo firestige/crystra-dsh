@@ -1,0 +1,8 @@
+.crystra-question-history{color:var(--dsw-alias-label-primary,#222);background:var(--dsw-alias-bg-base,#fff);margin:10px 0;padding:12px 16px;border:1px solid var(--dsw-alias-border-l2);border-radius:12px;overflow-wrap:anywhere;font-size:14px}
+.crystra-question-status{color:var(--dsw-alias-label-secondary);margin-bottom:8px}
+.crystra-question-copy{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0}
+.crystra-question-history ul{padding-left:24px}
+.crystra-question-history li{margin:8px 0}
+/* rc.2 semantic composer structure: cap the title region so options keep space. */
+[data-question-key]>section>header{flex-shrink:1;min-height:0;max-height:40%;overflow-y:auto}
+[data-question-key] h2{white-space:pre-wrap;overflow-wrap:anywhere}

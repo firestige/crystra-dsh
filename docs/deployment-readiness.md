@@ -34,3 +34,18 @@ Native model requests must contain only callable tool schemas. External Codex/Co
 ## Task Browser metadata
 
 Execution remains the owner of Task identity, presentation revision and archive state. The host joins bound Tasks with the current selected Session and the same durable Brief/Plan/Run projection used by the workbench. Discussion errors display as “对话失败”, unconfirmed requirements as “需求澄清”, and confirmation/review readiness as explicit labels; these do not claim Task completion or infer lifecycle activity from a Delivery outcome. The list revision includes the projected metadata so polling updates the Browser and Sidebar. Unbound Tasks retain missing metadata; a failed bound-state read displays “状态读取失败”. Workspace name/path come from the Task binding. Archiving a diagnostic Task uses the normal owner command and preserves its data.
+
+## Native question presentation
+
+The client registers a read-only `ask_user_question` toolview through the public
+`tool.call.toolview` slot (priority -10). It projects frozen arguments and results,
+including persisted `TOOL_OUTCOME_UNKNOWN` interruptions, without reviving settled
+question RPCs. Answers remain Session-owned. Pending questions still use the native
+DSH composer; its semantic title/header selectors preserve newlines and reserve
+space for scrollable options. These styles and the history view apply to the
+Crystra-composed host, including its native Harness surface.
+
+Task instructions put choices in `options` and background in `detail`. On a user's
+continuation, the model must read current Task state and recorded answers and issue
+a fresh question only for unresolved decisions. This is a model instruction, not
+an automatic retry or a guarantee of model compliance; no restart implies consent.
