@@ -33,6 +33,8 @@ import { createWorkbenchStore } from "../task-workbench/workbench-store";
 import sidebarCss from "../sidebar/sidebar.css";
 import settingsCss from "../settings/settings.css";
 import shellCss from "./shell.css";
+import {registerQuestionHistory} from '../questions/history.js';
+import questionCss from '../questions/questions.css';
 
 /** Native DSH transport adapter. Owner APIs retain their logical resource channels. */
 export function productRpc(rpc: any) {
@@ -53,6 +55,7 @@ const analysis = [
 ] as const;
 
 export function registerProductShell(ctx: any, controlPlane: any) {
+  registerQuestionHistory(ctx);
   const rpc = productRpc(ctx.connection.rpc);
   const tasks = createTasksResource(
     createExecutionTasksApi(rpc),
@@ -84,7 +87,7 @@ export function registerProductShell(ctx: any, controlPlane: any) {
   );
   const style = document.createElement("style");
   style.dataset.crystraProduct = "";
-  style.textContent = [sidebarCss, settingsCss, shellCss].join("\n");
+  style.textContent = [sidebarCss, settingsCss, shellCss, questionCss].join("\n");
   document.head.append(style);
   ctx.effect(() => () => style.remove(), "Crystra product styles");
   const go = (href: string) => {

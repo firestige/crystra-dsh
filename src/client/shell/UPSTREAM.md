@@ -34,3 +34,13 @@ the Crystra components. Native Workspace/Settings remain native. The return acti
 `scripts/lib/sidebar-banner-fork.mjs`; the original New Session button is unchanged.
 The build fails if the exact upstream banner seam changes. No DOM hiding or page recreation
 is used to approximate the native shell.
+
+## Question presentation
+
+`src/client/questions/history.js` shadows the shipped ask-user history view via
+DSH's public keyed `tool.call.toolview` registration at priority -10; the upstream
+view remains registered. No upstream factory or installed dependency is modified.
+`questions.css` relies on the rc.2 native composer's semantic structure
+(`[data-question-key] > section > header`, with an `h2` title), preserves title
+newlines and constrains the header so options remain accessible. The native
+composer retains question ownership, selection, submission and cancellation.

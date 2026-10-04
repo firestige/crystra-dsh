@@ -89,6 +89,11 @@ jobs:
           npm run qualify:initialization-services
       - name: Install browser qualification driver
         run: npm install --prefix "$RUNNER_TEMP/crystra-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
+      - name: Qualify native question layout
+        run: node scripts/qualify-question-layout.mjs
+        env:
+          CRYSTRA_PLAYWRIGHT_MODULE: ${{ runner.temp }}/crystra-browser/node_modules/playwright/index.mjs
+          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
       - name: Qualify installed rc.2 host and durable Task admission
         timeout-minutes: 10
         run: npm run qualify:current-host
