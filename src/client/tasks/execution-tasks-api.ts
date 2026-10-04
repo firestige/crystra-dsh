@@ -47,6 +47,10 @@ function parse(answer: unknown): { revision: string; items: Task[] } {
       task.thumbnail.startsWith("data:image/png;base64,")
         ? { thumbnail: task.thumbnail }
         : {}),
+      ...(typeof task.status === "string" && task.status.trim() ? {status:task.status} : {}),
+      ...(Number.isSafeInteger(task.attention) && task.attention! >= 0 ? {attention:task.attention} : {}),
+      ...(typeof task.workspace === "string" ? {workspace:task.workspace} : {}),
+      ...(typeof task.workspacePath === "string" ? {workspacePath:task.workspacePath} : {}),
       id: task.id,
       title: task.title,
       lastActivityAt: task.lastActivityAt,
