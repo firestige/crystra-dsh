@@ -10,7 +10,8 @@ export interface SidebarLink {
   attention?: number;
 }
 export interface SidebarTask extends SidebarLink {
-  status?: "failed" | "review" | "running" | "complete";
+  // Host-projected discussion labels; not an Execution lifecycle enum.
+  status?: string;
   active?: boolean;
   relativeTime?: string;
   /** Epoch milliseconds provided by the data owner; never inferred from display text. */
