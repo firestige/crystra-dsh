@@ -1,0 +1,252 @@
+{
+  "root": "/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6",
+  "project": "crystra-rollback-d700e4d8",
+  "cases": [
+    {
+      "id": "native-failure-recovery",
+      "passed": true,
+      "code": 23
+    },
+    {
+      "id": "environment-check-failed",
+      "passed": true,
+      "code": 23,
+      "hooks": [
+        {
+          "stage": "pre",
+          "error": "No available compatible container runtime"
+        }
+      ],
+      "profileBytesRestored": true,
+      "dependencyTreeRestored": true
+    },
+    {
+      "id": "scripts-not-authorized",
+      "passed": true,
+      "code": 1,
+      "hooks": [],
+      "profileBytesRestored": true,
+      "dependencyTreeRestored": true
+    },
+    {
+      "id": "initialization-partial-failed",
+      "passed": true,
+      "code": 23,
+      "hooks": [
+        {
+          "stage": "preflight",
+          "runtime": "docker"
+        },
+        {
+          "stage": "service-started"
+        },
+        {
+          "stage": "app-and-credentials-created"
+        },
+        {
+          "stage": "post",
+          "error": "Injected initialization failure after service/app/credentials"
+        }
+      ],
+      "profileBytesRestored": true,
+      "dependencyTreeRestored": true
+    },
+    {
+      "id": "normal-install",
+      "passed": true,
+      "protectedDataHash": "d2544a569c27b60ee04e8e9bf11967fe0fedbc7c39c376a12defc949bc7f26fb"
+    },
+    {
+      "id": "normal-uninstall",
+      "passed": true,
+      "volumesRetained": 2,
+      "laterSettingPreserved": true
+    },
+    {
+      "id": "reinstall-partial-failed",
+      "passed": true,
+      "volumesRetained": 2
+    },
+    {
+      "id": "reinstall",
+      "passed": true,
+      "existingConsensusExact": true,
+      "noDuplicateData": true
+    },
+    {
+      "id": "repeated-uninstall",
+      "passed": true
+    }
+  ],
+  "nativeCommands": [
+    {
+      "label": "baseline-add",
+      "args": [
+        "add",
+        "crystra-existing-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/existing-package/crystra-existing-fixture-1.0.0.tgz",
+        "--offline",
+        "--ignore-scripts"
+      ]
+    },
+    {
+      "label": "native-only-add",
+      "args": [
+        "add",
+        "crystra-rollback-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/package/crystra-rollback-fixture-1.0.0.tgz",
+        "--offline",
+        "--allow-build=crystra-rollback-fixture@file:../../../package/crystra-rollback-fixture-1.0.0.tgz"
+      ]
+    },
+    {
+      "label": "native-only-recovery-native-install",
+      "args": [
+        "install",
+        "--offline",
+        "--ignore-scripts",
+        "--frozen-lockfile"
+      ]
+    },
+    {
+      "label": "native-only-recovery-module-snapshot-restore",
+      "reason": "native install leaves unregistered package files"
+    },
+    {
+      "label": "environment-check-failed-add",
+      "args": [
+        "add",
+        "crystra-rollback-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/package/crystra-rollback-fixture-1.0.0.tgz",
+        "--offline",
+        "--allow-build=crystra-rollback-fixture@file:../../../package/crystra-rollback-fixture-1.0.0.tgz"
+      ]
+    },
+    {
+      "label": "environment-check-failed-rollback-native-install",
+      "args": [
+        "install",
+        "--offline",
+        "--ignore-scripts",
+        "--frozen-lockfile"
+      ]
+    },
+    {
+      "label": "environment-check-failed-rollback-module-snapshot-restore",
+      "reason": "native install leaves unregistered package files"
+    },
+    {
+      "label": "scripts-not-authorized-add",
+      "args": [
+        "add",
+        "crystra-rollback-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/package/crystra-rollback-fixture-1.0.0.tgz",
+        "--offline"
+      ]
+    },
+    {
+      "label": "scripts-not-authorized-rollback-native-install",
+      "args": [
+        "install",
+        "--offline",
+        "--ignore-scripts",
+        "--frozen-lockfile"
+      ]
+    },
+    {
+      "label": "scripts-not-authorized-rollback-module-snapshot-restore",
+      "reason": "native install leaves unregistered package files"
+    },
+    {
+      "label": "initialization-partial-failed-add",
+      "args": [
+        "add",
+        "crystra-rollback-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/package/crystra-rollback-fixture-1.0.0.tgz",
+        "--offline",
+        "--allow-build=crystra-rollback-fixture@file:../../../package/crystra-rollback-fixture-1.0.0.tgz"
+      ]
+    },
+    {
+      "label": "initialization-partial-failed-rollback-native-install",
+      "args": [
+        "install",
+        "--offline",
+        "--ignore-scripts",
+        "--frozen-lockfile"
+      ]
+    },
+    {
+      "label": "initialization-partial-failed-rollback-module-snapshot-restore",
+      "reason": "native install leaves unregistered package files"
+    },
+    {
+      "label": "normal-install-add",
+      "args": [
+        "add",
+        "crystra-rollback-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/package/crystra-rollback-fixture-1.0.0.tgz",
+        "--offline",
+        "--allow-build=crystra-rollback-fixture@file:../../../package/crystra-rollback-fixture-1.0.0.tgz"
+      ]
+    },
+    {
+      "label": "normal-uninstall-remove",
+      "args": [
+        "remove",
+        "crystra-rollback-fixture"
+      ]
+    },
+    {
+      "label": "reinstall-partial-failed-add",
+      "args": [
+        "add",
+        "crystra-rollback-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/package/crystra-rollback-fixture-1.0.0.tgz",
+        "--offline",
+        "--allow-build=crystra-rollback-fixture@file:../../../package/crystra-rollback-fixture-1.0.0.tgz"
+      ]
+    },
+    {
+      "label": "reinstall-partial-failed-rollback-native-install",
+      "args": [
+        "install",
+        "--offline",
+        "--ignore-scripts",
+        "--frozen-lockfile"
+      ]
+    },
+    {
+      "label": "reinstall-partial-failed-rollback-module-snapshot-restore",
+      "reason": "native install leaves unregistered package files"
+    },
+    {
+      "label": "reinstall-add",
+      "args": [
+        "add",
+        "crystra-rollback-fixture@file:/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-rollback-Ilv2q6/package/crystra-rollback-fixture-1.0.0.tgz",
+        "--offline",
+        "--allow-build=crystra-rollback-fixture@file:../../../package/crystra-rollback-fixture-1.0.0.tgz"
+      ]
+    },
+    {
+      "label": "final-uninstall-remove",
+      "args": [
+        "remove",
+        "crystra-rollback-fixture"
+      ]
+    }
+  ],
+  "passed": true,
+  "runtime": {
+    "engine": "docker",
+    "version": "29.4.0"
+  },
+  "testSubnet": "172.31.200.0/28",
+  "nativeOnly": {
+    "failureCode": 23,
+    "residue": {
+      "package": true,
+      "changedTracked": [
+        "profiles/probe/pnpm-lock.yaml",
+        "profiles/probe/pnpm-workspace.yaml"
+      ],
+      "filesExact": false
+    }
+  },
+  "actualProfileUntouched": true,
+  "testResourcesCleaned": true
+}

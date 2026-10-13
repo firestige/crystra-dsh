@@ -1,47 +1,34 @@
-# Crystra for DeepSeek Harness
+# Crystra DSH backend plugin
 
-Crystra turns repeatable workflow steps into deterministic execution, reducing unnecessary agent and LLM calls. This repository owns the single public DSH plugin **dsh-crystra**; its target registration repository is **firestige/crystra-dsh**.
+Crystra augments DSH with managed consensus, verifiable step commitments and Barrier gates, independent core-code reflection, and observed/validated crystallization. DSH owns agent execution and scheduling.
 
-Execution and Studio are internal modules of this plugin. `crystra-execution` and `crystra-ui-core` remain ordinary, independently versioned component dependencies. Domain implementations stay in their component repositories.
+The default `dsh-crystra` export is the backend plugin. There is no legacy execution suite, client bundle, UI replacement, bundled model CLI, or compatibility entry point.
 
-## Current development state
-
-The new distribution starts at `0.1.0`; no Crystra release is claimed by this source checkout. During rename preparation, `config/development-inputs.json` binds exact component commits and SHA-256 digests. The eight repositories now use their Crystra coordinates. Production candidates reject local file dependencies and require exact published GitHub Release assets.
-
-Use Node 24.12.0, npm 11.6.2 and pnpm 11.23.0. Check out the configured Execution and UI commits under `.crystra-inputs/sources/execution` and `.crystra-inputs/sources/ui`, then run:
+Install through DSH's native plugin manager:
 
 ```sh
-node scripts/prepare-development-artifacts.mjs
-npm ci --ignore-scripts --no-audit --no-fund
-npm rebuild better-sqlite3
-npm run build
-npm test
-npm run pack:verify
+dsh plugin --profile web add dsh-crystra@file:/absolute/path/dsh-crystra-0.1.0.tgz --ignore-scripts
 ```
 
-The build emits one CSP-compatible browser bundle with module identity `dsh-crystra`. Its Cordis patch registers one plugin and the internal Workspace override. Archives include source and license attribution; internal modules have no separate plugin manifests.
+The plugin registers the `crystra` settings namespace. It is disabled until configured with a project root, scope, exact consensus publications and host-owned Squidex credential references. Selected agents are attached automatically at native creation/resume, before their first model request. Configuration changes require a DSH restart; approved consensus version switches use a durable binding journal and do not require a restart. Native DSH approval cards handle exact publication, binding switches, withdrawal and historical restoration. Existing model, UI and LAN settings are preserved.
 
-## Isolated integration checks
+See [native setup and failure behavior](docs/backend-rebuild/native-usage.md) and [backend documentation](docs/backend-rebuild/README.md). Explicit trusted programmatic `resolveConsensus` / `consensus` ports remain available for integrations. Required host services are sessions, persistence, tools, system prompt and agents; native mode also uses settings and credentials. Supported integration profile: DSH 0.1.5-rc.2, Node 24.12.0 / npm 11.6.2. This tested profile does not promise compatibility with later DSH releases.
 
-Use DSH `0.1.5-rc.2`. Set `CRYSTRA_DSH_BINARY` to that version's executable when the global DSH differs. The public plugin declares this runtime as a direct dependency as well as its host compatibility peer: a CLI outside the profile alone does not make the Execution provider resolvable. Development installs and qualification profiles pin the complete rc.2 closure. Checks use temporary DSH homes and profiles:
+The optional `dsh-crystra/pi-ai-lifecycle` export manages pi-ai transport shutdown. Actual code-capability execution currently uses the macOS/Python adapter; no portability claim is made for other operating systems.
 
-```sh
-npm run qualify:clean-profile
-npm run qualify:lifecycle
-npm run qualify:provider-routing
-# Requires Playwright 1.62.1 (or CRYSTRA_PLAYWRIGHT_MODULE) and Chrome.
-npm run qualify:current-host
-npm run qualify:real-harness
-CRYSTRA_QUALIFY_TERMINAL=1 npm run qualify:real-harness
-CRYSTRA_QUALIFY_INITIALIZATION=1 npm run qualify:real-harness
-```
+See [first-run installation and activation](docs/backend-rebuild/first-run.md) for the independent package path. No pre-created consensus references are required.
 
-The current-host check installs the packed plugin, queries models through its installed Execution provider, authenticates a browser, admits a real Task through a localhost DeepSeek protocol fixture, confirms Brief and Plan through the native browser questions, applies an owner control request, and checks confirmed-state reload and host-restart recovery. It uses explicit development Execution configuration and does not call a live model or prove the complete Delivery/Evidence/Evaluation chain. The historical Real Harness script targets an older browser flow and must be migrated before its Delivery/Studio/outage release checks can be claimed on rc.2. The terminal fixture mode supplies deterministic owner facts without invoking an LLM. DSH 0.1.5-rc.2 supplies no CSP header; the bundle check separately rejects dynamic code and inline-script injection.
+## Install and manage
 
-The root plugin loads without pre-existing Execution configuration. `/crystra setup` prepares configuration and the bound service group; `/crystra doctor` reports readiness and missing repository role bindings. `/crystra services start|stop|status` manages the installation's own Compose namespace. These commands are deterministic and do not invoke an LLM. No independent public product installer is shipped. See [initialization](docs/initialization.md).
+The package provides a thin `crystra` CLI: `install`, `uninstall`, `recover`, and `doctor`. It delegates package operations to DSH/pnpm, prepares a managed local consensus service when needed, and restores snapshots on failure. It never installs a container runtime or silently disables execution isolation. Uninstall preserves consensus data by default.
 
-Before new service assets are published and bound, setup activates Execution and explicitly reports `DEGRADED / CRYSTRA_SERVICE_DESCRIPTOR_UNAVAILABLE`. This development state is not a fully installed release.
+For an existing profile installation: `dsh plugin --profile web exec crystra doctor`. Direct `plugin add` remains supported; missing setup is reported through native diagnostics, warnings, and managed-task checks. See [CLI usage](docs/backend-rebuild/cli-usage.md) for local artifact bootstrap, retained data, and supported boundaries.
 
-New RC tags use `crystra-dsh-v<version>-rc.N`. Stable promotion reuses qualified bytes through GitHub Releases and retains its manual release gate. There is no npm publication stage. Historical release records describe their original artifacts, not this new distribution.
+## Development and acceptance
 
-See [foundation boundaries](docs/foundation-boundaries.md), [source notice](NOTICE.md), and [security policy](SECURITY.md).
+- `npm ci`: install development host components.
+- `npm test`: all backend regression tests.
+- `npm run pack:verify`: default entry and archive contents.
+- `npm run qualify:clean-install`: pack, install into an isolated consumer with empty HOME/XDG/npm cache, exercise native DSH capabilities and a fresh Squidex/PostgreSQL instance, then remove that instance and its volumes. Requires macOS, Python, Docker and docker-compose. No model credentials are inherited.
+
+Clean acceptance uses deterministic local model adapters and provider fixtures to test mechanism behavior, including failures. It does not re-establish the previously measured quality of a real high-tier model.

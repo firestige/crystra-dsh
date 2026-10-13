@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "independentArtifact": true,
+  "failureAfterRealContainerStartup": true,
+  "cleanupFailureRetainedDurableRecord": true,
+  "newProcessRecovered": true,
+  "profileRestored": true,
+  "ownedResourcesRemoved": true,
+  "repositoryImports": false
+}

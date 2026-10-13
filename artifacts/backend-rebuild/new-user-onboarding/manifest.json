@@ -1,0 +1,37 @@
+{
+  "package": "dsh-crystra@0.1.0",
+  "size": 74040,
+  "unpackedSize": 224162,
+  "sha256": "160c910c2518ce4852429994fd8e4763b3ea568f72f59091f92d0ba6f7339179",
+  "integrity": "sha512-PDz2STLDD2zvC6CoafA6bEiOz1su2BDRGLKg2nlaWN0BsEZrZMXDrATJ4baLtP7vG9so93aP9q29dvGA/0e5fw==",
+  "sourceArchiveMatchesCheckout": true,
+  "tests": {
+    "passed": 415,
+    "failed": 0,
+    "skipped": 0
+  },
+  "environment": {
+    "dsh": "0.1.5-rc.2",
+    "node": "24.12.0",
+    "isolatedHome": true,
+    "isolatedDshHome": true,
+    "emptyNpmCacheAtStart": true,
+    "preinstalledDshAndContainerRuntimeArePrerequisites": true,
+    "containerInterface": "OrbStack Docker + Compose",
+    "paidModelCalls": 0
+  },
+  "scope": {
+    "repositoryImportsDuringUserFlow": false,
+    "precreatedPublicationReferences": false,
+    "publishedToRegistry": false,
+    "dailyWebProfileModified": false
+  },
+  "supplementaryRealNodeProcess": {
+    "passed": true,
+    "firstExitCode": 1,
+    "secondExitCode": 0,
+    "noGo": 1,
+    "closed": "GO",
+    "sameArtifactSha256": "160c910c2518ce4852429994fd8e4763b3ea568f72f59091f92d0ba6f7339179"
+  }
+}

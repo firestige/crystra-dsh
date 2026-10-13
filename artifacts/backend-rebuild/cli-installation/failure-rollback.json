@@ -1,0 +1,17 @@
+{
+  "root": "/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-cli-negative-3hToKw",
+  "cases": [
+    {
+      "id": "real-preflight-no-engine",
+      "passed": true,
+      "noInstallSideEffects": true
+    },
+    {
+      "id": "actual-initialization-before-commit-failure",
+      "passed": true,
+      "settingsCredentialsAndProfileExact": true,
+      "newResourcesRemoved": true
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,13 @@
+{
+  "root": "/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-cli-live-WARtEE",
+  "passed": true,
+  "steps": [
+    "real package + real CMS initialized, no consensus auto-approved",
+    "installed executable works through native pnpm exec",
+    "repeat install retains managed configuration ownership",
+    "installed CLI can uninstall itself; existing/later settings preserved",
+    "real CLI reinstall retains exact draft id/body/version",
+    "repeated uninstall succeeds"
+  ],
+  "testServicesCleaned": true
+}

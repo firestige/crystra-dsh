@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "cleaned": [
+    {
+      "base": "/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-new-user-PYxQov",
+      "project": "crystra-b39790432ed8",
+      "discardedSyntheticTestVolumes": true
+    }
+  ],
+  "retentionWasVerifiedBeforeDisposableTestCleanup": true
+}

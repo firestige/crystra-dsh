@@ -1,0 +1,9 @@
+{
+  "src/backend/install/components.js": "8b5034b7419e45550524f49f56065744c3cd663ea96a3565aa4a40eedd2090fd",
+  "src/backend/install/manager.js": "93510438d2472c3da021d60a75a5e795b875a1c311a55335cc374a41a6a3e1c4",
+  "src/backend/install/cli.js": "c3755eebebdfc660db79ba7dafbf17d6fdaa41028d7847e1936bf786e3b114fb",
+  "src/backend/install/operations.js": "132325f7ec6c8b28479395be177d5ed17f6d82125fd1ec93f2bb1d04a0fd9d18",
+  "src/backend/native-plugin.js": "2907315cd55232ef5061863de3304fee93c44595ada973044d7d2513072e19cf",
+  "package.json": "47cf226d548b596e243dbf3d9fca68e787cf2e7ba07321ab136d9bb7338f0aa3",
+  "package-lock.json": "5617863e26895501925c50b91c3ce4ffd441727e16c03140828a023dbd361086"
+}

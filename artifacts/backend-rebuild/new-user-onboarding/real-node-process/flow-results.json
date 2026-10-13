@@ -1,0 +1,84 @@
+{
+  "passed": true,
+  "actualNodeSubprocess": true,
+  "independentArtifact": true,
+  "emptyHomeAndNpmCache": true,
+  "noPresetConsensusReferences": true,
+  "initialProjectApprovedThroughNativeUi": true,
+  "firstConsensusRejectedWithoutActivation": false,
+  "forcedExitDuringApproval": false,
+  "oldOperationReturnedInterrupted": false,
+  "newApprovalPublishedAndActivated": true,
+  "configurationSeedStillEmpty": true,
+  "exactPublicationReference": {
+    "id": "4c8d602d-a942-4e7c-88c2-913743dc5f55",
+    "published_version": 2,
+    "publication_event_id": "6b46d6b3-6ed2-40f4-97fe-92224ced676e",
+    "actor": "client:crystra-b39790432ed8:default",
+    "data_hash": "2e084b572e72bc7a1753ed7fbeed5c3d1583add0a868df46b0ecb70ab7b9f505"
+  },
+  "knownNativeSessionEventsOnly": true,
+  "newSessionAutomaticallyBound": true,
+  "failedActualCheckNoGo": 1,
+  "subsequentActualCheckClosed": "GO",
+  "noPendingResponsibility": true,
+  "onlineDiagnostic": {
+    "state": "managed",
+    "restartRequired": false,
+    "error": null,
+    "components": {
+      "ready": true,
+      "missing": [],
+      "warnings": [],
+      "action": "请运行 crystra doctor；尚未初始化时运行 crystra install。"
+    },
+    "action": "请运行 crystra doctor；未初始化时运行 crystra install。",
+    "nativeState": "enabled",
+    "project": {
+      "state": "managed",
+      "configured": true,
+      "root": "/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-new-user-PYxQov/project",
+      "scope": "project:new-user",
+      "publicationCount": 1,
+      "publicationAuthority": "runtime-journal",
+      "action": "使用原生诊断工具核验当前共识效力和模型路由。",
+      "features": {
+        "barrier": "configured",
+        "reflection": "disabled",
+        "crystallization": "disabled"
+      }
+    },
+    "consensus": {
+      "state": "effective"
+    },
+    "routes": {
+      "reflection": {
+        "state": "disabled"
+      },
+      "crystallization": {
+        "state": "disabled"
+      }
+    },
+    "attached": [
+      "new-user-DRAFT",
+      "new-user-WORK"
+    ],
+    "managed": [
+      "new-user-DRAFT",
+      "new-user-WORK"
+    ],
+    "ready": true
+  },
+  "paidModelCalls": 0,
+  "offlineAdapterOnlyDrivesModelOutputs": true,
+  "repositoryImports": false,
+  "modelAndOtherSettings": {
+    "agent-default-model": {
+      "provider": "new-user-offline",
+      "model": "WORK"
+    },
+    "ui-onboarding": {
+      "welcomeNoticeVersion": "2026-08-13.1"
+    }
+  }
+}

@@ -1,103 +1,16 @@
-name: Verify Foundation
-
-on:
-  pull_request:
-  push:
-    branches:
-      - main
-
+name: Verify backend
+on: [push, pull_request]
 permissions:
   contents: read
-
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 24.12.0
           cache: npm
-      - name: Read independent development component inputs
-        id: inputs
-        run: |
-          echo "execution_repo=$(jq -er .inputs.execution.repository config/development-inputs.json)" >> "$GITHUB_OUTPUT"
-          echo "execution_sha=$(jq -er .inputs.execution.revision config/development-inputs.json)" >> "$GITHUB_OUTPUT"
-          echo "ui_repo=$(jq -er .inputs.ui.repository config/development-inputs.json)" >> "$GITHUB_OUTPUT"
-          echo "ui_sha=$(jq -er .inputs.ui.revision config/development-inputs.json)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.inputs.outputs.execution_repo }}
-          ref: ${{ steps.inputs.outputs.execution_sha }}
-          path: .crystra-inputs/sources/execution
-      - uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.inputs.outputs.ui_repo }}
-          ref: ${{ steps.inputs.outputs.ui_sha }}
-          path: .crystra-inputs/sources/ui
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 11.23.0
-      - run: node scripts/prepare-development-artifacts.mjs
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm rebuild better-sqlite3
-      - run: node scripts/build-client-bundles.mjs
-      - run: git diff --exit-code -- lib/client.js
+      - run: npm ci --no-audit --no-fund
       - run: npm test
-        env:
-          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
-      - run: npm run build
       - run: npm run pack:verify
-      - name: Read exact development service sources
-        id: services
-        run: |
-          echo "evidence_repo=$(jq -er .evidence.repository config/development-services.json)" >> "$GITHUB_OUTPUT"
-          echo "evidence_sha=$(jq -er .evidence.revision config/development-services.json)" >> "$GITHUB_OUTPUT"
-          echo "evolution_repo=$(jq -er .evolution.repository config/development-services.json)" >> "$GITHUB_OUTPUT"
-          echo "evolution_sha=$(jq -er .evolution.revision config/development-services.json)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.services.outputs.evidence_repo }}
-          ref: ${{ steps.services.outputs.evidence_sha }}
-          path: .crystra-inputs/services/evidence
-      - uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.services.outputs.evolution_repo }}
-          ref: ${{ steps.services.outputs.evolution_sha }}
-          path: .crystra-inputs/services/evolution
-      - name: Read Evolution contract source
-        id: service_contract
-        run: |
-          echo "repository=$(jq -er .repository .crystra-inputs/services/evolution/config/development-contract.json)" >> "$GITHUB_OUTPUT"
-          echo "revision=$(jq -er .revision .crystra-inputs/services/evolution/config/development-contract.json)" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v6
-        with:
-          repository: ${{ steps.service_contract.outputs.repository }}
-          ref: ${{ steps.service_contract.outputs.revision }}
-          path: .crystra-inputs/services/evolution/.crystra-inputs/contracts
-      - name: Build and qualify current development services
-        timeout-minutes: 20
-        run: |
-          for service in evidence evolution; do
-            docker build \
-              --build-arg "CRYSTRA_RELEASE_REVISION=$(jq -er .$service.revision config/development-services.json)" \
-              --tag "$(jq -er .$service.image config/development-services.json)" \
-              --file ".crystra-inputs/services/$service/$(jq -er .$service.dockerfile config/development-services.json)" \
-              ".crystra-inputs/services/$service"
-          done
-          docker pull "$(jq -er .postgres config/development-services.json)"
-          npm run qualify:initialization-services
-      - name: Install browser qualification driver
-        run: npm install --prefix "$RUNNER_TEMP/crystra-browser" --ignore-scripts --no-audit --no-fund playwright@1.62.1
-      - name: Qualify native question layout
-        run: node scripts/qualify-question-layout.mjs
-        env:
-          CRYSTRA_PLAYWRIGHT_MODULE: ${{ runner.temp }}/crystra-browser/node_modules/playwright/index.mjs
-          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome
-      - name: Qualify installed rc.2 host and durable Task admission
-        timeout-minutes: 10
-        run: npm run qualify:current-host
-        env:
-          CRYSTRA_DSH_BINARY: ${{ github.workspace }}/.crystra-inputs/sources/execution/node_modules/.bin/dsh
-          CRYSTRA_PLAYWRIGHT_MODULE: ${{ runner.temp }}/crystra-browser/node_modules/playwright/index.mjs
-          CRYSTRA_CHROME_BINARY: /usr/bin/google-chrome

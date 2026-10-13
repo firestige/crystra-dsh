@@ -1,0 +1,18 @@
+{
+  "baseUrl": "http://127.0.0.1:1946",
+  "app": "crystra-local",
+  "scope": "crystra-backend-rebuild",
+  "namespace": "native-5c13a68c67e00c6eeec23a47",
+  "reference": {
+    "id": "914fc21b-d44d-4ba2-a589-60a0b66243e1",
+    "published_version": 2,
+    "publication_event_id": "33dac192-ab3c-40f6-a483-479743984b75",
+    "actor": "client:crystra-local:default",
+    "data_hash": "ac11ec3afc378a00508d93c07a70658054b6394864e57dd9e664f88c97caaadc"
+  },
+  "existingSettingsPreserved": true,
+  "existingCredentialsPreserved": true,
+  "addedCredentialRefs": 2,
+  "reflectionModel": "kimi-coding/k3",
+  "crystallizationModel": "kimi-coding/k3"
+}

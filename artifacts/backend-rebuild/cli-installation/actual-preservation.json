@@ -1,0 +1,98 @@
+{
+  "closedCommitments": 2,
+  "noGoFeedback": 2,
+  "exactConsensusReference": true,
+  "finalNativeAttach": true,
+  "originalSettingsNamespacesPreserved": [
+    "ui-onboarding",
+    "llm-pi-ai",
+    "agent-default-model",
+    "llm-deepseek"
+  ],
+  "originalCredentialRefsPreserved": true,
+  "originalCredentialRecordsPreserved": true,
+  "unchangedFiles": [
+    "profiles/web/cordis.patch.yml",
+    "profiles/web/cordis.yml",
+    "lan-proxy/Caddyfile"
+  ],
+  "originalWorkspaceKeysPreserved": true,
+  "ownedCompatibilityPins": 34,
+  "profileSdkVersions": [
+    {
+      "name": "dsh-atomic-write",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-brand",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-credentials",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-credentials-local",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-home-paths",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-invariants",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-launch-environment",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-llm",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-session",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-session-persistence",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-timeout",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-typert-protocol",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-util-crypto",
+      "version": "0.1.5-rc.2"
+    },
+    {
+      "name": "dsh-util-values",
+      "version": "0.1.5-rc.2"
+    }
+  ],
+  "temporaryProviderRemoved": true,
+  "defaultModel": {
+    "provider": "deepseek-official",
+    "model": "deepseek-flash",
+    "reasoningEffort": "high"
+  },
+  "reflection": {
+    "provider": "kimi-coding",
+    "model": "k3"
+  },
+  "crystallization": {
+    "provider": "kimi-coding",
+    "model": "k3"
+  },
+  "dshPackages": 231,
+  "allDshVersions": "0.1.5-rc.2",
+  "hmr": "1.0.17",
+  "globalEntry": "/Users/firestige/.local/share/dsh/runtimes/0.1.5-rc.2/node_modules/@deepseek-ai/dsh",
+  "paidModelCalls": 0
+}

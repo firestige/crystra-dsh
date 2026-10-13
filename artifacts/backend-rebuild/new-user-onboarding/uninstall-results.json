@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "installedCliUninstalledItself": true,
+  "packageRemoved": true,
+  "otherSettingsPreserved": true,
+  "userInitializedProjectPreserved": true,
+  "sessionHistoryExact": true,
+  "projectFilesExact": true,
+  "ownedContainersStopped": true,
+  "dataVolumesRetained": 2,
+  "repeatedUninstallFromIndependentPackage": true
+}

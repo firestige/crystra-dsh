@@ -1,0 +1,35 @@
+{
+  "ready": true,
+  "missing": [],
+  "warnings": [
+    "Crystra 已安装但未启用；初始化后仍需在 DSH 选择项目及批准共识。"
+  ],
+  "action": "请运行 crystra doctor；尚未初始化时运行 crystra install。",
+  "installationReady": true,
+  "configuration": {
+    "state": "disabled"
+  },
+  "project": {
+    "state": "disabled",
+    "configured": false,
+    "root": null,
+    "scope": null,
+    "publicationCount": 0,
+    "publicationAuthority": "configuration-seed",
+    "action": "在 DSH 会话请求初始化 Crystra 项目。",
+    "features": {
+      "barrier": "inactive",
+      "reflection": "disabled",
+      "crystallization": "disabled"
+    }
+  },
+  "managedReady": "not-verified-offline",
+  "runtimeCheck": "在 DSH 调用 crystra_installation_status 核验持久绑定、共识效力和模型路由。",
+  "compatibility": {
+    "state": "ready",
+    "dsh": "0.1.5-rc.2"
+  },
+  "profile": "web",
+  "installed": true,
+  "managedService": true
+}

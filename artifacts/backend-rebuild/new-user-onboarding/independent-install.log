@@ -1,0 +1,7 @@
+{
+  "state": "installed",
+  "profile": "web",
+  "service": "managed",
+  "message": "插件和共识服务已就绪；项目选择、正式共识审批和模型配置仍使用 DSH。"
+}
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead

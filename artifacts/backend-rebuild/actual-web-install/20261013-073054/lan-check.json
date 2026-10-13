@@ -1,0 +1,7 @@
+{
+  "origin": "https://192.168.50.175:8080",
+  "tlsVerifiedWithExistingCA": true,
+  "authenticatedIndexStatus": 200,
+  "authenticatedNativeRpc": true,
+  "unauthenticatedIndexStatus": 401
+}

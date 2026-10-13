@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "cleaned": [
+    {
+      "base": "/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-new-user-UIFKds",
+      "project": "crystra-ad4e6aaa926d",
+      "discardedSyntheticTestVolumes": true
+    },
+    {
+      "base": "/private/var/folders/lh/c37674mj2yjf5nz0knxxck0c0000gn/T/crystra-new-user-Wj7XZb",
+      "project": "crystra-cf058d1b6997",
+      "discardedSyntheticTestVolumes": true
+    }
+  ],
+  "retentionWasVerifiedBeforeDisposableTestCleanup": true
+}

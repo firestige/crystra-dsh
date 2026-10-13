@@ -1,0 +1,51 @@
+# Local integration fixture only. Fixed project name is used by fault-injection tests.
+name: crystra-squidex-trial
+services:
+  database:
+    image: postgis/postgis@sha256:60f6ad1d21ea86a67d47780b9a0d1e1d200500f62b19293fa834d0dea80b8677
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: squidex
+      POSTGRES_PASSWORD: crystra-local-fixture-only
+      POSTGRES_DB: squidex
+    volumes:
+      - postgispgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U squidex"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  squidex:
+    image: squidex/squidex@sha256:acab8ab3a6757142a348c78f2c4b4d2b942ec53dfa01c34a1f7be3b94f54f928
+    ports:
+      - "127.0.0.1:1946:80"
+    environment:
+      URLS__BASEURL: http://127.0.0.1:1946
+      URLS__ENFORCEHTTPS: "false"
+      STORE__TYPE: Sql
+      STORE__SQL__PROVIDER: Postgres
+      STORE__SQL__CONNECTIONSTRING: Host=database;Database=squidex;Username=squidex;Password=crystra-local-fixture-only
+      EVENTSTORE__TYPE: Sql
+      MESSAGING__TYPE: Sql
+      IDENTITY__ADMINCLIENTID: crystra-admin
+      IDENTITY__ADMINCLIENTSECRET: crystra-local-admin-fixture-only
+      IDENTITY__GOOGLECLIENT: ""
+      IDENTITY__GOOGLESECRET: ""
+      IDENTITY__GITHUBCLIENT: ""
+      IDENTITY__GITHUBSECRET: ""
+      IDENTITY__MICROSOFTCLIENT: ""
+      IDENTITY__MICROSOFTSECRET: ""
+      CONTENTS__USETRANSACTIONS: "true"
+    volumes:
+      - assets:/app/Assets
+    depends_on:
+      database:
+        condition: service_healthy
+volumes:
+  postgispgdata:
+  assets:
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.194.0/28

@@ -1,0 +1,9 @@
+{
+  "created": {
+    "sessionId": "native-web-worker",
+    "agentPreset": "standard"
+  },
+  "firstPromptManaged": true,
+  "restartedAndPromptAccepted": true,
+  "changedBindingBlockedBeforeModel": true
+}

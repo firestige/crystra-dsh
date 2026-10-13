@@ -1,0 +1,13 @@
+{
+  "existingHomeUnchanged": true,
+  "clonedSettingsUnchanged": true,
+  "clonedProfilePatchUnchanged": true,
+  "bundlesUnchanged": true,
+  "UIWorkspacePresent": true,
+  "LANTrustPresent": true,
+  "hashes": {
+    "settings.yaml": "97d42c802b9c36d028ba7f150a36941a7bdd0e2d9ab9e2ef93f6ad8334f01207",
+    "profiles/web/package.json": "fbd59cb2cb51846e14e0c834bc9ffe9b52ad0f6218e124c426d1558214fc5b70",
+    "profiles/web/cordis.patch.yml": "8fc0ea9c6d9b5f18b0bb35f7fdd377352690e11202453535e756f018a01c3efe"
+  }
+}

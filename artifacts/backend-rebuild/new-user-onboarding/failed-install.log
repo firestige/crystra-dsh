@@ -1,0 +1,2 @@
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+Crystra：安装未完成，恢复待处理；请运行 crystra recover：docker 执行失败（69）；请检查 rm。
