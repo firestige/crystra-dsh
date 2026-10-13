@@ -1,3 +1,4 @@
+import {isInternalAgent} from './internal-agents.js';
 import {clientToken} from './squidex-auth.js';
 import z from '@deepseek-ai/schemastery';
 import {realpathSync} from 'node:fs';
@@ -15,7 +16,7 @@ export const Config=z.object({
  crystallization:z.object({...model,python:text,executionTimeoutMs:z.number()}),
 });
 export function selectedProject(agent,root){
- if(agent.session.id.startsWith('crystra-reflection-')||agent.session.id.startsWith('crystra-crystallization-eval-'))return false;
+ if(isInternalAgent(agent))return false;
  const cwd=agent.session.header.cwd;if(typeof cwd!=='string')return false;
  let path;try{path=realpathSync(cwd);}catch{return false;}
  const rel=relative(root,path);return rel===''||(!rel.startsWith('..'+ '/')&&rel!=='..'&&!isAbsolute(rel));

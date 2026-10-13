@@ -1,3 +1,4 @@
+import {isInternalAgent} from './internal-agents.js';
 import {decodeOriginalResult} from './dsh-evidence.js';
 import {plain,same,digest} from './value.js';
 
@@ -7,13 +8,12 @@ export function connectCrystallization(ctx,ready,options){
  const pending=new Map();let tail=Promise.resolve(),failure=null,stopped=false;
  const stats={observed:0,crystallized:0,skipped:0};
  const key=(id,seq)=>`${id}:${seq}`;
- const internal=agent=>agent.session.id.startsWith('crystra-crystallization-eval-')||agent.session.id.startsWith('crystra-reflection-');
  const idle=async()=>{let current;do{current=tail;await current;}while(current!==tail);if(failure)throw failure;};
  function schedule(operation){
   tail=tail.then(async()=>{if(failure)return;await operation();}).catch(error=>{failure=error;});
  }
  const offExecute=ctx.on('tools/execute',async(exec,next)=>{
-  if(stopped||!exec.agent||exec.parent!==undefined||internal(exec.agent)||exec.name.startsWith('crystra_'))return next();
+  if(stopped||!exec.agent||exec.parent!==undefined||isInternalAgent(exec.agent)||exec.name.startsWith('crystra_'))return next();
   const service=await ready;
   if(service.isOriginalExecution())return next();
   if(!plain(exec.arguments)||Object.keys(exec.arguments).length!==1||!Object.hasOwn(exec.arguments,'input'))return next();

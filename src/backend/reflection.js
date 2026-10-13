@@ -1,4 +1,5 @@
-import {randomUUID} from 'node:crypto';
+import {internalSessionId} from './internal-agents.js';
+import {createInternalAgentRunner} from './dsh-internal-agent-runner.js';
 import {readFile,realpath} from 'node:fs/promises';
 import {resolve,relative,isAbsolute} from 'node:path';
 import {execFile} from 'node:child_process';
@@ -18,10 +19,9 @@ export function createReflection(ctx,config) {
   if(!config.agentOptions?.provider||!config.agentOptions?.model)throw new TypeError('Explicit reflection provider and model required');
   const timeoutMs=config.timeoutMs??300000;
   if(!Number.isSafeInteger(timeoutMs)||timeoutMs<=0)throw new TypeError('Invalid reflection timeout');
-  const live=new Set();
-  let closed=false;
+  const runner=createInternalAgentRunner(ctx,{closedMessage:'Reflection service closed',closeReason:'Reflection service closed',timeoutReason:'Reflection time budget exceeded',preCancelledReason:'Reflection cancelled before execution'});
   async function run(request,{signal}={}) {
-    if(closed)throw new Error('Reflection service closed');
+    runner.assertOpen();
     if(!request||typeof request.goal!=='string'||!request.goal.trim()||!Array.isArray(request.files)||!request.files.length)throw new TypeError('Reflection goal and explicit core files required');
     const root=await realpath(request.root);
     const files=new Map();
@@ -38,20 +38,13 @@ export function createReflection(ctx,config) {
       if(!spec?.id||experiments.has(spec.id)||typeof spec.command!=='string'||!isAbsolute(spec.command)||!Array.isArray(spec.args)||!spec.args.every(a=>typeof a==='string'))throw new TypeError('Invalid host experiment');
       experiments.set(spec.id,structuredClone(spec));
     }
-    const id=`crystra-reflection-${randomUUID()}`;
-    const journal=await openJournal(ctx.sessionPersistence,`reflection:${id}`);
+    const id=internalSessionId('reflection');
     const state={schemaVersion:1,workerSessionId:`reflection:${id}`,id,status:'running',model:structuredClone(config.agentOptions),goal:request.goal,root,files:Object.fromEntries([...files].map(([k,v])=>[k,v.hash])),reads:[],experiments:[],report:null,events:[]};
-    let handle,expired=false, timer;
-    const abort=new AbortController();
-    let settled;const done=new Promise(resolve=>{settled=resolve;});
-    const entry={cancel:()=>{abort.abort();handle?.agent.cancel({kind:'hook',reason:'Reflection service closed'});},done};
-    live.add(entry);
-    const cancel=()=>entry.cancel();
-    signal?.addEventListener('abort',cancel,{once:true});
-    if(signal?.aborted)cancel();
+    const run=runner.begin({timeoutMs,signal});let journal;
     try {
+      journal=await openJournal(ctx.sessionPersistence,`reflection:${id}`);
       await journal.append(state);
-      handle=await ctx.agents.create({sessionId:id,meta:{cwd:root},agentOptions:structuredClone(config.agentOptions),setup:(ac,agent)=>{
+      state.events=await run.execute({sessionId:id,meta:{cwd:root},agentOptions:structuredClone(config.agentOptions),setup:(ac,agent)=>{
         // Restrict inherited tools; the three local registrations remain available.
         ac.tools.restrict({allow:[]});
         ac.systemPrompt.section({name:'crystra-reflection',order:40,text:prompt});
@@ -69,7 +62,7 @@ export function createReflection(ctx,config) {
           const before=await currentHashes(files),started=performance.now();
           let result;
           const env={...process.env};delete env.NODE_TEST_CONTEXT;
-          try {const r=await exec(spec.command,spec.args,{cwd:root,env,timeout:Math.min(spec.timeoutMs??30000,timeoutMs),maxBuffer:128*1024,signal:abort.signal});result={exitCode:0,stdout:r.stdout,stderr:r.stderr,error:null};}
+          try {const r=await exec(spec.command,spec.args,{cwd:root,env,timeout:Math.min(spec.timeoutMs??30000,timeoutMs),maxBuffer:128*1024,signal:run.signal});result={exitCode:0,stdout:r.stdout,stderr:r.stderr,error:null};}
           catch(error){result={exitCode:Number.isInteger(error.code)?error.code:null,stdout:error.stdout??'',stderr:error.stderr??'',error:error.message};}
           const receipt={callId:execution.callId,id:`experiment:${state.experiments.length+1}`,experiment:id,command:spec.command,args:spec.args,...result,durationMs:performance.now()-started,before,after:await currentHashes(files)};
           state.experiments.push(receipt);return receipt;
@@ -78,22 +71,14 @@ export function createReflection(ctx,config) {
           validateReport(report,state,files);
           state.report=structuredClone(report);return {recorded:true};
         });
-      }});
-      timer=setTimeout(()=>{expired=true;abort.abort();handle.agent.cancel({kind:'hook',reason:'Reflection time budget exceeded'});},timeoutMs);
-      if(abort.signal.aborted)handle.agent.cancel({kind:'hook',reason:'Reflection cancelled before execution'});
-      else handle.agent.followup(createUserMessage({source:{kind:'plugin',plugin:'crystra-reflection',form:'notice'},content:[{type:'text',text:JSON.stringify({goal:state.goal,files:state.files,experiments:[...experiments.values()],instructions:'Investigate, then submit a report; mark unsupported aspects unresolved.'})}]}));
-      while(handle.agent.status!=='idle'&&!expired&&!abort.signal.aborted)await new Promise(r=>setTimeout(r,10));
-      if(expired||abort.signal.aborted)await handle.agent.whenIdle();
-      await ctx.sessions.flush(handle.agent.session);
-      state.events=handle.agent.session.snapshotEvents();
+      }},createUserMessage({source:{kind:'plugin',plugin:'crystra-reflection',form:'notice'},content:[{type:'text',text:JSON.stringify({goal:state.goal,files:state.files,experiments:[...experiments.values()],instructions:'Investigate, then submit a report; mark unsupported aspects unresolved.'})}]}));
       state.currentFiles=await currentHashes(files);
       const changed=JSON.stringify(state.currentFiles)!==JSON.stringify(state.files)||state.experiments.some(e=>JSON.stringify(e.before)!==JSON.stringify(state.files)||JSON.stringify(e.after)!==JSON.stringify(state.files));
       const end=state.events.findLast(e=>e.type==='turn/end');
-      state.status=expired?'timed_out':abort.signal.aborted?'cancelled':changed?'stale':end?.data.reason.kind!=='completed'?'failed':state.report?'completed':'incomplete';
-    } catch(error) {state.status='failed';state.error=error.message;}
+      state.status=run.expired?'timed_out':run.signal.aborted?'cancelled':changed?'stale':end?.data.reason.kind!=='completed'?'failed':state.report?'completed':'incomplete';
+    } catch(error) {if(!journal)throw error;state.status='failed';state.error=error.message;}
     finally {
-      clearTimeout(timer);signal?.removeEventListener('abort',cancel);await handle?.dispose();live.delete(entry);
-      try{await journal.append(state);}finally{await journal.close();settled();}
+      await run.finish(async()=>{if(journal)try{await journal.append(state);}finally{await journal.close();}});
     }
     return structuredClone(state);
   }
@@ -109,7 +94,7 @@ export function createReflection(ctx,config) {
     if(typeof id!=='string'||!/^crystra-reflection-[0-9a-f-]{36}$/.test(id))throw new TypeError('Invalid reflection id');
     const journal=await openJournal(ctx.sessionPersistence,`reflection:${id}`);
     try{const state=await journal.read();if(!state)throw new Error('Reflection not found');return state.status==='running'?{...state,status:'interrupted'}:state;}finally{await journal.close();}
-  },async close(){closed=true;const entries=[...live];for(const entry of entries)entry.cancel();await Promise.all(entries.map(e=>e.done));}};
+  },close:()=>runner.close()};
 }
 async function currentHashes(files) {
   return Object.fromEntries(await Promise.all([...files].map(async([file,v])=>{try{return [file,digest(await readFile(v.path,'utf8'))];}catch{return [file,null];}})));

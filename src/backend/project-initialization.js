@@ -1,3 +1,4 @@
+import {isInternalAgent} from './internal-agents.js';
 import {realpath,stat} from 'node:fs/promises';
 import {isAbsolute} from 'node:path';
 import {nativeConfig} from './native-config.js';
@@ -10,7 +11,7 @@ export function projectDiagnostic(config={},manifest){
 /** Only initial project identity is changed. DSH owns approval, CAS and persistence. */
 export async function initializeProject(ctx,input,execution,check=inspectComponents){
  if(!input||Object.keys(input).some(k=>!['root','scope'].includes(k))||!isAbsolute(input.root??'')||typeof input.scope!=='string'||!input.scope.trim())throw Error('项目目录必须是绝对路径，并提供明确 scope');
- if(execution.agent?.session?.id?.startsWith('crystra-reflection-')||execution.agent?.session?.id?.startsWith('crystra-crystallization-eval-'))throw Error('Internal evaluator cannot initialize a project');
+ if(isInternalAgent(execution.agent))throw Error('Internal evaluator cannot initialize a project');
  const settings=ctx.settings,descriptor=settings?.describe({redactSecrets:true}).find(d=>d.ns==='crystra');
  if(!descriptor)throw Error('DSH settings 尚未就绪');
  const current=descriptor.value;
