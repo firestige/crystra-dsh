@@ -9,7 +9,7 @@ import os from 'node:os';
 import assert from 'node:assert/strict';
 const root=resolve(import.meta.dirname,'../..');
 const baseline=resolve(root,'artifacts/backend-rebuild/association-fix/barrier-before.js');
-const current=resolve(root,'src/backend/barrier.js');
+const current=resolve(root,'src/backend/dsh-barrier.js');
 function fixture(kind,size) {
   const count=kind==='dense'?64:kind==='noise'?20:5;
   const actions=Array.from({length:count},(_,i)=>({id:`a${i}`,tool:'check',kind:kind==='mismatch'?'result-equals':'tool-completed',match:kind==='noise'?{case:i}:{suite:'public'},...(kind==='mismatch'?{path:['exitCode'],equals:0}:{})}));

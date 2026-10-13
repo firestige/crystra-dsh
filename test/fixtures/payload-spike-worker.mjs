@@ -1,4 +1,5 @@
-import {compileCommitment,verifyCommitment} from '../../src/backend/barrier.js';
+import {nativeEvidence} from '../../src/backend/dsh-evidence.js';
+import {compileCommitment,verifyCommitment} from '../../src/backend/dsh-barrier.js';
 import {Controller} from '../../src/backend/controller.js';
 import {digest} from '../../src/backend/value.js';
 import {openJournal} from '../../src/backend/dsh-journal.js';
@@ -22,7 +23,7 @@ if(spec.mode==='compile'){
  output.compile=await caught(()=>compileCommitment(input,{sessionId:'worker',stepId:'s',seq:0},[ref]));
  // Avoid serializing deeply nested successful goal, which itself may exhaust JSON.stringify.
  if(output.compile.status==='returned')output.compile.value={compiled:true};
- let stored=null;const options={workerSessionId:'worker',journal:{read:async()=>structuredClone(stored),append:async state=>{stored=structuredClone(state);}},resolve:async()=>({reference:ref,data,effective:true}),evidence:async()=>({sessionId:'worker',seq:0,events:[]})};
+ let stored=null;const options={workerSessionId:'worker',journal:{read:async()=>structuredClone(stored),append:async state=>{stored=structuredClone(state);}},resolve:async()=>({reference:ref,data,effective:true}),evidence:nativeEvidence(async()=>({sessionId:'worker',seq:0,events:[]}))};
  const controller=await Controller.open(options,{scope:'payload',references:[ref]});output.declare=await caught(()=>controller.declare(input));output.responsibility={active:controller.snapshot().active?.id,pending:controller.snapshot().pending.length,history:controller.snapshot().history.length};
 }else if(spec.mode==='pure'){
  const goal=compileCommitment(input,{sessionId:'worker',stepId:'s',seq:0},[ref]);
@@ -37,7 +38,7 @@ if(spec.mode==='compile'){
   await start();ctx.llm.registerAdapter(['payload-fixture'],new Adapter());
   handle=await ctx.agents.create({sessionId:'worker',agentOptions:{provider:'payload-fixture',model:'offline'},setup:ac=>{ac.tools.register({name:'probe',description:'Deterministic payload probe',parameters:{type:'object'},output:{schema:{type:'object'},render:args=>[{type:'text',text:args.recovery?'{"x":0}':text}]},execute:()=>({x:0})});}});
   journal=await openJournal(ctx.sessionPersistence,'worker');
-  const options=()=>({workerSessionId:'worker',journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:async()=>({sessionId:'worker',seq:events.at(-1)?.seq??0,events})});
+  const options=()=>({workerSessionId:'worker',journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:nativeEvidence(async()=>({sessionId:'worker',seq:events.at(-1)?.seq??0,events}))});
   // Session begins with native initialization facts; use those as the declaration anchor.
   events.push(...handle.agent.session.snapshotEvents());
   const controller=await Controller.open(options(),{scope:'payload',references:[ref]});

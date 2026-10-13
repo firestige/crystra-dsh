@@ -1,3 +1,4 @@
+import {decodeOriginalResult} from './dsh-evidence.js';
 import {plain,same,digest} from './value.js';
 
 /** Native-tool observation and around-dispatch routing; never changes the worker's tools/prompt. */
@@ -51,9 +52,7 @@ export function connectCrystallization(ctx,ready,options){
    });
    return; // A fast output must never qualify its own replacement.
   }
-  const blocks=event.data.message?.content;
-  if(!Array.isArray(blocks)||blocks.length!==1||blocks[0].type!=='tool-result'||blocks[0].isError||blocks[0].content?.length!==1||blocks[0].content[0].type!=='text'){stats.skipped++;schedule(()=>durable);return;}
-  try{digest(JSON.parse(blocks[0].content[0].text));}catch{stats.skipped++;schedule(()=>durable);return;}
+  if(!decodeOriginalResult(event.data.message).found){stats.skipped++;schedule(()=>durable);return;}
   schedule(async()=>{
    // session/event is a synchronous observer. Flush outside append's critical section.
    await durable;

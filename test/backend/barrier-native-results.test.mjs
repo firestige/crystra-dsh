@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {captureNativeResults} from '../fixtures/native-result-probe.mjs';
-import {compileCommitment,verifyCommitment} from '../../src/backend/barrier.js';
+import {compileCommitment,verifyCommitment} from '../../src/backend/dsh-barrier.js';
 
 test('native DSH emits one associated result block, preserving renderer text parts',{timeout:5000},async()=>{
   const specs=[{callId:'fragment',tool:'fragmented',content:[{type:'text',text:'{"exit'},{type:'text',text:'Code":0}'}]},{callId:'prose',tool:'prose',content:[{type:'text',text:'Result: '},{type:'text',text:'{"exitCode":0}'}]},{callId:'plain',tool:'plain'}];

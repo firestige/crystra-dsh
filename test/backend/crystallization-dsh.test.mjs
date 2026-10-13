@@ -149,7 +149,7 @@ test('automatic observation errors are visible and prevent silent continuation',
  const dir=await mkdtemp(join(tmpdir(),'crystra-auto-error-'));let ctx;
  try{
   const f=await host(dir,'candidate',2000,true);ctx=f.ctx;const service=await ctx.crystraCrystallization.ready;
-  service.config.readEvents=async()=>{throw Error('Native storage unavailable');};await f.work(req(1));await assert.rejects(ctx.crystraCrystallization.whenIdle(),/storage unavailable/);
+  service.config.readFacts=async()=>{throw Error('Native storage unavailable');};await f.work(req(1));await assert.rejects(ctx.crystraCrystallization.whenIdle(),/storage unavailable/);
   assert.match(ctx.crystraCrystallization.observationStatus().error,/storage unavailable/);const n=f.counts.bodies;
   await f.work(req(2));assert.equal(f.counts.bodies,n);assert.equal(f.counts.built,0);
  }finally{await ctx?.fiber.dispose();await rm(dir,{recursive:true,force:true});}

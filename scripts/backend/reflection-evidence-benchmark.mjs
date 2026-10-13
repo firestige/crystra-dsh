@@ -2,7 +2,7 @@
 import {performance} from 'node:perf_hooks';
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
-import * as current from '../../src/backend/barrier.js';
+import * as current from '../../src/backend/dsh-barrier.js';
 const implementations=[{label:'current',api:current}];
 if(process.argv[2])implementations.unshift({label:'baseline',api:await import(pathToFileURL(resolve(process.argv[2])).href)});
 function fixture(kind,size,actionCount=5,payloadBytes=0) {

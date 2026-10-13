@@ -40,3 +40,45 @@ test('explicit initializing project permits an empty seed without making it a ma
   assert.throws(()=>nativeConfig({},{...c,project:{...c.project,initializing:false}}));
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+function crystalConfigured(root){return {...configured(root),reflection:{enabled:true,provider:'expert',model:'high',files:['core.js'],experiments:[]},crystallization:{enabled:true,provider:'expert',model:'high',python:'/usr/bin/python3'}};}
+async function applicability(input,extra={}){
+ const ctx={crystraConsensus:{ready:Promise.resolve({resolve:async()=>({})})},...extra};return nativeConfig(ctx,input).core.crystallization.context();
+}
+test('reflection, evaluation and credential routing changes do not invalidate an admitted native crystal',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystal-applicability-'));try{
+  const input=crystalConfigured(root),basis=await applicability(input);
+  const variants=[
+   {...input,reflection:{enabled:false}},
+   {...input,reflection:{...input.reflection,provider:'other',model:'other',reasoningEffort:'low',timeoutMs:12,files:['other.js'],experiments:[{id:'other',command:'/usr/bin/true',args:[],timeoutMs:10}]}},
+   {...input,crystallization:{...input.crystallization,provider:'other',model:'other',reasoningEffort:'low',timeoutMs:99}},
+   {...input,squidex:{...input.squidex,managementTokenRef:'NEW_WRITE',consumerTokenRef:'NEW_READ',timeoutMs:99}},
+   {...input,squidex:{baseUrl:input.squidex.baseUrl,app:'test',schema:'agreements',managementClientId:'new-write',managementSecretRef:'WRITE_SECRET',consumerClientId:'new-read',consumerSecretRef:'READ_SECRET'}},
+   {...input,crystallization:{...input.crystallization,executionTimeoutMs:2000}},
+  ];
+  for(const variant of variants)assert.deepEqual(await applicability(variant),basis);
+  assert.ok(!JSON.stringify(basis).includes('CMS_WRITE'));assert.ok(!JSON.stringify(basis).includes('CMS_READ'));
+ }finally{await rm(root,{recursive:true,force:true});}
+});
+test('project consensus, source identity and execution environment changes invalidate native crystallization',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystal-relevant-')),other=await mkdtemp(join(tmpdir(),'crystal-other-'));try{
+  const input=crystalConfigured(root),basis=await applicability(input);
+  for(const variant of [
+   {...input,project:{...input.project,root:other}}, {...input,project:{...input.project,scope:'other'}},
+   ...[{id:'b'},{published_version:2},{publication_event_id:'p2'},{actor:'other'},{data_hash:'b'.repeat(64)}].map(change=>({...input,project:{...input.project,references:[{...ref,...change}]}})),
+   ...[{baseUrl:'http://127.0.0.1:1947'},{app:'other'},{schema:'other'}].map(change=>({...input,squidex:{...input.squidex,...change}})),
+   {...input,crystallization:{...input.crystallization,python:'/opt/other/python3'}},
+   {...input,crystallization:{...input.crystallization,executionTimeoutMs:3000}},
+  ])assert.notDeepEqual(await applicability(variant),basis);
+  const changed=[{...ref,published_version:2,publication_event_id:'p2'}],ctx={crystraConsensusApproval:{ready:Promise.resolve({manifest:()=>({references:changed})})}};
+  const current=await applicability(input,ctx);assert.deepEqual(current.references,changed);assert.notDeepEqual(current,basis);
+ }finally{await rm(root,{recursive:true,force:true});await rm(other,{recursive:true,force:true});}
+});
+test('unavailable, missing or malformed effective publications never yield a crystallization context',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'crystal-context-failure-'));try{
+  const input=crystalConfigured(root);
+  await assert.rejects(applicability(input,{crystraConsensus:{ready:Promise.resolve({resolve:async()=>{throw Error('publication withdrawn');}})}}),/withdrawn/);
+  await assert.rejects(applicability(input,{crystraConsensusApproval:{ready:Promise.resolve({manifest:()=>({references:[]})})}}),/consensus approval/i);
+  await assert.rejects(applicability(input,{crystraConsensusApproval:{ready:Promise.resolve({manifest:()=>({references:[{...ref,data_hash:'bad'}]})})}}),/publication reference/i);
+ }finally{await rm(root,{recursive:true,force:true});}
+});

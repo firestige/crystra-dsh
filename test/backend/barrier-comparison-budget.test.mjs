@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compileCommitment,verifyCommitment,COMPARISON_LIMITS} from '../../src/backend/barrier.js';
+import {compileCommitment,verifyCommitment,COMPARISON_LIMITS} from '../../src/backend/dsh-barrier.js';
 const anchor={sessionId:'budget',stepId:'s',seq:0};
 const action={id:'a',tool:'probe',kind:'result-equals',match:{suite:'public'},path:['x'],equals:0};
 const compile=a=>compileCommitment({label:'Bounded comparison',actions:[a]},anchor,[]);

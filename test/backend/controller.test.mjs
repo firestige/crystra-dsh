@@ -1,3 +1,4 @@
+import {nativeEvidence} from '../../src/backend/dsh-evidence.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Controller } from '../../src/backend/controller.js';
@@ -11,7 +12,7 @@ function fixture() {
   let stored = null, unavailable = false, failWrite = false;
   const events = [];
   const journal = { read:async()=>structuredClone(stored), append:async(value)=>{ if(failWrite)throw Error('disk failure'); stored=structuredClone(value); } };
-  const options = { workerSessionId:'worker', journal, resolve:async()=>{if(unavailable)throw Error('offline');return {reference:ref,data,effective:true};}, evidence:async()=>({sessionId:'worker',seq:events.length,events:structuredClone(events)}) };
+  const options = { workerSessionId:'worker', journal, resolve:async()=>{if(unavailable)throw Error('offline');return {reference:ref,data,effective:true};}, evidence:nativeEvidence(async()=>({sessionId:'worker',seq:events.length,events:structuredClone(events)})) };
   const completed=(name,args)=>{
     const id='call-'+events.length;
     events.push({seq:events.length+1,type:'tool/call',data:{callId:id,name,arguments:JSON.stringify(args)}});

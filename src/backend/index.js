@@ -1,4 +1,5 @@
-import {approvalDetailProjection} from './consensus-approval-projection.js';
+import {extractExecutionFacts,nativeCrystallizationConfig} from './dsh-evidence.js';
+import {approvalDetailProjection,createDshApprovalAdapter} from './dsh-approval-adapter.js';
 import { digest } from './value.js';
 import { ConsensusApproval } from './consensus-approval.js';
 import { applyNative } from './native-plugin.js';
@@ -64,12 +65,12 @@ function applyCore(ctx, config) {
     if (typeof options.namespace !== 'string' || !options.namespace) throw new TypeError('Crystallization namespace required');
     crystallizationJournal = await openJournal(ctx.sessionPersistence, `crystallization:${options.namespace}`);
     try {
-      return await Crystallization.open({ ...options, original: options.original ?? (async () => { throw new Error('Explicit run requires an original execution adapter; automatic observation does not'); }), evaluate: options.evaluate ?? evaluator.evaluate,
+      return await Crystallization.open(nativeCrystallizationConfig({ ...options, original: options.original ?? (async () => { throw new Error('Explicit run requires an original execution adapter; automatic observation does not'); }), evaluate: options.evaluate ?? evaluator.evaluate,
         readEvents: options.readEvents ?? (async id => {
           const handle = await ctx.sessionPersistence.open(id, 'read');
           try { return (await handle.read()).events; } finally { await handle.close(); }
         }),
-      }, crystallizationJournal);
+      }), crystallizationJournal);
     } catch (error) { await crystallizationJournal.close(); throw error; }
   })() : null;
   crystallizationReady?.catch(() => {});
@@ -90,15 +91,7 @@ function applyCore(ctx, config) {
     const client=config.consensus.client??new SquidexClient(config.consensus.squidex);
     return ConsensusApproval.open({namespace:config.consensus.namespace,journal:approvalJournal,manager,client,
       ...config.consensus.approval,resolve:(ref,options)=>manager.resolve(ref,options),
-      approval:async request=>{
-        const service=typeof ctx.get==='function'?ctx.get('approval'):ctx.approval;
-        if(!service)return 'unavailable';
-        const {presentation,...nativeRequest}=request;
-        // Native approval/asked carries readable detail; no unknown required session event.
-        const outcome=await service.request(nativeRequest);
-        await ctx.sessions.flush(request.agent.session);
-        return outcome;
-      }});
+      approval:createDshApprovalAdapter(ctx)});
   })():null;
   approvalReady?.catch(()=>{});
   if(approvalReady)ctx.provide('crystraConsensusApproval',{ready:approvalReady});
@@ -113,16 +106,17 @@ function applyCore(ctx, config) {
         let selectedManifest=manifest;
         if(approvalReady){
           const approvals=await approvalReady,stored=await journal.read();
-          if(stored){if(!approvals.accepts(stored.manifest))throw Error('Restored consensus binding is not an approved project version');selectedManifest=undefined;}
+          if(stored)selectedManifest=undefined;
           else selectedManifest=approvals.manifest();
         }
         const controller = await Controller.open({
           workerSessionId: agent.session.id, journal, initializing:config.initializing===true, resolve: resolveConsensus,
-          evidence: async () => {
+          evidence: async window => {
             await ac.sessions.flush(agent.session);
-            return { sessionId: agent.session.id, seq: agent.session.seq - 1, events: agent.session.snapshotEvents() };
+            return extractExecutionFacts({ sessionId: agent.session.id, seq: agent.session.seq - 1, events: agent.session.snapshotEvents() },window);
           },
         }, selectedManifest);
+        if(approvalReady && !(await approvalReady).accepts(controller.bindingStatus().manifest))throw Error('Restored consensus binding is not an approved project version');
         return controller;
       } catch (error) { await journal.close(); throw error; }
     })();

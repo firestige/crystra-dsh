@@ -1,5 +1,5 @@
 import {performance} from 'node:perf_hooks';
-import {compileCommitment,verifyCommitment} from '../../src/backend/barrier.js';
+import {compileCommitment,verifyCommitment} from '../../src/backend/dsh-barrier.js';
 const actions=Array.from({length:20},(_,i)=>({id:`a${i}`,kind:'tool-completed',tool:'check',match:{case:i}}));
 const goal=compileCommitment({label:'20 checks',actions},{sessionId:'benchmark',seq:0,stepId:'s'},[]);
 const samples=[];

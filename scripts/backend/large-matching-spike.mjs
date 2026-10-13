@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {compileCommitment,verifyCommitment} from '../../src/backend/barrier.js';
+import {compileCommitment,verifyCommitment} from '../../src/backend/dsh-barrier.js';
 
 // Worker intentionally uses subset DP, not the production augmenting-path algorithm.
 export function oracle(edges,nCalls) {

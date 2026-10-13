@@ -1,5 +1,6 @@
+import {nativeEvidence} from '../../src/backend/dsh-evidence.js';
 import test from 'node:test';import assert from 'node:assert/strict';
-import {compileCommitment,verifyCommitment} from '../../src/backend/barrier.js';
+import {compileCommitment,verifyCommitment} from '../../src/backend/dsh-barrier.js';
 import {Controller} from '../../src/backend/controller.js';import {digest} from '../../src/backend/value.js';
 import {observeNativeOutcomes} from '../fixtures/outcome-spike-worker.mjs';
 import {mkdir,writeFile} from 'node:fs/promises';
@@ -16,7 +17,7 @@ test('artificial duplicate target blocks fail closed, distinct-ID and fragmented
 test('artificial result ambiguity does not erase active or inherited pending responsibility',async()=>{
  for(const pair of [[0,1],[1,0],[0,0],'events']){
  let stored=null,events=[];const data={body:'fixture'},ref={id:'c',published_version:1,publication_event_id:'p',actor:'user:owner',data_hash:digest(data)};
- const options={workerSessionId:'s',journal:{read:async()=>structuredClone(stored),append:async s=>{stored=structuredClone(s);}},resolve:async()=>({reference:ref,data,effective:true}),evidence:async()=>({sessionId:'s',seq:events.at(-1)?.seq??0,events})};
+ const options={workerSessionId:'s',journal:{read:async()=>structuredClone(stored),append:async s=>{stored=structuredClone(s);}},resolve:async()=>({reference:ref,data,effective:true}),evidence:nativeEvidence(async()=>({sessionId:'s',seq:events.at(-1)?.seq??0,events}))};
  const c=await Controller.open(options,{scope:'fixture',references:[ref]});
  const keep={id:'keep',kind:'tool-completed',tool:'prepare',match:{case:'public'}};
  await c.declare({label:'prepare and run',actions:[keep,action]});events=[{...call,data:{...call.data,name:'prepare'}},result([block('c',0)])];

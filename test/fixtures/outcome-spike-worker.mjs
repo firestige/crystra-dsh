@@ -1,3 +1,4 @@
+import {nativeEvidence} from '../../src/backend/dsh-evidence.js';
 import {Context} from '@deepseek-ai/cordis';
 import {LlmAdapter,createUserMessage} from '@deepseek-ai/dsh-llm';
 import {mkdtemp,rm,readdir,readFile} from 'node:fs/promises';
@@ -13,7 +14,7 @@ export async function observeNativeOutcomes(){
  const boot=async()=>{ctx=new Context();for(const n of ['dsh-session','dsh-session-projection','dsh-agent','dsh-llm','dsh-system-prompt','dsh-tools','dsh-session-persistence-jsonl','dsh-agent-loop']){const m=await import('@deepseek-ai/'+n);const configs={'dsh-system-prompt':{includeHarnessIdentity:false,includeRuntimeContext:false},'dsh-tools':{mode:'native'},'dsh-session-persistence-jsonl':{root,compression:'none'},'dsh-agent-loop':{agents:[],maxParallelToolCalls:1}};await ctx.plugin(m.default??m,configs[n]??{});}ctx.llm.registerAdapter(['outcome-fixture'],new Calls());};
  const files=async()=>{const result={};async function visit(path){for(const e of await readdir(path,{withFileTypes:true})){const p=join(path,e.name);if(e.isDirectory())await visit(p);else if(e.name.endsWith('.jsonl'))result[p.slice(root.length)]=await readFile(p,'utf8');}}await visit(root);return result;};
  const data={body:'outcome fixture'},ref={id:'c',published_version:1,publication_event_id:'p',actor:'user:owner',data_hash:digest(data)},manifest={scope:'fixture',references:[ref]};
- const options=events=>({workerSessionId:sessionId,journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:async()=>({sessionId,seq:events().at(-1)?.seq??0,events:events()})});
+ const options=events=>({workerSessionId:sessionId,journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:nativeEvidence(async()=>({sessionId,seq:events().at(-1)?.seq??0,events:events()}))});
  try{
  await boot();handle=await ctx.agents.create({sessionId,agentOptions:{provider:'outcome-fixture',model:'offline'},setup});journal=await openJournal(ctx.sessionPersistence,sessionId);
  const controller=await Controller.open(options(()=>handle.agent.session.snapshotEvents()),manifest);

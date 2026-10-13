@@ -24,6 +24,15 @@ function options(value){
  if(!value.provider?.trim()||!value.model?.trim())throw Error('Explicit evaluation provider/model required');
  return {provider:value.provider,model:value.model,...value.reasoningEffort?{reasoningEffort:value.reasoningEffort}:{}};
 }
+// Admission models/credentials/transport budgets do not change frozen execution.
+// Keep this list explicit: new execution semantics require a reviewed fingerprint.
+function crystallizationConfiguration(config){
+ const {squidex,crystallization:c}=config;
+ return digest({version:1,scope:config.project.scope,
+  consensusSource:{baseUrl:squidex.baseUrl,app:squidex.app,schema:squidex.schema},
+  execution:{protocol:'python-json-files-v1',python:c.python,timeoutMs:c.executionTimeoutMs??2000,platform:process.platform,arch:process.arch},
+ });
+}
 /** Translate only serializable user settings into trusted host ports. */
 export function nativeConfig(ctx,input){
  const config=Config(input);if(!config.enabled)return null;
@@ -49,7 +58,7 @@ export function nativeConfig(ctx,input){
   core.crystallization={namespace,agentOptions:options(c),cwd:projectRoot,timeoutMs:c.timeoutMs??300000,
    code:{root:join(resolveDshHome(),'crystra','code',namespace),python:c.python,timeoutMs:c.executionTimeoutMs??2000},
    auto:{select:exec=>selectedProject(exec.agent,projectRoot)?{scope:project.scope,boundary:exec.name,input:exec.arguments.input}:null},
-   context:async()=>{const service=await ctx.crystraConsensus.ready;const current=ctx.crystraConsensusApproval? (await ctx.crystraConsensusApproval.ready).manifest().references:references;if(!current.length)throw Error('First consensus approval required before crystallization');for(const ref of current)await service.resolve(ref);return {projectRoot,references:current,configuration:digest(config)};},
+   context:async()=>{const service=await ctx.crystraConsensus.ready;const current=(ctx.crystraConsensusApproval? (await ctx.crystraConsensusApproval.ready).manifest().references:references).map(publicationReference);if(!current.length)throw Error('First consensus approval required before crystallization');for(const ref of current)await service.resolve(ref);return {applicabilityVersion:1,projectRoot,references:current,configuration:crystallizationConfiguration(config)};},
   };
  }
  return {projectRoot,manifest,core,config};

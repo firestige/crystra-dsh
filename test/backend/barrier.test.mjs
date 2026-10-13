@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { compileCommitment, verifyCommitment, splitCommitment } from '../../src/backend/barrier.js';
+import { compileCommitment, verifyCommitment, splitCommitment } from '../../src/backend/dsh-barrier.js';
 
 const ref = { id: 'agreement-1', published_version: 2, publication_event_id: 'publish-1', actor: 'user:owner', data_hash: 'a'.repeat(64) };
 const anchor = { sessionId: 'worker-1', seq: 10, stepId: 'step-1' };

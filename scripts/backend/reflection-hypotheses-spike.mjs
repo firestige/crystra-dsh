@@ -1,4 +1,5 @@
-import {compileCommitment,verifyCommitment,splitCommitment} from '../../src/backend/barrier.js';
+import {nativeEvidence} from '../../src/backend/dsh-evidence.js';
+import {compileCommitment,verifyCommitment,splitCommitment} from '../../src/backend/dsh-barrier.js';
 import {Controller} from '../../src/backend/controller.js';
 import {digest,canonical} from '../../src/backend/value.js';
 import {openJournal} from '../../src/backend/dsh-journal.js';
@@ -35,7 +36,7 @@ async function boundaries(){
  handle=await ctx.agents.create({sessionId:'worker',agentOptions:{provider:'hypothesis-fixture',model:'offline'},setup:ac=>{ac.tools.register({name:'probe',description:'Controlled boundary probe',parameters:{type:'object'},output:{schema:{type:'object'},render:(_a,v)=>[{type:'text',text:JSON.stringify(v)}]},execute:()=>({x:0})});}});
  const data={body:'consensus'},ref={id:'c',published_version:1,publication_event_id:'p',actor:'user:test',data_hash:digest(data)};
  journal=await openJournal(ctx.sessionPersistence,'worker');
- const opts={workerSessionId:'worker',journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:async()=>{await ctx.sessions.flush(handle.agent.session);return ev(handle.agent.session.snapshotEvents());}};
+ const opts={workerSessionId:'worker',journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:nativeEvidence(async()=>{await ctx.sessions.flush(handle.agent.session);return ev(handle.agent.session.snapshotEvents());})};
  const ctrl=await Controller.open(opts,{scope:'spike',references:[ref]});
  const input={label:'First done, second pending',actions:[action('a'),{...action('b'),match:{case:'missing'}}]};
  assert.equal(await ctrl.declare(input),'GO');input.actions[0].equals=333;
@@ -48,14 +49,14 @@ async function boundaries(){
  assert.equal(out.H2.controller.inputIsolated,true);assert.equal(out.H2.controller.snapshotsIsolated,true);assert.equal(out.H2.controller.finish,'NO_GO');assert.equal(ctrl.snapshot().active,null);assert.equal(ctrl.snapshot().pending.length,1);
  await journal.close();journal=await openJournal(ctx.sessionPersistence,'worker');const restored=await Controller.open({...opts,journal});out.H2.restored={state:restored.snapshot(),finish:await restored.finish()};assert.deepEqual(restored.snapshot(),ctrl.snapshot());
  // Host JS input is a separate trust boundary from JSON model arguments.
- const j2=await openJournal(ctx.sessionPersistence,'host-hole');try{const hc=await Controller.open({...opts,workerSessionId:'host-hole',journal:j2,evidence:async()=>({sessionId:'host-hole',seq:0,events:[]})},{scope:'spike',references:[ref]});out.H1.hostDeclare=await caught(()=>hc.declare({label:'Host sparse expectation',actions:[{...action(),equals:Array(1)}]}));out.H1.hostState=hc.snapshot();}finally{await j2.close();}
+ const j2=await openJournal(ctx.sessionPersistence,'host-hole');try{const hc=await Controller.open({...opts,workerSessionId:'host-hole',journal:j2,evidence:nativeEvidence(async()=>({sessionId:'host-hole',seq:0,events:[]}))},{scope:'spike',references:[ref]});out.H1.hostDeclare=await caught(()=>hc.declare({label:'Host sparse expectation',actions:[{...action(),equals:Array(1)}]}));out.H1.hostState=hc.snapshot();}finally{await j2.close();}
  out.H1.jsonRepresentability={holeIsJSONExpressible:false,extraArrayPropertyIsJSONExpressible:false,encodedHole:JSON.stringify(Array(1)),encodedExtra:JSON.stringify(Object.assign([],{extra:true}))};
  out.H3.helper=[];
  for(const kind of ['missing-seq','nan-seq','fractional-seq','missing-content','object-content']){const events=pair();if(kind==='missing-seq')delete events[1].seq;if(kind==='nan-seq')events[1].seq=NaN;if(kind==='fractional-seq')events[1].seq=1.5;if(kind==='missing-content')delete events[1].data.message.content;if(kind==='object-content')events[1].data.message.content={};out.H3.helper.push({kind,result:await caught(()=>verifyCommitment(goal([action()]),{sessionId:'worker',seq:3,events},[]))});}
  out.H3.nativeAppend=[];
  for(const kind of ['normal','missing-content','object-content','missing-block-content','wrong-call-id']){
   const s=Session.create('fault-'+kind);s.append('session/end-seed',{});const [c,r]=pair();if(kind==='missing-content')delete r.data.message.content;if(kind==='object-content')r.data.message.content={};if(kind==='missing-block-content')delete r.data.message.content[0].content;if(kind==='wrong-call-id')r.data.message.content[0].toolCallId='wrong';
-  let faultState=null;const fc=await Controller.open({workerSessionId:s.id,journal:{read:async()=>structuredClone(faultState),append:async v=>{faultState=structuredClone(v);}},resolve:opts.resolve,evidence:async()=>({sessionId:s.id,seq:s.seq-1,events:s.snapshotEvents()})},{scope:'spike',references:[ref]});assert.equal(await fc.declare({label:'Fault event check',actions:[action()]}),'GO');const faultBefore=fc.snapshot();s.append('tool/call',c.data);
+  let faultState=null;const fc=await Controller.open({workerSessionId:s.id,journal:{read:async()=>structuredClone(faultState),append:async v=>{faultState=structuredClone(v);}},resolve:opts.resolve,evidence:nativeEvidence(async()=>({sessionId:s.id,seq:s.seq-1,events:s.snapshotEvents()}))},{scope:'spike',references:[ref]});assert.equal(await fc.declare({label:'Fault event check',actions:[action()]}),'GO');const faultBefore=fc.snapshot();s.append('tool/call',c.data);
   const appended=await caught(()=>s.append('tool/result',r.data,{surfaceOp:'append',sourceEventSeqs:[1]}));
   const record={kind,appended,events:s.snapshotEvents(),verify:await caught(()=>verifyCommitment(goal([action()]),ev(s.snapshotEvents()),[])),restore:await caught(()=>{Session.create(s.id,structuredClone(s.snapshotEvents()),s.header);return 'accepted';})};
   // Persist exact native event snapshots into an isolated native JSONL store.

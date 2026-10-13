@@ -1,3 +1,4 @@
+import {nativeEvidence} from '../../src/backend/dsh-evidence.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
@@ -7,7 +8,7 @@ import {Context} from '@deepseek-ai/cordis';
 import {Session} from '@deepseek-ai/dsh-session';
 import {Controller} from '../../src/backend/controller.js';
 import {openJournal} from '../../src/backend/dsh-journal.js';
-import {compileCommitment,verifyCommitment} from '../../src/backend/barrier.js';
+import {compileCommitment,verifyCommitment} from '../../src/backend/dsh-barrier.js';
 import {digest} from '../../src/backend/value.js';
 const action={id:'probe',tool:'probe',kind:'result-equals',match:{suite:'public'},path:['x'],equals:0};
 const malformed={
@@ -26,7 +27,7 @@ for(const [name,mutate] of Object.entries(malformed))test(`native malformed ${na
   const session=Session.create('worker');session.append('session/end-seed',{});
   const data={body:'Require actual successful probe'},ref={id:'c',published_version:1,publication_event_id:'p',actor:'user:test',data_hash:digest(data)};
   journal=await openJournal(ctx.sessionPersistence,'worker');
-  const options=()=>({workerSessionId:'worker',journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:async()=>({sessionId:'worker',seq:session.seq-1,events:session.snapshotEvents()})});
+  const options=()=>({workerSessionId:'worker',journal,resolve:async()=>({reference:ref,data,effective:true}),evidence:nativeEvidence(async()=>({sessionId:'worker',seq:session.seq-1,events:session.snapshotEvents()}))});
   const controller=await Controller.open(options(),{scope:'event-shape',references:[ref]});
   assert.equal(await controller.declare({label:'Probe x is zero',actions:[action]}),'GO');
   const original=controller.snapshot().active;

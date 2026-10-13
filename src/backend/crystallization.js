@@ -12,7 +12,7 @@ function reference(value) {
 /** Host-owned execution boundary. No scheduler, model routing, or arbitrary-code sandbox. */
 export class Crystallization {
   static async open(config,journal) {
-    if(typeof config.namespace!=='string'||!config.namespace||!['context','original','readEvents','evaluate','resolve'].every(key=>typeof config[key]==='function'))throw new TypeError('Crystallization namespace and trusted host ports required');
+    if(typeof config.namespace!=='string'||!config.namespace||!['context','original','readFacts','evaluate','resolve'].every(key=>typeof config[key]==='function'))throw new TypeError('Crystallization namespace and trusted host ports required');
     const threshold=config.threshold??2;
     if(!Number.isSafeInteger(threshold)||threshold<2)throw new TypeError('At least two distinct originals required');
     const identity=`crystallization:${config.namespace}`;
@@ -127,17 +127,14 @@ export class Crystallization {
   }
   async originalOutput(request,receipt){
     if(!receipt||typeof receipt.sessionId!=='string'||!Number.isSafeInteger(receipt.callSeq)||!Number.isSafeInteger(receipt.resultSeq)||receipt.resultSeq<=receipt.callSeq)throw new Error('Invalid native original receipt');
-    const events=await this.config.readEvents(receipt.sessionId);
-    if(!Array.isArray(events))throw new Error('Missing native original events');
-    const calls=events.filter(e=>e.seq===receipt.callSeq&&e.type==='tool/call'),results=events.filter(e=>e.seq===receipt.resultSeq&&e.type==='tool/result');
-    if(calls.length!==1||results.length!==1)throw new Error('Ambiguous or missing native original receipt');
-    const call=calls[0],result=results[0],id=call.data.callId;
-    let args;try{args=JSON.parse(call.data.arguments);}catch{throw new Error('Invalid native original arguments');}
-    const linked=events.filter(e=>e.type==='tool/result'&&e.sourceEventSeqs?.includes(receipt.callSeq));
-    if(typeof id!=='string'||!id||call.data.name!==request.boundary||!same(args.input,request.input)||linked.length!==1||!same(result.sourceEventSeqs,[call.seq])||result.data.message.source?.callId!==id)throw new Error('Native original provenance mismatch');
-    const blocks=result.data.message.content;
-    if(!Array.isArray(blocks)||blocks.length!==1||blocks[0].type!=='tool-result'||blocks[0].toolCallId!==id||blocks[0].isError||!Array.isArray(blocks[0].content)||blocks[0].content.length!==1||blocks[0].content[0].type!=='text')throw new Error('Unsupported native original result');
-    try{const value=JSON.parse(blocks[0].content[0].text);digest(value);return value;}catch{throw new Error('Native original result must contain one JSON value');}
+    const facts=await this.config.readFacts(receipt.sessionId,{after:receipt.callSeq-1,callSeq:receipt.callSeq});
+    if(!facts||facts.sessionId!==receipt.sessionId||!Array.isArray(facts.executions))throw new Error('Missing native original facts');
+    const matches=facts.executions.filter(e=>e.callSeq===receipt.callSeq&&e.resultSeq===receipt.resultSeq);
+    if(matches.length!==1)throw new Error('Ambiguous or missing native original receipt');
+    const execution=matches[0];
+    if(execution.tool!==request.boundary||!same(execution.arguments.input,request.input))throw new Error('Native original provenance mismatch');
+    if(!execution.original?.found)throw new Error('Unsupported native original result');
+    return copy(execution.original.value);
   }
   async evaluate(request,family){
     const job={id:randomUUID(),status:'running',context:copy(family.context),observationCount:family.observations.length,shadows:[]};

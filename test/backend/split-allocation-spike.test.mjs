@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { compileCommitment, verifyCommitment, splitCommitment } from '../../src/backend/barrier.js';
+import { compileCommitment, verifyCommitment, splitCommitment } from '../../src/backend/dsh-barrier.js';
 
 const out = new URL('../../artifacts/backend-rebuild/payload-split-fix/split/', import.meta.url);
 mkdirSync(out, {recursive:true});

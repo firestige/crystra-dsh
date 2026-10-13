@@ -48,52 +48,12 @@ export function compileCommitment(input, anchor, references) {
   return { id: anchor.stepId, version: 1, sessionId: anchor.sessionId, declarationSeq: anchor.seq, label: input.label, actions, references: refs, versions: [] };
 }
 
-function resultValue(block, path) {
-  let value;
-  try { value = JSON.parse(block.content.filter(part => part.type === 'text').map(part => part.text).join('')); }
-  catch { return { found: false }; }
-  for (const key of path) {
-    if (value === null || typeof value !== 'object' || !Object.hasOwn(value, key)) return { found: false };
-    value = value[key];
-  }
-  return { found: true, value };
-}
-
 function evaluateCommitment(goal, evidence, currentReferences, retain = []) {
   const no = reason => ({ decision: 'NO_GO', reason, matches: [], missing: goal?.actions?.map(action => action.id) ?? [] });
   if (!goal || !goal.actions?.length) return no('uncovered');
   if (evidence.sessionId !== goal.sessionId || !Number.isSafeInteger(evidence.seq) || evidence.seq < goal.declarationSeq) return no('wrong-evidence-anchor');
   if (!goal.references.every(ref => currentReferences.some(current => same(ref, publicationReference(current))))) return no('consensus-version-changed');
-  // Native DSH results cite exactly one call event. Textual call IDs may be
-  // reused in later steps; only the session-scoped event sequence is identity.
-  const calls = [], results = new Map();
-  for (const event of evidence.events) {
-    if (event.seq <= goal.declarationSeq || event.seq > evidence.seq) continue;
-    if (event.type === 'tool/call') calls.push(event);
-    else if (event.type === 'tool/result' && Array.isArray(event.sourceEventSeqs) && event.sourceEventSeqs.length === 1) {
-      const callSeq = event.sourceEventSeqs[0];
-      if (!Number.isSafeInteger(callSeq) || callSeq <= goal.declarationSeq || callSeq >= event.seq) continue;
-      if (results.has(callSeq)) results.set(callSeq, null); // Ambiguous outcomes fail closed.
-      else results.set(callSeq, event);
-    }
-  }
-  const executions = [];
-  for (const call of calls) {
-    const result = results.get(call.seq);
-    const message = result?.data?.message;
-    // Host plugins can append malformed live events that restored DSH logs reject.
-    // Keep their call/result association above (including duplicate ambiguity),
-    // but never use malformed content as evidence or let it poison later calls.
-    if (message?.source?.callId !== call.data.callId || !Array.isArray(message.content) || message.content.some(part => !plain(part))) continue;
-    const blocks = message.content.filter(part => part.type === 'tool-result' && part.toolCallId === call.data.callId);
-    if (blocks.length !== 1 || blocks[0].isError) continue;
-    let args;
-    try { args = JSON.parse(call.data.arguments); } catch { continue; }
-    if (!plain(args)) continue;
-    executions.push({call, result, args, block: blocks[0]});
-  }
-  // Decode rendered JSON once per execution, only if a result assertion needs it.
-  const decoded = new Map();
+  const executions = evidence.executions.filter(execution => execution.callSeq > goal.declarationSeq && execution.resultSeq <= evidence.seq);
   const comparisonKeys = new Map();
   const keyFor = value => {
     if (!comparisonKeys.has(value)) comparisonKeys.set(value, comparisonKey(value));
@@ -103,21 +63,28 @@ function evaluateCommitment(goal, evidence, currentReferences, retain = []) {
     const leftKey = keyFor(left), rightKey = keyFor(right);
     return leftKey !== undefined && rightKey !== undefined && leftKey === rightKey;
   };
+  // Equal predicates share immutable candidate rows, never action identity or
+  // responsibility. Keep the full predicate (kind/tool/match/path/equals).
+  const rows = new Map();
   const candidates = goal.actions.map(action => {
+    const { id, ...predicate } = action;
+    const signature = canonical(predicate);
+    if (rows.has(signature)) return rows.get(signature);
     const eligible = [];
-    for (const {call, result, args, block} of executions) {
-      if (call.data.name !== action.tool || !Object.entries(action.match).every(([key, value]) => Object.hasOwn(args, key) && comparableSame(args[key], value))) continue;
+    for (const execution of executions) {
+      const {arguments:args}=execution;
+      if (execution.tool !== action.tool || !Object.entries(action.match).every(([key, value]) => Object.hasOwn(args, key) && comparableSame(args[key], value))) continue;
       if (action.kind === 'result-equals') {
-        if (!decoded.has(call.seq)) decoded.set(call.seq, resultValue(block, []));
-        let {found, value} = decoded.get(call.seq);
+        let {found, value} = execution.result;
         for (const key of action.path) {
           if (!found || value === null || typeof value !== 'object' || !Object.hasOwn(value, key)) { found = false; break; }
           value = value[key];
         }
         if (!found || !comparableSame(value, action.equals)) continue;
       }
-      eligible.push({ actionId: action.id, callId: call.data.callId, callSeq: call.seq, resultSeq: result.seq });
+      eligible.push({ callId: execution.callId, callSeq: execution.callSeq, resultSeq: execution.resultSeq });
     }
+    rows.set(signature, eligible);
     return eligible;
   });
   // Deterministic maximum bipartite matching. Iterative augmenting paths avoid
@@ -129,23 +96,42 @@ function evaluateCommitment(goal, evidence, currentReferences, retain = []) {
   const retained = new Set(retain);
   const indices = goal.actions.map((_action, i) => i);
   const order = [...indices.filter(i => retained.has(goal.actions[i].id)), ...indices.filter(i => !retained.has(goal.actions[i].id))];
+  // Augmentation only grows the occupied-call set: a call once occupied never
+  // becomes free. A shared row cursor can therefore skip its occupied prefix.
+  const cursors = new Map();
+  // A failed exhaustive alternating search proves a closed, saturated region.
+  // Later augmentations cannot enter and then escape it. These certificates are
+  // local to this evaluation; new evidence always builds a fresh matching.
+  const exhausted = new Set();
   for (const root of order) {
+    if (owner.size === executions.length) continue;
+    const row = candidates[root];
+    let cursor = cursors.get(row) ?? 0;
+    while (cursor < row.length && owner.has(row[cursor].callSeq)) cursor++;
+    cursors.set(row, cursor);
+    if (cursor < row.length) {
+      const witness = row[cursor];
+      assignments[root] = { actionId: goal.actions[root].id, ...witness };
+      owner.set(witness.callSeq, root);
+      continue;
+    }
     const queue = [root], visitedActions = new Set(queue), parents = new Map();
     let free;
     search: for (let cursor = 0; cursor < queue.length; cursor++) {
       const actionIndex = queue[cursor];
       for (const witness of candidates[actionIndex]) {
-        if (parents.has(witness.callSeq)) continue;
+        if (exhausted.has(witness.callSeq) || parents.has(witness.callSeq)) continue;
         parents.set(witness.callSeq, { actionIndex, witness });
         if (!owner.has(witness.callSeq)) { free = witness.callSeq; break search; }
         const other = owner.get(witness.callSeq);
         if (!visitedActions.has(other)) { visitedActions.add(other); queue.push(other); }
       }
     }
+    if (free === undefined) for (const seq of parents.keys()) exhausted.add(seq);
     while (free !== undefined) {
       const { actionIndex, witness } = parents.get(free);
       const previous = assignments[actionIndex]?.callSeq;
-      assignments[actionIndex] = witness; owner.set(free, actionIndex);
+      assignments[actionIndex] = { actionId: goal.actions[actionIndex].id, ...witness }; owner.set(free, actionIndex);
       free = previous;
     }
   }
@@ -167,13 +153,15 @@ export function splitCommitment(goal, proposal, evidence, currentReferences) {
   if (typeof proposal.reason !== 'string' || !proposal.reason.trim()) invalid('revision reason required');
   if (!Array.isArray(proposal.retain) || !proposal.retain.length || !Array.isArray(proposal.defer) || !proposal.defer.length) invalid('retain/defer partition required');
   const ids = [...proposal.retain, ...proposal.defer];
-  if (ids.length !== goal.actions.length || new Set(ids).size !== ids.length || !goal.actions.every(action => ids.includes(action.id))) invalid('responsibility loss');
+  const idSet = new Set(ids), retained = new Set(proposal.retain), deferred = new Set(proposal.defer);
+  if (ids.length !== goal.actions.length || idSet.size !== ids.length || !goal.actions.every(action => idSet.has(action.id))) invalid('responsibility loss');
   const facts = evaluateCommitment(goal, evidence, currentReferences, proposal.retain);
   if (facts.reason === 'consensus-version-changed' || facts.reason === 'wrong-evidence-anchor') invalid(facts.reason);
-  if (!proposal.retain.every(id => facts.matches.some(match => match.actionId === id)) || !proposal.defer.every(id => facts.missing.includes(id))) invalid('split lacks actual completed/unfinished facts');
-  const pending = goal.actions.filter(action => proposal.defer.includes(action.id)).map(action => ({ id: `${goal.id}:v${goal.version}:${action.id}`, originStepId: goal.id, originVersion: goal.version, action: structuredClone(action) }));
+  const matchedIds = new Set(facts.matches.map(match => match.actionId)), missingIds = new Set(facts.missing);
+  if (!proposal.retain.every(id => matchedIds.has(id)) || !proposal.defer.every(id => missingIds.has(id))) invalid('split lacks actual completed/unfinished facts');
+  const pending = goal.actions.filter(action => deferred.has(action.id)).map(action => ({ id: `${goal.id}:v${goal.version}:${action.id}`, originStepId: goal.id, originVersion: goal.version, action: structuredClone(action) }));
   return {
-    commitment: { ...structuredClone(goal), version: goal.version + 1, actions: goal.actions.filter(action => proposal.retain.includes(action.id)), versions: [...goal.versions, structuredClone(goal)], revision: { reason: proposal.reason, anchor: { sessionId: evidence.sessionId, seq: evidence.seq }, basis: facts.matches.filter(match => proposal.retain.includes(match.actionId)) } },
+    commitment: { ...structuredClone(goal), version: goal.version + 1, actions: goal.actions.filter(action => retained.has(action.id)), versions: [...goal.versions, structuredClone(goal)], revision: { reason: proposal.reason, anchor: { sessionId: evidence.sessionId, seq: evidence.seq }, basis: facts.matches.filter(match => retained.has(match.actionId)) } },
     pending,
   };
 }
