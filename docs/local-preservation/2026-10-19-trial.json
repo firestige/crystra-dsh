@@ -1,0 +1,43 @@
+{
+  "schema": "crystra.local-preservation/1",
+  "date": "2026-10-19",
+  "kind": "trial",
+  "sourceRepository": "/Users/firestige/Projects/wsr-dsh",
+  "baseCommit": "ce0d28ed778b14913481b2ab9db9b932698e534d",
+  "branch": "codex/preserve-task-control-trial-20261019",
+  "excluded": [
+    "node_modules/",
+    ".git/",
+    "dist/",
+    "build/",
+    ".cache/",
+    ".DS_Store"
+  ],
+  "files": [
+    {
+      "source": "/Users/firestige/Projects/wsr-dsh/tmp/task-control-trial/analysis.md",
+      "path": "docs/research/task-control-trial-20261006/analysis.md",
+      "size": 9533,
+      "sha256": "1937e86dbd9b8da7a935f2eeff05418e4c1f21c16b563c2b2537bb67f699170d"
+    },
+    {
+      "source": "/Users/firestige/Projects/wsr-dsh/tmp/task-control-trial/chain-evidence.json",
+      "path": "docs/research/task-control-trial-20261006/chain-evidence.json",
+      "size": 59903,
+      "sha256": "baad9c5fc2556d0e5a88a8b145c822c87211ca66fc90ce7d0b9ed0b2b8fc14f7"
+    },
+    {
+      "source": "/Users/firestige/Projects/wsr-dsh/tmp/task-control-trial/event-log-audit.md",
+      "path": "docs/research/task-control-trial-20261006/event-log-audit.md",
+      "size": 5591,
+      "sha256": "832efe0a8026194e62d0b606a06fa6b471456ead0bc2faf240adcc81bb8e6bad"
+    },
+    {
+      "source": "/Users/firestige/Projects/wsr-dsh/tmp/task-control-trial/event-log-chain-analysis.md",
+      "path": "docs/research/task-control-trial-20261006/event-log-chain-analysis.md",
+      "size": 8934,
+      "sha256": "1bd773abae6a1e26bbbacb9c042769417411b0259857cf5b4991af53d7b2ac44"
+    }
+  ],
+  "inheritedCheckpointFiles": []
+}
