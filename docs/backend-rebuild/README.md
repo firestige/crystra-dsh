@@ -1,5 +1,7 @@
 # Crystra 后台插件重建起点
 
+> 本文件保留开发起点与各轮增量，以下“当前”“尚未实现”和测试数量均须按所在阶段理解。新接手请先读 [项目方向](../project-direction.md) 与 [当前状态](../current-state.md)，不要把历史未完成项直接作为待办。
+
 2026-10-12。分支 `codex/backend-rebuild`，起点为 `origin/main` 的 `ce0d28ed778b14913481b2ab9db9b932698e534d`。
 
 ## 当前安装入口
